@@ -14,74 +14,34 @@ export async function saveGameSession({
   leaderboardData
 }) {
   try {
-    const sb = await getSupabase();
-
-    const { data: existingSession } = await sb
-      .from("game_sessions")
-      .select("id")
-      .eq("room_code", roomCode)
-      .maybeSingle();
-
-    if (existingSession) {
-      return existingSession.id;
-    }
-
-    const { data: session, error: sessionError } = await sb
-      .from("game_sessions")
-      .insert({
-        host_id: user.id,
-        room_code: roomCode,
-        title: pack.title,
-        category: pack.category || "General Knowledge",
-        challenge_count: pack.challenges?.length || 0,
-        document_name: documentName || "document",
-        document_text: documentText || null,
-        document_preview: documentText ? documentText.slice(0, 1500) : null,
+    const response = await fetch("/api/sessions/save", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        hostId: user.id,
         pack,
-        conspect: pack.conspect || null,
-        player_count: leaderboardData.leaderboard?.length || 0
+        roomCode,
+        documentName,
+        documentText,
+        leaderboardData
       })
-      .select()
-      .single();
+    });
 
-    if (sessionError) {
-      console.error("game_sessions insert error:", sessionError);
+    const data = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      console.error("saveGameSession backend error:", data.error);
       return null;
     }
 
-    if (!session) return null;
-
-    const results = (leaderboardData.leaderboard || []).map(player => ({
-      session_id: session.id,
-      user_id: player.userId || (player.id === user.id ? user.id : null),
-      player_name: player.name,
-      score: player.score,
-      correct_count: player.correct,
-      total_answered: player.totalAnswered,
-      rank: player.rank,
-      weak_concepts: player.weakConcepts || [],
-      answers: player.answers || []
-    }));
-
-    if (results.length > 0) {
-      const { error: resultsError } = await sb
-        .from("game_results")
-        .insert(results);
-
-      if (resultsError) {
-        console.error("game_results insert error:", resultsError);
-      }
-    }
-
-    await updateStatsForLoggedPlayers(sb, results, user.id, profile);
-
-    return session.id;
+    return data.sessionId || null;
   } catch (err) {
     console.error("saveGameSession error:", err);
     return null;
   }
 }
-
 async function updateStatsForLoggedPlayers(sb, results, hostId, hostProfile) {
   const grouped = new Map();
 
