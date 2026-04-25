@@ -106,6 +106,9 @@ multiple_select:
   correctAnswers: array of 2 or 3 correct options (subset of options)
   correctAnswer: "" (leave empty)
 
+Also add a "category" field to the root JSON object. Choose ONE:
+Mathematics, Programming, Science, History, Literature, Language, Economics, Philosophy, Art, General Knowledge, Medicine, Law, Engineering, Physics, Chemistry, Biology, Other
+
 DOCUMENT:
 ${documentSlice}
 `;

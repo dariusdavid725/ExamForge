@@ -914,3 +914,153 @@ blockquote {
 @media (max-width: 600px) {
   .matching-grid { grid-template-columns: 1fr; }
 }
+
+/* ── Auth ──────────────────────────────────────────────────────────────────── */
+
+.auth-tabs {
+  display: flex;
+  gap: 0;
+  border: 3px solid var(--text);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 4px 4px 0 var(--text);
+}
+
+.auth-tab {
+  flex: 1;
+  padding: 12px;
+  font-weight: 900;
+  font-size: 15px;
+  font-family: inherit;
+  cursor: pointer;
+  background: var(--paper-2);
+  border: none;
+  transition: 0.1s ease;
+}
+
+.auth-tab-active { background: var(--blue); color: white; }
+
+/* ── Dashboard ─────────────────────────────────────────────────────────────── */
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  align-items: start;
+}
+
+@media (max-width: 900px) { .dashboard-grid { grid-template-columns: 1fr; } }
+
+.dash-profile-card { position: relative; }
+
+.dash-avatar {
+  width: 56px;
+  height: 56px;
+  border-radius: 14px;
+  border: 3px solid var(--text);
+  box-shadow: 4px 4px 0 var(--text);
+  display: grid;
+  place-items: center;
+  font-size: 24px;
+  font-weight: 900;
+  color: white;
+  flex-shrink: 0;
+}
+
+.dash-avatar-sm {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 2px solid var(--text);
+  display: grid;
+  place-items: center;
+  font-size: 14px;
+  font-weight: 900;
+  color: white;
+  flex-shrink: 0;
+}
+
+.dash-stats-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.dash-stat {
+  background: var(--paper-2);
+  border: 3px solid var(--text);
+  border-radius: 14px;
+  padding: 14px;
+  text-align: center;
+  box-shadow: 3px 3px 0 var(--text);
+}
+
+.dash-stat-val {
+  font-size: 28px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.dash-stat-label {
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--muted);
+  margin-top: 4px;
+}
+
+.dash-session-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px;
+  border: 3px solid var(--text);
+  border-radius: 12px;
+  background: var(--paper-2);
+  cursor: pointer;
+  transition: 0.1s ease;
+  box-shadow: 3px 3px 0 var(--text);
+}
+
+.dash-session-row:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 5px 5px 0 var(--text);
+}
+
+/* ── Header user area ──────────────────────────────────────────────────────── */
+
+.header-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  border: 3px solid var(--text);
+  display: grid;
+  place-items: center;
+  font-size: 16px;
+  font-weight: 900;
+  color: white;
+}
+
+.header-username {
+  font-weight: 900;
+  font-size: 14px;
+}
+
+/* ── Session modal ─────────────────────────────────────────────────────────── */
+
+.session-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  display: grid;
+  place-items: center;
+  z-index: 1000;
+  padding: 16px;
+}
+
+.session-modal {
+  max-width: 600px;
+  width: 100%;
+  max-height: 80vh;
+  overflow-y: auto;
+}
