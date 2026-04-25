@@ -12,6 +12,78 @@ import {
   renderRecoveryLesson
 } from "./renderer.js";
 
+// ─── Session persistence (survives page refresh) ─────────────────────────────
+
+function saveSession() {
+  sessionStorage.setItem("ef_session", JSON.stringify({
+    currentRoomCode: state.currentRoomCode,
+    currentPlayerId: state.currentPlayerId,
+    currentPlayerName: state.currentPlayerName,
+    isHost: state.isHost,
+    currentChallengeIndex: state.currentChallengeIndex,
+    localScore: state.localScore,
+    questionTime: state.questionTime,
+    arenaEndsAt: state.arenaEndsAt
+  }));
+}
+
+function clearSession() {
+  sessionStorage.removeItem("ef_session");
+}
+
+async function restoreSession() {
+  const raw = sessionStorage.getItem("ef_session");
+  if (!raw) return;
+
+  let saved;
+  try { saved = JSON.parse(raw); } catch { return; }
+
+  if (!saved.currentRoomCode || !saved.currentPlayerId) return;
+
+  Object.assign(state, {
+    currentRoomCode: saved.currentRoomCode,
+    currentPlayerId: saved.currentPlayerId,
+    currentPlayerName: saved.currentPlayerName,
+    isHost: saved.isHost,
+    currentChallengeIndex: saved.currentChallengeIndex || 0,
+    localScore: saved.localScore || 0,
+    questionTime: saved.questionTime || 20,
+    arenaEndsAt: saved.arenaEndsAt
+  });
+
+  try {
+    const { response, data } = await api.fetchRoom(state.currentRoomCode);
+    if (!response.ok) { clearSession(); return; }
+
+    if (data.status === "lobby") {
+      await showLobby();
+      startLobbyPolling();
+      return;
+    }
+
+    if (data.status === "started" || data.status === "finished") {
+      const { response: packRes, data: packData } = await api.fetchPack(state.currentRoomCode);
+      if (!packRes.ok) { clearSession(); return; }
+
+      state.currentPack = packData.pack;
+      state.questionTime = packData.questionTime || 20;
+      if (packData.endsAt) state.arenaEndsAt = packData.endsAt;
+
+      if (data.status === "finished" || state.currentChallengeIndex >= state.currentPack.challenges.length) {
+        await showLeaderboard();
+      } else {
+        dom.playerNameText.textContent = state.currentPlayerName || "Player";
+        showScreen(dom.screens.challenge);
+        renderChallenge(submitCurrentAnswer);
+        startChallengeTimer();
+        startArenaEndWatcher();
+      }
+    }
+  } catch {
+    clearSession();
+  }
+}
+
 // ─── Timer ───────────────────────────────────────────────────────────────────
 
 function startChallengeTimer() {
@@ -99,6 +171,7 @@ function nextChallenge() {
     dom.viewLeaderboardBtn.classList.remove("hidden");
     showWaitingResults();
   } else {
+    saveSession();
     renderChallenge(submitCurrentAnswer);
     startChallengeTimer();
   }
@@ -126,6 +199,7 @@ async function loadPackAndStart() {
   state.questionTime = data.questionTime || 20;
   state.currentChallengeIndex = 0;
   state.localScore = 0;
+  saveSession();
 
   startArenaEndWatcher();
   dom.playerNameText.textContent = state.currentPlayerName || "Player";
@@ -321,6 +395,7 @@ async function joinRoomWithName(code, name) {
   if (!response.ok) throw new Error(data.error || "Could not join room.");
   state.currentPlayerId = data.playerId;
   state.currentPlayerName = name;
+  saveSession();
 }
 
 async function startArena() {
@@ -457,3 +532,7 @@ if (roomParam) {
   dom.joinCodeInput.value = roomParam.toUpperCase();
   dom.joinStatusText.textContent = "Room code detected. Enter your nickname to join.";
 }
+
+// ─── Restore session on page load ────────────────────────────────────────────
+
+restoreSession();
