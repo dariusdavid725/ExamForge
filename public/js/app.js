@@ -1,8 +1,13 @@
 import * as dom from "./dom.js";
+import roomInviteRoutes from "./src/routes/roomInviteRoutes.js";
 import { state } from "./state.js";
 import * as api from "./api.js";
 import { getSession, login, register } from "./auth.js";
 import { getProfile } from "./supabaseClient.js";
+import {
+  showInviteFriendsModal,
+  renderRoomInvitesCard
+} from "./roomInvites.js";
 import {
   saveGameSession,
   renderDashboard,
@@ -126,6 +131,28 @@ async function showDashboard() {
         onHistory: () => showHistoryScreen()
       }
     );
+
+await renderRoomInvitesCard(
+  dom.dashboardContent,
+  state.currentUser,
+  async invite => {
+    const name =
+      state.userProfile?.username ||
+      state.currentUser?.email?.split("@")[0] ||
+      "Player";
+
+    state.isHost = false;
+
+    await joinRoomWithName(invite.room_code, name);
+    await api.respondRoomInvite(invite.id, "accepted");
+
+    state.currentRoomCode = invite.room_code;
+
+    await showLobby();
+    startLobbyPolling();
+  }
+);
+
   } catch (err) {
     console.error("Dashboard error:", err);
 
@@ -893,6 +920,23 @@ function mountArenaActionButtons(context) {
   wrapper.style.flexWrap = "wrap";
   wrapper.style.justifyContent = "flex-end";
   wrapper.style.maxWidth = "calc(100vw - 44px)";
+
+if (state.isHost && context === "lobby" && state.currentUser) {
+  const inviteButton = document.createElement("button");
+
+  inviteButton.type = "button";
+  inviteButton.className = "btn btn-secondary";
+  inviteButton.textContent = "Invite friends";
+
+  inviteButton.addEventListener("click", () => {
+    showInviteFriendsModal({
+      roomCode: state.currentRoomCode,
+      currentUser: state.currentUser
+    });
+  });
+
+  wrapper.appendChild(inviteButton);
+}
 
   const button = document.createElement("button");
 

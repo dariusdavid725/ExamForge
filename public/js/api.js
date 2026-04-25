@@ -223,3 +223,55 @@ export async function leaveRoom(code, playerId) {
     data: await response.json()
   };
 }
+
+export async function fetchFriends(userId) {
+  const response = await fetch(`/api/friends/${userId}`);
+
+  return {
+    response,
+    data: await response.json()
+  };
+}
+
+export async function sendRoomInvite(roomCode, inviterId, inviteeId) {
+  const response = await fetch("/api/room-invites", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      roomCode,
+      inviterId,
+      inviteeId
+    })
+  });
+
+  return {
+    response,
+    data: await response.json()
+  };
+}
+
+export async function fetchRoomInvites(userId) {
+  const response = await fetch(`/api/room-invites/${userId}`);
+
+  return {
+    response,
+    data: await response.json()
+  };
+}
+
+export async function respondRoomInvite(inviteId, status) {
+  const response = await fetch(`/api/room-invites/${inviteId}/respond`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ status })
+  });
+
+  return {
+    response,
+    data: await response.json()
+  };
+}
