@@ -44,9 +44,15 @@ function normalizePlayer(player) {
     correct: player.correct,
     totalAnswered: player.total_answered,
     finished: player.finished,
+    abandoned: Boolean(player.abandoned),
+    leftAt: player.left_at || null,
     answers: player.answers || [],
     weakConcepts: player.weak_concepts || []
   };
+}
+
+function getActivePlayers(room) {
+  return (room.players || []).filter(player => !player.abandoned);
 }
 
 export function getRoomTiming(room, serverNow = Date.now()) {
@@ -62,6 +68,20 @@ export function getRoomTiming(room, serverNow = Date.now()) {
       phase: "lobby",
       currentChallengeIndex: 0,
       timeLeft: questionTime,
+      cycleMs,
+      questionTime,
+      resultDuration,
+      leaderboardDuration,
+      totalChallenges
+    };
+  }
+
+  if (room.status === "closed") {
+    return {
+      serverNow,
+      phase: "closed",
+      currentChallengeIndex: 0,
+      timeLeft: 0,
       cycleMs,
       questionTime,
       resultDuration,
@@ -221,6 +241,8 @@ export async function addPlayerToRoom(roomCode, name, userId = null) {
     correct: 0,
     total_answered: 0,
     finished: false,
+    abandoned: false,
+    left_at: null,
     answers: [],
     weak_concepts: []
   };
@@ -240,7 +262,7 @@ export async function startRoom(code) {
 
   const { data: room } = await supabase
     .from("rooms")
-    .select("pack")
+    .select("pack, status")
     .eq("code", upperCode)
     .single();
 
@@ -248,7 +270,12 @@ export async function startRoom(code) {
     throw new Error("Room not found");
   }
 
+  if (room.status === "closed") {
+    throw new Error("Arena a fost închisă.");
+  }
+
   const cycleMs = getCycleMs();
+
   const endsAt =
     now +
     room.pack.challenges.length * cycleMs +
@@ -317,9 +344,11 @@ export async function advanceRoomAfterSubmit(roomCode, challengeIndex) {
     return null;
   }
 
+  const activePlayers = getActivePlayers(room);
+
   const allAnswered =
-    room.players.length > 0 &&
-    room.players.every(player => {
+    activePlayers.length > 0 &&
+    activePlayers.every(player => {
       return hasPlayerAnsweredChallenge(player, challengeIndex);
     });
 
@@ -387,21 +416,20 @@ export async function advanceRoomAfterSubmit(roomCode, challengeIndex) {
 }
 
 export async function finishRoomIfAllDone(roomCode) {
-  const upperCode = roomCode.toUpperCase();
+  const room = await getRoom(roomCode);
 
-  const { data: players } = await supabase
-    .from("players")
-    .select("finished")
-    .eq("room_code", upperCode);
+  if (!room || room.status !== "started") return;
 
-  if (players && players.length > 0 && players.every(player => player.finished)) {
+  const activePlayers = getActivePlayers(room);
+
+  if (activePlayers.length > 0 && activePlayers.every(player => player.finished)) {
     await supabase
       .from("rooms")
       .update({
         status: "finished",
         ends_at: Date.now()
       })
-      .eq("code", upperCode);
+      .eq("code", room.code);
   }
 }
 
@@ -430,6 +458,109 @@ export async function finishRoomIfTimeExpired(roomCode) {
 
   return {
     status: "finished",
+    serverNow: now
+  };
+}
+
+export async function closeRoom(roomCode, playerId) {
+  const room = await getRoom(roomCode);
+
+  if (!room) {
+    throw new Error("Camera nu există.");
+  }
+
+  const host = room.players[0];
+
+  if (!host || host.id !== playerId) {
+    throw new Error("Doar creatorul poate închide arena.");
+  }
+
+  const now = Date.now();
+
+  const { error } = await supabase
+    .from("rooms")
+    .update({
+      status: "closed",
+      closed_by: host.userId || null,
+      closed_at: now,
+      ends_at: now
+    })
+    .eq("code", room.code);
+
+  if (error) {
+    throw new Error(`Failed to close room: ${error.message}`);
+  }
+
+  await supabase
+    .from("players")
+    .update({
+      abandoned: true,
+      left_at: now,
+      finished: false
+    })
+    .eq("room_code", room.code);
+
+  return {
+    status: "closed",
+    serverNow: now
+  };
+}
+
+export async function leaveRoom(roomCode, playerId) {
+  const room = await getRoom(roomCode);
+
+  if (!room) {
+    throw new Error("Camera nu există.");
+  }
+
+  const player = room.players.find(p => p.id === playerId);
+
+  if (!player) {
+    throw new Error("Player inexistent.");
+  }
+
+  const now = Date.now();
+
+  if (room.status === "lobby") {
+    const { error } = await supabase
+      .from("players")
+      .delete()
+      .eq("id", playerId);
+
+    if (error) {
+      throw new Error(`Failed to leave lobby: ${error.message}`);
+    }
+
+    return {
+      status: "left",
+      serverNow: now
+    };
+  }
+
+  if (room.status === "started") {
+    const { error } = await supabase
+      .from("players")
+      .update({
+        abandoned: true,
+        left_at: now,
+        finished: false
+      })
+      .eq("id", playerId);
+
+    if (error) {
+      throw new Error(`Failed to abandon arena: ${error.message}`);
+    }
+
+    await finishRoomIfAllDone(room.code);
+
+    return {
+      status: "abandoned",
+      serverNow: now
+    };
+  }
+
+  return {
+    status: room.status,
     serverNow: now
   };
 }

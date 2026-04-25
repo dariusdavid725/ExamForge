@@ -9,7 +9,9 @@ import {
   finishRoomIfAllDone,
   finishRoomIfTimeExpired,
   advanceRoomAfterSubmit,
-  getRoomTiming
+  getRoomTiming,
+  closeRoom,
+  leaveRoom
 } from "../services/roomService.js";
 import { normalizeLearningPack } from "../validators/packValidator.js";
 import { generateRecoveryLessonWithAI } from "../services/aiService.js";
@@ -25,6 +27,10 @@ function playerAnsweredChallenge(player, challengeIndex) {
   return (player.answers || []).some(answer => {
     return Number(answer.challengeIndex) === Number(challengeIndex);
   });
+}
+
+function activePlayers(room) {
+  return (room.players || []).filter(player => !player.abandoned);
 }
 
 router.post("/", async (req, res) => {
@@ -93,11 +99,12 @@ router.get("/:code", async (req, res) => {
 
     const timing = getRoomTiming(room);
     const currentChallengeIndex = timing.currentChallengeIndex;
+    const players = activePlayers(room);
 
     const allAnsweredCurrentQuestion =
       room.status === "started" &&
-      room.players.length > 0 &&
-      room.players.every(player => {
+      players.length > 0 &&
+      players.every(player => {
         return playerAnsweredChallenge(player, currentChallengeIndex);
       });
 
@@ -112,22 +119,20 @@ router.get("/:code", async (req, res) => {
       startedAt: room.started_at,
       endsAt: room.ends_at,
       questionTime: room.question_time,
-
       serverNow: timing.serverNow,
       phase: timing.phase,
       timeLeft: timing.timeLeft,
       currentChallengeIndex: timing.currentChallengeIndex,
       totalChallenges: timing.totalChallenges,
-
       allAnsweredCurrentQuestion,
-
-      players: room.players.map(player => ({
+      players: players.map(player => ({
         id: player.id,
         userId: player.userId || null,
         name: player.name,
         score: player.score,
         finished: player.finished,
-        totalAnswered: player.totalAnswered
+        totalAnswered: player.totalAnswered,
+        abandoned: player.abandoned
       }))
     });
   } catch (error) {
@@ -146,6 +151,12 @@ router.post("/:code/join", async (req, res) => {
     if (!room) {
       return res.status(404).json({
         error: "Camera nu există."
+      });
+    }
+
+    if (room.status === "closed") {
+      return res.status(400).json({
+        error: "Arena a fost închisă."
       });
     }
 
@@ -173,7 +184,7 @@ router.post("/:code/join", async (req, res) => {
         code: room.code,
         status: room.status,
         packTitle: room.pack.title,
-        players: [...room.players, player]
+        players: [...activePlayers(room), player]
       }
     });
   } catch (error) {
@@ -192,6 +203,12 @@ router.post("/:code/start", async (req, res) => {
     if (!room) {
       return res.status(404).json({
         error: "Camera nu există."
+      });
+    }
+
+    if (room.status === "closed") {
+      return res.status(400).json({
+        error: "Arena a fost închisă."
       });
     }
 
@@ -220,6 +237,56 @@ router.post("/:code/start", async (req, res) => {
   }
 });
 
+router.post("/:code/close", async (req, res) => {
+  try {
+    const { playerId } = req.body;
+
+    if (!playerId) {
+      return res.status(400).json({
+        error: "Player missing."
+      });
+    }
+
+    const result = await closeRoom(req.params.code, playerId);
+
+    return res.json({
+      ok: true,
+      ...result
+    });
+  } catch (error) {
+    console.error("EROARE close room:", error);
+
+    return res.status(400).json({
+      error: error.message || "Nu am putut închide arena."
+    });
+  }
+});
+
+router.post("/:code/leave", async (req, res) => {
+  try {
+    const { playerId } = req.body;
+
+    if (!playerId) {
+      return res.status(400).json({
+        error: "Player missing."
+      });
+    }
+
+    const result = await leaveRoom(req.params.code, playerId);
+
+    return res.json({
+      ok: true,
+      ...result
+    });
+  } catch (error) {
+    console.error("EROARE leave room:", error);
+
+    return res.status(400).json({
+      error: error.message || "Nu am putut părăsi arena."
+    });
+  }
+});
+
 router.get("/:code/pack", async (req, res) => {
   try {
     const room = await getRoom(req.params.code);
@@ -227,6 +294,12 @@ router.get("/:code/pack", async (req, res) => {
     if (!room) {
       return res.status(404).json({
         error: "Camera nu există."
+      });
+    }
+
+    if (room.status === "closed") {
+      return res.status(400).json({
+        error: "Arena a fost închisă."
       });
     }
 
@@ -257,50 +330,6 @@ router.get("/:code/pack", async (req, res) => {
   }
 });
 
-router.get("/:code/quiz", async (req, res) => {
-  try {
-    const room = await getRoom(req.params.code);
-
-    if (!room) {
-      return res.status(404).json({
-        error: "Camera nu există."
-      });
-    }
-
-    if (room.status !== "started" && room.status !== "finished") {
-      return res.status(400).json({
-        error: "Arena nu a început încă."
-      });
-    }
-
-    const timing = getRoomTiming(room);
-
-    return res.json({
-      quiz: {
-        title: room.pack.title,
-        summary: room.pack.summary,
-        category: room.pack.category,
-        concepts: room.pack.concepts,
-        questions: room.pack.challenges
-      },
-      pack: room.pack,
-      startedAt: room.started_at,
-      endsAt: room.ends_at,
-      questionTime: room.question_time,
-      serverNow: timing.serverNow,
-      phase: timing.phase,
-      timeLeft: timing.timeLeft,
-      currentChallengeIndex: timing.currentChallengeIndex
-    });
-  } catch (error) {
-    console.error("EROARE get quiz:", error);
-
-    return res.status(500).json({
-      error: "Eroare server."
-    });
-  }
-});
-
 router.post("/:code/submit", async (req, res) => {
   try {
     const room = await getRoom(req.params.code);
@@ -308,6 +337,12 @@ router.post("/:code/submit", async (req, res) => {
     if (!room) {
       return res.status(404).json({
         error: "Camera nu există."
+      });
+    }
+
+    if (room.status === "closed") {
+      return res.status(400).json({
+        error: "Arena a fost închisă."
       });
     }
 
@@ -337,6 +372,12 @@ router.post("/:code/submit", async (req, res) => {
     if (!player) {
       return res.status(404).json({
         error: "Player inexistent."
+      });
+    }
+
+    if (player.abandoned) {
+      return res.status(400).json({
+        error: "Ai părăsit arena."
       });
     }
 
@@ -422,7 +463,6 @@ router.post("/:code/submit", async (req, res) => {
       type: challenge.type,
       correctAnswers: challenge.correctAnswers || [],
       pairs: challenge.pairs || [],
-
       status: advance?.status || freshRoom.status,
       startedAt: advance?.startedAt || freshRoom.started_at,
       endsAt: advance?.endsAt || freshRoom.ends_at,
@@ -456,9 +496,16 @@ router.get("/:code/leaderboard", async (req, res) => {
       });
     }
 
-    const timing = getRoomTiming(room);
+    if (room.status === "closed") {
+      return res.status(400).json({
+        error: "Arena a fost închisă."
+      });
+    }
 
-    const leaderboard = [...room.players]
+    const timing = getRoomTiming(room);
+    const players = activePlayers(room);
+
+    const leaderboard = [...players]
       .sort((a, b) => b.score - a.score)
       .map((player, index) => ({
         rank: index + 1,
@@ -469,13 +516,14 @@ router.get("/:code/leaderboard", async (req, res) => {
         correct: player.correct,
         totalAnswered: player.totalAnswered,
         finished: player.finished,
+        abandoned: player.abandoned,
         weakConcepts: [...new Set(player.weakConcepts)],
         answers: player.answers || []
       }));
 
     const conceptCounts = {};
 
-    room.players.forEach(player => {
+    players.forEach(player => {
       player.weakConcepts.forEach(concept => {
         conceptCounts[concept] = (conceptCounts[concept] || 0) + 1;
       });

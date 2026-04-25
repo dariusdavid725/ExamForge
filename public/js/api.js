@@ -194,3 +194,32 @@ export async function generateLesson(code, playerId) {
     data: await response.json()
   };
 }
+export async function closeRoom(code, playerId) {
+  const response = await fetch(`/api/rooms/${code}/close`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ playerId })
+  });
+
+  return {
+    response,
+    data: await response.json()
+  };
+}
+
+export async function leaveRoom(code, playerId) {
+  const response = await fetch(`/api/rooms/${code}/leave`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ playerId })
+  });
+
+  return {
+    response,
+    data: await response.json()
+  };
+}

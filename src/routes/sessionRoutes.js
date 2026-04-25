@@ -121,7 +121,11 @@ router.post("/sessions/save", async (req, res) => {
 
     const leaderboard = normalizeLeaderboard(leaderboardData);
 
-    if (leaderboard.length === 0) {
+    const eligibleLeaderboard = leaderboard.filter(player => {
+     return !player.abandoned && player.finished;
+    });
+
+    if (eligibleLeaderboard.length === 0) { {
       return res.status(400).json({
         error: "Missing leaderboard."
       });
@@ -154,7 +158,7 @@ router.post("/sessions/save", async (req, res) => {
         document_preview: documentText ? String(documentText).slice(0, 1500) : null,
         pack,
         conspect: pack.conspect || null,
-        player_count: leaderboard.length
+        player_count: eligibleLeaderboard.length
       })
       .select()
       .single();
@@ -167,7 +171,7 @@ router.post("/sessions/save", async (req, res) => {
       });
     }
 
-    const results = leaderboard.map(player => ({
+    const results = eligibleLeaderboard.map(player => ({
       session_id: session.id,
       user_id: player.userId || null,
       player_name: player.name || "Player",
