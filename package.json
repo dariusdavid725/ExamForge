@@ -1,0 +1,16 @@
+{
+  "name": "examforge-ai",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "node app.js"
+  },
+  "dependencies": {
+    "dotenv": "latest",
+    "express": "latest",
+    "multer": "latest",
+    "openai": "^6.34.0",
+    "pdf-parse": "^1.1.1",
+    "tesseract.js": "latest"
+  }
+}
