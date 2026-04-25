@@ -456,7 +456,8 @@ router.get("/:code/leaderboard", async (req, res) => {
         correct: player.correct,
         totalAnswered: player.totalAnswered,
         finished: player.finished,
-        weakConcepts: [...new Set(player.weakConcepts)]
+        weakConcepts: [...new Set(player.weakConcepts)],
+        answers: player.answers || []
       }));
 
     const conceptCounts = {};

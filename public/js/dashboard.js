@@ -1,7 +1,6 @@
 import { getSupabase } from "./supabaseClient.js";
 import { logout } from "./auth.js";
-
-// ─── Save completed game ──────────────────────────────────────────────────────
+import { showHistoryDetailModal } from "./historyDetail.js";
 
 export async function saveGameSession({
   user,
@@ -15,6 +14,16 @@ export async function saveGameSession({
   try {
     const sb = await getSupabase();
 
+    const { data: existingSession } = await sb
+      .from("game_sessions")
+      .select("id")
+      .eq("room_code", roomCode)
+      .maybeSingle();
+
+    if (existingSession) {
+      return existingSession.id;
+    }
+
     const { data: session, error: sessionError } = await sb
       .from("game_sessions")
       .insert({
@@ -25,7 +34,7 @@ export async function saveGameSession({
         challenge_count: pack.challenges.length,
         document_name: documentName || "document",
         document_text: documentText || null,
-        document_preview: documentText ? documentText.slice(0, 1200) : null,
+        document_preview: documentText ? documentText.slice(0, 1500) : null,
         pack,
         conspect: pack.conspect || null,
         player_count: leaderboardData.leaderboard.length
@@ -48,7 +57,8 @@ export async function saveGameSession({
       correct_count: player.correct,
       total_answered: player.totalAnswered,
       rank: player.rank,
-      weak_concepts: player.weakConcepts || []
+      weak_concepts: player.weakConcepts || [],
+      answers: player.answers || []
     }));
 
     const { error: resultsError } = await sb
@@ -133,8 +143,6 @@ async function updateStreakAndStats(sb, userId, profile, addedPoints = 0) {
     })
     .eq("id", userId);
 }
-
-// ─── Dashboard render ─────────────────────────────────────────────────────────
 
 export async function renderDashboard(
   container,
@@ -283,7 +291,7 @@ export async function renderDashboard(
                           </p>
                         </div>
 
-                        <span>${escapeHTML(session.category || "Quiz")}</span>
+                        <span>Details</span>
                       </button>
                     `;
                   })
@@ -326,12 +334,13 @@ export async function renderDashboard(
   container.querySelector("#dashCreateBtn")?.addEventListener("click", onCreateArena);
   container.querySelector("#dashJoinBtn")?.addEventListener("click", onJoinArena);
   container.querySelector("#dashHistoryBtn")?.addEventListener("click", onHistory);
+
   container.querySelector("#addFriendBtn")?.addEventListener("click", () => {
     showAddFriendModal(sb, user.id);
   });
 
   container.querySelectorAll(".dash-session-row").forEach(row => {
-    row.addEventListener("click", () => showSessionDetail(row.dataset.id, sb));
+    row.addEventListener("click", () => showHistoryDetailModal(row.dataset.id, sb));
   });
 
   await loadPendingRequests(sb, user.id, container);
@@ -498,116 +507,6 @@ async function showAddFriendModal(sb, userId) {
 
   alert(`Friend request sent to ${friend.username}!`);
 }
-
-async function showSessionDetail(sessionId, sb) {
-  const { data: session } = await sb
-    .from("game_sessions")
-    .select("*")
-    .eq("id", sessionId)
-    .single();
-
-  const { data: results } = await sb
-    .from("game_results")
-    .select("*")
-    .eq("session_id", sessionId)
-    .order("rank");
-
-  if (!session) return;
-
-  const modal = document.createElement("div");
-
-  modal.className = "session-modal-overlay";
-
-  modal.innerHTML = `
-    <div class="session-modal card">
-      <div class="row" style="justify-content:space-between; align-items:flex-start;">
-        <div>
-          <h2>${escapeHTML(session.title || "Quiz")}</h2>
-
-          <p class="muted" style="margin-top:8px;">
-            ${escapeHTML(session.category || "Quiz")}
-            · ${session.player_count || 0} players
-            · ${new Date(session.played_at).toLocaleDateString()}
-          </p>
-
-          <p class="muted" style="margin-top:6px;">
-            Document: ${escapeHTML(session.document_name || "document")}
-          </p>
-        </div>
-
-        <button id="closeModal" class="btn btn-secondary" type="button">
-          ✕
-        </button>
-      </div>
-
-      <h3 style="margin-top:22px;">Results</h3>
-
-      <div style="display:grid; gap:10px; margin-top:12px;">
-        ${
-          results && results.length
-            ? results
-                .map(result => {
-                  return `
-                    <div class="friend-row">
-                      <span class="rank">${result.rank}</span>
-
-                      <div>
-                        <strong>${escapeHTML(result.player_name)}</strong>
-
-                        <p class="muted">
-                          ${result.correct_count}/${result.total_answered} correct
-                        </p>
-                      </div>
-
-                      <strong>${result.score} pts</strong>
-                    </div>
-                  `;
-                })
-                .join("")
-            : `<p class="muted">No results saved.</p>`
-        }
-      </div>
-
-      ${
-        session.document_preview
-          ? `
-            <h3 style="margin-top:22px;">Document preview</h3>
-
-            <div class="flat-card" style="margin-top:10px; max-height:180px; overflow:auto;">
-              <p class="muted">${escapeHTML(session.document_preview)}</p>
-            </div>
-          `
-          : ""
-      }
-
-      ${
-        session.conspect
-          ? `
-            <h3 style="margin-top:22px;">Study notes</h3>
-
-            <div class="flat-card" style="margin-top:10px; max-height:180px; overflow:auto;">
-              <p class="muted">${escapeHTML(JSON.stringify(session.conspect, null, 2))}</p>
-            </div>
-          `
-          : ""
-      }
-    </div>
-  `;
-
-  document.body.appendChild(modal);
-
-  modal.querySelector("#closeModal")?.addEventListener("click", () => {
-    modal.remove();
-  });
-
-  modal.addEventListener("click", event => {
-    if (event.target === modal) {
-      modal.remove();
-    }
-  });
-}
-
-// ─── Bell notifications ───────────────────────────────────────────────────────
 
 export async function loadNotificationCount(userId) {
   const sb = await getSupabase();
