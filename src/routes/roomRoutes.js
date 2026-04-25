@@ -58,6 +58,7 @@ router.post("/", async (req, res) => {
         title: rawPack.title,
         summary: rawPack.summary,
         concepts: rawPack.concepts,
+        category: rawPack.category,
         challenges: rawPack.questions
       });
     } else {
@@ -131,6 +132,7 @@ router.get("/:code", async (req, res) => {
       currentChallengeIndex,
       players: room.players.map(player => ({
         id: player.id,
+        userId: player.userId || null,
         name: player.name,
         score: player.score,
         finished: player.finished,
@@ -163,6 +165,7 @@ router.post("/:code/join", async (req, res) => {
     }
 
     const name = String(req.body.name || "").trim();
+    const userId = req.body.userId || null;
 
     if (!name) {
       return res.status(400).json({
@@ -170,7 +173,7 @@ router.post("/:code/join", async (req, res) => {
       });
     }
 
-    const player = await addPlayerToRoom(room.code, name);
+    const player = await addPlayerToRoom(room.code, name, userId);
 
     return res.json({
       playerId: player.id,
@@ -275,6 +278,7 @@ router.get("/:code/quiz", async (req, res) => {
       quiz: {
         title: room.pack.title,
         summary: room.pack.summary,
+        category: room.pack.category,
         concepts: room.pack.concepts,
         questions: room.pack.challenges
       },
@@ -446,6 +450,7 @@ router.get("/:code/leaderboard", async (req, res) => {
       .map((player, index) => ({
         rank: index + 1,
         id: player.id,
+        userId: player.userId || null,
         name: player.name,
         score: player.score,
         correct: player.correct,

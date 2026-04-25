@@ -57,6 +57,7 @@ export function generatePack(formData, onProgress) {
         });
 
         const lines = buffer.split("\n");
+
         buffer = lines.pop();
 
         for (const line of lines) {
@@ -88,13 +89,16 @@ export async function createRoom(pack) {
   };
 }
 
-export async function joinRoom(code, name) {
+export async function joinRoom(code, name, userId = null) {
   const response = await fetch(`/api/rooms/${code}/join`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json"
     },
-    body: JSON.stringify({ name })
+    body: JSON.stringify({
+      name,
+      userId
+    })
   });
 
   return {

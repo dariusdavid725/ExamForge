@@ -52,6 +52,7 @@ function getCurrentChallengeIndex(room) {
 function normalizePlayer(p) {
   return {
     id: p.id,
+    userId: p.user_id || null,
     name: p.name,
     score: p.score,
     correct: p.correct,
@@ -122,9 +123,10 @@ export async function createRoom(pack) {
   };
 }
 
-export async function addPlayerToRoom(roomCode, name) {
+export async function addPlayerToRoom(roomCode, name, userId = null) {
   const player = {
     id: generatePlayerId(),
+    user_id: userId || null,
     room_code: roomCode.toUpperCase(),
     name,
     score: 0,
