@@ -8,11 +8,13 @@ import {
   renderPlayerList,
   renderConceptPills,
   renderAnswerFeedback,
-  renderLeaderboard,
+  renderPodium,
   renderRecoveryLesson
 } from "./renderer.js";
 
-// ─── Session persistence (survives page refresh) ─────────────────────────────
+const RESULTS_DURATION = 6; // seconds — must match backend RESULTS_DURATION_SECONDS
+
+// ─── Session persistence ──────────────────────────────────────────────────────
 
 function saveSession() {
   sessionStorage.setItem("ef_session", JSON.stringify({
@@ -23,6 +25,7 @@ function saveSession() {
     currentChallengeIndex: state.currentChallengeIndex,
     localScore: state.localScore,
     questionTime: state.questionTime,
+    startedAt: state.startedAt,
     arenaEndsAt: state.arenaEndsAt
   }));
 }
@@ -37,7 +40,6 @@ async function restoreSession() {
 
   let saved;
   try { saved = JSON.parse(raw); } catch { return; }
-
   if (!saved.currentRoomCode || !saved.currentPlayerId) return;
 
   Object.assign(state, {
@@ -48,6 +50,7 @@ async function restoreSession() {
     currentChallengeIndex: saved.currentChallengeIndex || 0,
     localScore: saved.localScore || 0,
     questionTime: saved.questionTime || 20,
+    startedAt: saved.startedAt,
     arenaEndsAt: saved.arenaEndsAt
   });
 
@@ -67,16 +70,15 @@ async function restoreSession() {
 
       state.currentPack = packData.pack;
       state.questionTime = packData.questionTime || 20;
+      if (packData.startedAt) state.startedAt = packData.startedAt;
       if (packData.endsAt) state.arenaEndsAt = packData.endsAt;
 
-      if (data.status === "finished" || state.currentChallengeIndex >= state.currentPack.challenges.length) {
+      if (data.status === "finished") {
         await showLeaderboard();
       } else {
         dom.playerNameText.textContent = state.currentPlayerName || "Player";
         showScreen(dom.screens.challenge);
-        renderChallenge(submitCurrentAnswer);
-        startChallengeTimer();
-        startArenaEndWatcher();
+        startSyncedLoop();
       }
     }
   } catch {
@@ -84,35 +86,127 @@ async function restoreSession() {
   }
 }
 
-// ─── Timer ───────────────────────────────────────────────────────────────────
+// ─── Synced game loop ─────────────────────────────────────────────────────────
 
-function startChallengeTimer() {
-  clearInterval(state.timer);
+function getArenaPhase() {
+  if (!state.startedAt || !state.currentPack) return { phase: "waiting" };
 
-  state.timeLeft = state.questionTime;
-  updateTimerUI();
+  const elapsed = Date.now() - state.startedAt;
+  const totalChallenges = state.currentPack.challenges.length;
+  const cycleMs = (state.questionTime + RESULTS_DURATION) * 1000;
+  const cycleIndex = Math.floor(elapsed / cycleMs);
+  const timeInCycle = elapsed % cycleMs;
 
-  state.timer = setInterval(() => {
-    // Bug fix: clamp to 0 so the timer never displays negative
-    state.timeLeft = Math.max(0, state.timeLeft - 1);
-    updateTimerUI();
+  if (cycleIndex >= totalChallenges) return { phase: "done" };
 
-    if (state.timeLeft <= 0) {
-      clearInterval(state.timer);
+  if (timeInCycle < state.questionTime * 1000) {
+    return {
+      phase: "question",
+      challengeIndex: cycleIndex,
+      timeLeft: Math.max(0, Math.ceil((state.questionTime * 1000 - timeInCycle) / 1000))
+    };
+  }
 
-      if (!dom.feedbackBox.classList.contains("hidden")) return;
+  return {
+    phase: "results",
+    challengeIndex: cycleIndex,
+    timeLeft: Math.max(0, Math.ceil((cycleMs - timeInCycle) / 1000))
+  };
+}
 
-      const challenge = state.currentPack.challenges[state.currentChallengeIndex];
+function startSyncedLoop() {
+  if (state.syncLoop) clearInterval(state.syncLoop);
 
-      if (challenge.type === "order_steps") {
-        state.selectedAnswer = [...state.currentOrderSelection];
-      } else if (!state.selectedAnswer) {
-        state.selectedAnswer = "__TIMEOUT__";
+  let trackedChallenge = -1;
+  let trackedPhase = "";
+
+  state.syncLoop = setInterval(() => {
+    const arena = getArenaPhase();
+
+    if (arena.phase === "done") {
+      clearInterval(state.syncLoop);
+      state.syncLoop = null;
+      showLeaderboard();
+      return;
+    }
+
+    const phaseChanged = arena.phase !== trackedPhase;
+    const challengeChanged = arena.challengeIndex !== trackedChallenge;
+
+    // ── Question phase ──
+    if (arena.phase === "question") {
+      if (phaseChanged || challengeChanged) {
+        trackedPhase = arena.phase;
+        trackedChallenge = arena.challengeIndex;
+        state.currentChallengeIndex = arena.challengeIndex;
+        state.answeredCurrentChallenge = false;
+        state.lastSubmitResult = null;
+        state.localScore = state.localScore; // keep current score
+        saveSession();
+        renderChallenge(submitCurrentAnswer);
+
+        // Update progress
+        const progress = Math.round((arena.challengeIndex / state.currentPack.challenges.length) * 100);
+        dom.progressText.textContent = `${progress}%`;
+        dom.progressBar.style.width = `${progress}%`;
+        dom.scoreText.textContent = state.localScore;
       }
 
-      submitCurrentAnswer();
+      if (!state.answeredCurrentChallenge) {
+        state.timeLeft = arena.timeLeft;
+        updateTimerUI();
+
+        if (arena.timeLeft <= 0) {
+          state.answeredCurrentChallenge = true;
+          const challenge = state.currentPack.challenges[arena.challengeIndex];
+          if (challenge.type === "order_steps") {
+            state.selectedAnswer = [...state.currentOrderSelection];
+          } else if (!state.selectedAnswer) {
+            state.selectedAnswer = "__TIMEOUT__";
+          }
+          submitCurrentAnswer();
+        }
+      }
     }
-  }, 1000);
+
+    // ── Results phase ──
+    if (arena.phase === "results") {
+      if (phaseChanged || challengeChanged) {
+        trackedPhase = arena.phase;
+        trackedChallenge = arena.challengeIndex;
+
+        // If player never answered, show correct answer
+        if (!state.answeredCurrentChallenge) {
+          const challenge = state.currentPack.challenges[arena.challengeIndex];
+          showTimeoutFeedback(challenge);
+        }
+      }
+
+      const isLast = arena.challengeIndex >= state.currentPack.challenges.length - 1;
+      dom.nextChallengeBtn.textContent = isLast
+        ? `🏆 Leaderboard in ${arena.timeLeft}s`
+        : `⏭ Next question in ${arena.timeLeft}s`;
+      dom.nextChallengeBtn.disabled = true;
+      dom.nextChallengeBtn.classList.remove("hidden");
+      dom.submitAnswerBtn.classList.add("hidden");
+      dom.feedbackBox.classList.remove("hidden");
+    }
+  }, 200);
+}
+
+function showTimeoutFeedback(challenge) {
+  dom.feedbackTitle.textContent = "Time's up!";
+  dom.feedbackTitle.style.color = "var(--red)";
+
+  const correctDisplay = challenge.type === "order_steps"
+    ? challenge.correctOrder.join(" → ")
+    : challenge.correctAnswer;
+
+  dom.correctAnswerText.textContent = `Correct answer: ${correctDisplay}`;
+  dom.explanationText.textContent = challenge.explanation || "";
+  dom.sourceSnippet.textContent = challenge.sourceSnippet || "No source snippet.";
+  dom.submitAnswerBtn.classList.add("hidden");
+  dom.feedbackBox.classList.remove("hidden");
 }
 
 // ─── Answer submission ────────────────────────────────────────────────────────
@@ -133,7 +227,6 @@ async function submitCurrentAnswer() {
 
   if (!hasValidAnswer(challenge)) return;
 
-  clearInterval(state.timer);
   dom.submitAnswerBtn.disabled = true;
 
   try {
@@ -148,12 +241,15 @@ async function submitCurrentAnswer() {
     if (!response.ok) throw new Error(data.error || "Could not submit answer.");
 
     state.localScore = data.score;
+    state.lastSubmitResult = data;
+    state.answeredCurrentChallenge = true;
     dom.scoreText.textContent = state.localScore;
 
-    const isLastChallenge =
-      state.currentChallengeIndex >= state.currentPack.challenges.length - 1;
-
+    const isLastChallenge = state.currentChallengeIndex >= state.currentPack.challenges.length - 1;
     renderAnswerFeedback(data, isLastChallenge);
+
+    // Synced loop controls the "next question" button text — hide the default btn
+    dom.nextChallengeBtn.classList.add("hidden");
   } catch (error) {
     console.error(error);
     dom.feedbackTitle.textContent = "Submission error";
@@ -162,25 +258,9 @@ async function submitCurrentAnswer() {
   }
 }
 
-function nextChallenge() {
-  state.currentChallengeIndex++;
-
-  if (state.currentChallengeIndex >= state.currentPack.challenges.length) {
-    dom.progressText.textContent = "100%";
-    dom.progressBar.style.width = "100%";
-    dom.viewLeaderboardBtn.classList.remove("hidden");
-    showWaitingResults();
-  } else {
-    saveSession();
-    renderChallenge(submitCurrentAnswer);
-    startChallengeTimer();
-  }
-}
-
 // ─── Room lifecycle ───────────────────────────────────────────────────────────
 
 async function loadPackAndStart() {
-  // Bug fix: guard against concurrent calls from lobby polling + startArena
   if (state.packLoading) return;
   state.packLoading = true;
 
@@ -195,32 +275,16 @@ async function loadPackAndStart() {
   }
 
   state.currentPack = data.pack;
+  state.startedAt = data.startedAt;
   state.arenaEndsAt = data.endsAt;
   state.questionTime = data.questionTime || 20;
   state.currentChallengeIndex = 0;
   state.localScore = 0;
   saveSession();
 
-  startArenaEndWatcher();
   dom.playerNameText.textContent = state.currentPlayerName || "Player";
   showScreen(dom.screens.challenge);
-  renderChallenge(submitCurrentAnswer);
-  startChallengeTimer();
-}
-
-function startArenaEndWatcher() {
-  if (state.arenaEndWatcher) clearInterval(state.arenaEndWatcher);
-
-  state.arenaEndWatcher = setInterval(() => {
-    if (!state.arenaEndsAt) return;
-    if (Date.now() >= state.arenaEndsAt) {
-      // Bug fix: clear interval BEFORE calling showLeaderboard
-      // to prevent multiple rapid calls while showLeaderboard awaits the fetch
-      clearInterval(state.arenaEndWatcher);
-      state.arenaEndWatcher = null;
-      showLeaderboard();
-    }
-  }, 700);
+  startSyncedLoop();
 }
 
 // ─── Screens ──────────────────────────────────────────────────────────────────
@@ -269,45 +333,10 @@ function startLobbyPolling() {
   state.lobbyPoll = setInterval(refreshRoomInfo, 1200);
 }
 
-function showWaitingResults() {
-  showScreen(dom.screens.waiting);
-
-  if (state.waitingResultsTimer) clearInterval(state.waitingResultsTimer);
-
-  state.waitingResultsTimer = setInterval(async () => {
-    try {
-      const { response, data } = await api.fetchRoom(state.currentRoomCode);
-
-      if (response.ok) {
-        const allFinished =
-          data.players.length > 0 && data.players.every(p => p.finished);
-
-        if (data.endsAt) state.arenaEndsAt = data.endsAt;
-
-        if (allFinished) {
-          clearInterval(state.waitingResultsTimer);
-          showLeaderboard();
-          return;
-        }
-      }
-
-      const secondsLeft = Math.max(0, Math.ceil((state.arenaEndsAt - Date.now()) / 1000));
-      dom.waitingSecondsText.textContent = secondsLeft;
-
-      if (secondsLeft <= 0) {
-        clearInterval(state.waitingResultsTimer);
-        showLeaderboard();
-      }
-    } catch (error) {
-      console.error(error);
-    }
-  }, 500);
-}
-
 async function showLeaderboard() {
-  clearInterval(state.timer);
-  if (state.arenaEndWatcher) clearInterval(state.arenaEndWatcher);
-  if (state.waitingResultsTimer) clearInterval(state.waitingResultsTimer);
+  if (state.syncLoop) { clearInterval(state.syncLoop); state.syncLoop = null; }
+  if (state.arenaEndWatcher) { clearInterval(state.arenaEndWatcher); state.arenaEndWatcher = null; }
+  if (state.waitingResultsTimer) { clearInterval(state.waitingResultsTimer); state.waitingResultsTimer = null; }
 
   const { response, data } = await api.fetchLeaderboard(state.currentRoomCode);
 
@@ -317,7 +346,7 @@ async function showLeaderboard() {
   }
 
   showScreen(dom.screens.leaderboard);
-  renderLeaderboard(data, state.currentPack);
+  renderPodium(data, state.currentPack);
 }
 
 // ─── Main actions ─────────────────────────────────────────────────────────────
@@ -339,7 +368,6 @@ async function createArena() {
     formData.append("document", file);
     formData.append("gameMode", state.selectedGameMode);
 
-    // SSE stream — updates status text in real time as backend reports progress
     const packData = await api.generatePack(formData, (message) => {
       dom.hostStatusText.textContent = message;
     });
@@ -460,7 +488,7 @@ window.addEventListener("popstate", event => {
   const screenName = event.state?.screen || "home";
   const screen = dom.screens[screenName] || dom.screens.home;
 
-  if (state.timer) clearInterval(state.timer);
+  if (state.syncLoop) clearInterval(state.syncLoop);
   if (state.lobbyPoll) clearInterval(state.lobbyPoll);
   if (state.arenaEndWatcher) clearInterval(state.arenaEndWatcher);
   if (state.waitingResultsTimer) clearInterval(state.waitingResultsTimer);
@@ -512,7 +540,6 @@ dom.joinArenaBtn.addEventListener("click", joinArena);
 dom.startArenaBtn.addEventListener("click", startArena);
 dom.copyLinkBtn.addEventListener("click", copyJoinLink);
 dom.submitAnswerBtn.addEventListener("click", submitCurrentAnswer);
-dom.nextChallengeBtn.addEventListener("click", nextChallenge);
 dom.viewLeaderboardBtn.addEventListener("click", showLeaderboard);
 dom.generateLessonBtn.addEventListener("click", generateRecoveryLesson);
 
@@ -524,10 +551,9 @@ document.querySelectorAll(".mode-option").forEach(button => {
   });
 });
 
-// ─── URL room param detection ─────────────────────────────────────────────────
+// ─── URL room param ───────────────────────────────────────────────────────────
 
 const roomParam = new URLSearchParams(window.location.search).get("room");
-
 if (roomParam) {
   dom.joinCodeInput.value = roomParam.toUpperCase();
   dom.joinStatusText.textContent = "Room code detected. Enter your nickname to join.";

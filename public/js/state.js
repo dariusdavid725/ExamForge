@@ -10,15 +10,21 @@ export const state = {
   localScore: 0,
   timeLeft: 20,
   questionTime: 20,
+  startedAt: null,
   arenaEndsAt: null,
   selectedGameMode: "arena_mix",
+
+  // Synced game loop
+  answeredCurrentChallenge: false,
+  lastSubmitResult: null,
+  syncLoop: null,
 
   // Guard flags
   packLoading: false,
 
   // Interval handles
-  timer: null,
   lobbyPoll: null,
   arenaEndWatcher: null,
-  waitingResultsTimer: null
+  waitingResultsTimer: null,
+  timer: null
 };

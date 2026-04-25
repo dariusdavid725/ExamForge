@@ -1,5 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
-import { QUESTION_TIME_SECONDS, EXTRA_RESULTS_BUFFER_MS } from "../config/constants.js";
+import { QUESTION_TIME_SECONDS, RESULTS_DURATION_SECONDS, EXTRA_RESULTS_BUFFER_MS } from "../config/constants.js";
 import { createTextHash } from "../utils/textUtils.js";
 
 const supabase = createClient(
@@ -107,10 +107,9 @@ export async function startRoom(code) {
 
   if (!room) throw new Error("Room not found");
 
-  const endsAt =
-    now +
-    room.pack.challenges.length * QUESTION_TIME_SECONDS * 1000 +
-    EXTRA_RESULTS_BUFFER_MS;
+  // Each question has a question phase + results phase
+  const cycleMs = (QUESTION_TIME_SECONDS + RESULTS_DURATION_SECONDS) * 1000;
+  const endsAt = now + room.pack.challenges.length * cycleMs + EXTRA_RESULTS_BUFFER_MS;
 
   const { error } = await supabase
     .from("rooms")

@@ -273,33 +273,67 @@ export function renderAnswerFeedback(data, isLastChallenge) {
     : "Next challenge";
 }
 
-export function renderLeaderboard(data, currentPack) {
+export function renderPodium(data, currentPack) {
   dom.leaderboardList.innerHTML = "";
 
-  data.leaderboard.forEach(player => {
+  const total = currentPack
+    ? currentPack.challenges.length
+    : data.totalChallenges || 8;
+
+  const players = data.leaderboard;
+
+  // ── Podium (top 3) ──
+  if (players.length >= 2) {
+    const podiumEl = document.createElement("div");
+    podiumEl.className = "podium-container";
+
+    // Order on podium: 2nd | 1st | 3rd  (visual layout)
+    const podiumOrder = [
+      players[1] ? { player: players[1], cls: "second", medal: "🥈", height: 110 } : null,
+      players[0] ? { player: players[0], cls: "first",  medal: "🥇", height: 160 } : null,
+      players[2] ? { player: players[2], cls: "third",  medal: "🥉", height: 70  } : null
+    ].filter(Boolean);
+
+    podiumOrder.forEach(({ player, cls, medal, height }) => {
+      const place = document.createElement("div");
+      place.className = `podium-place ${cls}`;
+      place.innerHTML = `
+        <div class="podium-avatar">${escapeHTML(player.name[0].toUpperCase())}</div>
+        <div class="podium-name">${escapeHTML(player.name)}</div>
+        <div class="podium-score">${player.score} pts</div>
+        <div class="podium-block" style="height:${height}px">${medal}</div>
+      `;
+      podiumEl.appendChild(place);
+    });
+
+    dom.leaderboardList.appendChild(podiumEl);
+  }
+
+  // ── Full ranked list ──
+  const listTitle = document.createElement("div");
+  listTitle.className = "eyebrow";
+  listTitle.style.marginBottom = "14px";
+  listTitle.textContent = "Full standings";
+  dom.leaderboardList.appendChild(listTitle);
+
+  players.forEach(player => {
     const row = document.createElement("div");
     row.className = `leader-row ${player.rank === 1 ? "first" : ""}`;
-
-    const total = currentPack
-      ? currentPack.challenges.length
-      : data.totalChallenges || player.totalAnswered;
-
     row.innerHTML = `
-      <div style="display: flex; gap: 14px; align-items: center;">
+      <div style="display:flex;gap:14px;align-items:center;">
         <div class="rank">${player.rank}</div>
         <div>
-          <strong style="font-size: 18px;">${escapeHTML(player.name)}</strong>
-          <p class="muted" style="font-size: 13px;">${player.correct}/${total} correct</p>
+          <strong style="font-size:18px;">${escapeHTML(player.name)}</strong>
+          <p class="muted" style="font-size:13px;">${player.correct}/${total} correct</p>
         </div>
       </div>
-      <strong style="font-size: 26px;">${player.score}</strong>
+      <strong style="font-size:26px;">${player.score}</strong>
     `;
-
     dom.leaderboardList.appendChild(row);
   });
 
+  // ── Weak concepts ──
   dom.groupWeakConcepts.innerHTML = "";
-
   if (!data.weakConcepts || data.weakConcepts.length === 0) {
     const span = document.createElement("span");
     span.className = "pill";
