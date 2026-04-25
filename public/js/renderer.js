@@ -238,6 +238,66 @@ export function renderOrderSteps(steps) {
   refreshSteps();
 }
 
+export function renderResultPhase(challenge, submitResult) {
+  // Clear the answer area and show full-screen result card
+  dom.answerBox.innerHTML = "";
+  dom.submitAnswerBtn.classList.add("hidden");
+  dom.feedbackBox.classList.add("hidden");
+  dom.mistakeBox.classList.add("hidden");
+
+  const isCorrect = submitResult?.isCorrect ?? false;
+  const points    = submitResult?.points    ?? 0;
+
+  const correctDisplay = challenge.type === "order_steps"
+    ? challenge.correctOrder.join(" → ")
+    : challenge.correctAnswer;
+
+  const card = document.createElement("div");
+  card.className = `result-phase-card ${isCorrect ? "result-correct" : "result-wrong"}`;
+  card.innerHTML = `
+    <div class="result-icon">${isCorrect ? "✅" : "❌"}</div>
+    <h2 class="result-label">${isCorrect ? `+${points} points!` : "Wrong answer!"}</h2>
+    <p class="result-answer">Correct answer: <strong>${escapeHTML(correctDisplay)}</strong></p>
+    <p class="result-explanation muted">${escapeHTML(challenge.explanation || "")}</p>
+  `;
+  dom.answerBox.appendChild(card);
+}
+
+export function renderMiniLeaderboard(data, currentPack, isLast) {
+  dom.answerBox.innerHTML = "";
+  dom.submitAnswerBtn.classList.add("hidden");
+  dom.feedbackBox.classList.add("hidden");
+
+  const total = currentPack ? currentPack.challenges.length : 8;
+  const players = data?.leaderboard || [];
+
+  const container = document.createElement("div");
+  container.className = "mini-lb";
+
+  const title = document.createElement("div");
+  title.className = "mini-lb-title";
+  title.innerHTML = `<span class="eyebrow">${isLast ? "🏁 Final standings" : "📊 Standings"}</span>
+    <span id="lbCountdownText" class="mini-lb-countdown"></span>`;
+  container.appendChild(title);
+
+  players.slice(0, 8).forEach((p, i) => {
+    const row = document.createElement("div");
+    row.className = `mini-lb-row ${i === 0 ? "mini-lb-first" : ""}`;
+    row.style.animationDelay = `${i * 0.05}s`;
+    row.innerHTML = `
+      <span class="mini-lb-rank">${p.rank}</span>
+      <span class="mini-lb-name">${escapeHTML(p.name)}</span>
+      <span class="mini-lb-score">${p.score}</span>
+    `;
+    container.appendChild(row);
+  });
+
+  dom.answerBox.appendChild(container);
+
+  // Expose countdown element globally so loop can update it
+  window.lbCountdownText = document.getElementById("lbCountdownText");
+}
+
 export function renderAnswerFeedback(data, isLastChallenge) {
   document.querySelectorAll(".option").forEach(button => {
     button.disabled = true;

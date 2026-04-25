@@ -14,15 +14,16 @@ export const state = {
   arenaEndsAt: null,
   selectedGameMode: "arena_mix",
 
-  // Synced game loop
+  // Synced loop
   answeredCurrentChallenge: false,
   lastSubmitResult: null,
+  cachedLeaderboard: null,
   syncLoop: null,
 
-  // Guard flags
+  // Guard
   packLoading: false,
 
-  // Interval handles
+  // Intervals
   lobbyPoll: null,
   arenaEndWatcher: null,
   waitingResultsTimer: null,
