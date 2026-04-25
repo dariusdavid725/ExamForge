@@ -42,23 +42,33 @@ router.post("/auth/register", async (req, res) => {
   const { data, error } = await admin.auth.admin.createUser({
     email: email.trim(),
     password,
-    email_confirm: true, // auto-confirm
+    email_confirm: true,
     user_metadata: { username: username.trim() }
   });
 
   if (error) {
-    if (error.message.includes("already registered")) {
+    const msg = error.message || "";
+    if (msg.includes("already registered") || msg.includes("already been registered")) {
       return res.status(400).json({ error: "An account with this email already exists." });
     }
-    return res.status(400).json({ error: error.message });
+    if (msg.includes("Database error")) {
+      return res.status(500).json({ error: "Database setup incomplete. Please contact the administrator." });
+    }
+    return res.status(400).json({ error: msg });
   }
 
-  // Ensure profile exists (trigger should handle it, this is a safety net)
-  await admin.from("profiles").upsert({
-    id: data.user.id,
-    username: username.trim(),
+  // Create profile explicitly (no trigger dependency)
+  const { error: profileError } = await admin.from("profiles").upsert({
+    id:           data.user.id,
+    username:     username.trim(),
     avatar_color: randomColor()
-  }, { onConflict: "id", ignoreDuplicates: true });
+  }, { onConflict: "id" });
+
+  if (profileError) {
+    // Auth user created but profile failed — delete the auth user to keep things clean
+    await admin.auth.admin.deleteUser(data.user.id).catch(() => {});
+    return res.status(500).json({ error: "Could not create profile. Try again." });
+  }
 
   return res.json({ success: true, message: "Account created. You can now log in." });
 });
