@@ -1,46 +1,68 @@
-import { prepareDocumentSlice, prepareTinyDocumentSlice, randomSeed } from "./textUtils.js";
+import {
+  prepareDocumentSlice,
+  prepareTinyDocumentSlice,
+  randomSeed
+} from "./textUtils.js";
 
 export function buildLearningPackPrompt(text, gameMode = "arena_mix") {
   const seed = randomSeed();
   const documentSlice = prepareDocumentSlice(text);
 
   return `
-You are a professional educator creating a competitive quiz game from a document.
-Think carefully before writing each question. Every question must be directly verifiable from the document text.
+You are a strict university-level educational game designer.
 
-Language: Use the same language as the document. If Romanian, write in Romanian.
+Return ONLY valid JSON.
+No markdown.
+No prose outside JSON.
 
-IGNORE completely: watermarks, page numbers, headers, footers, copyright notices, bibliography, URLs, image captions, decorative text, repeated boilerplate.
+Language:
+- Use the same main language as the document.
+- If the document is Romanian, write Romanian.
 
-QUALITY RULES (read carefully):
-- Each question must test a real concept from the document — not trivia or formatting.
-- The correct answer must be unambiguously derivable from the document text shown.
-- Wrong answer options must be plausible but clearly incorrect based on the document.
-- Questions must be self-contained — the player should understand what is being asked without seeing the document.
-- Do NOT ask about page numbers, authors, or document metadata.
-- Do NOT use quotes longer than 60 characters in a prompt.
-- Do NOT generate questions about information that only appears in removed/ignored sections.
-- For code: ask about behavior, output, purpose, complexity — not syntax memorization.
-- For math equations: ask about what the formula computes, its variables, or its result for given inputs.
+Core rule:
+Every challenge must be answerable by a player who sees ONLY:
+1. the prompt
+2. the visible answer options / pairs / steps
+3. the mistakeText, if present
+
+The player does NOT see the source document during the game.
+Therefore:
+- Do NOT ask questions that require hidden values from the source.
+- Do NOT create math word problems unless ALL numbers needed for the calculation are inside the prompt.
+- Do NOT invent prices, quantities, dates, names, formulas, or assumptions.
+- If a value is not explicitly visible in the prompt/options, do not require it as the answer.
+- sourceSnippet must contain the exact evidence from the document.
+- explanation must not introduce new facts that are missing from prompt/sourceSnippet.
+
+Ignore completely:
+watermarks, page numbers, headers, footers, copyright notices, URLs, bibliography, image captions, decorative text, repeated boilerplate.
+
+Quality rules:
+- Each question must test a real concept from the document.
+- Questions must be self-contained.
+- Wrong options must be plausible but clearly wrong.
+- Do NOT generate nonsense arithmetic unless the document is actually about that arithmetic.
+- For code: ask about behavior, output, purpose, complexity, invariants, steps, or edge cases.
+- For formulas: ask about meaning, variables, or calculations where all needed values are visible.
 
 Game mode: ${gameMode}
 Seed: ${seed}
 
-Generate exactly 8 challenges with this distribution:
-- 2 × multiple_choice (4 options, exactly 1 correct)
+Generate exactly 8 challenges:
+- 2 × multiple_choice
 - 1 × true_false
-- 1 × fill_blank (prompt contains exactly one ____)
-- 1 × order_steps (3 steps)
+- 1 × fill_blank
+- 1 × order_steps
 - 1 × spot_mistake
-- 1 × matching (4 left-right pairs)
-- 1 × multiple_select (4-5 options, 2-3 correct answers, prompt starts with "Select ALL that apply:")
+- 1 × matching
+- 1 × multiple_select
 
 Field length limits:
-- prompt: max 160 chars
-- explanation: max 200 chars
-- sourceSnippet: max 150 chars
-- options / left / right items: max 90 chars each
-- concept: max 35 chars
+- prompt: max 170 chars
+- explanation: max 220 chars
+- sourceSnippet: max 180 chars
+- options / steps / pair items: max 100 chars
+- concept: max 40 chars
 
 JSON schema:
 {
@@ -68,46 +90,52 @@ JSON schema:
   ]
 }
 
-Type-specific rules:
+Type rules:
 
-multiple_choice: exactly 4 options, correctAnswer is one of them.
+multiple_choice:
+- exactly 4 options
+- exactly 1 correct option
+- correctAnswer must be one of options
+- Do NOT use multiple_choice if more than one option is true.
+- Do NOT ask "which statements are true?" here. Use multiple_select instead.
 
 true_false:
-  options: ["Adevărat","Fals"] (Romanian) or ["True","False"] (English)
-  correctAnswer is one of them.
+- options ["Adevărat","Fals"] or ["True","False"]
+- correctAnswer must be one of options
+- statement must be clearly true or false from the document
 
 fill_blank:
-  prompt contains exactly one ____.
-  options: []
-  acceptedAnswers: list of all valid phrasings (synonyms, abbreviations, alternate forms).
-  The player types their answer — be generous with acceptedAnswers.
+- prompt contains exactly one blank token: ____
+- options: []
+- correctAnswer is only the missing word/phrase, not a full sentence
+- acceptedAnswers includes synonyms/alternate forms
+- Do NOT make a fill_blank math problem unless all needed values are visible in the prompt
+- Bad example: "Vasile had 100 lei and bought notebooks and books. How much remains? ____" if prices are not in prompt.
 
 order_steps:
-  exactly 3 steps.
-  steps: shuffled list.
-  correctOrder: same 3 strings in correct sequence.
-  options: []
+- exactly 3 steps
+- steps is shuffled
+- correctOrder contains same exact 3 strings in correct order
+- options: []
 
 spot_mistake:
-  mistakeText: a sentence with a factual error from the document.
-  options: exactly 4 strings explaining what the mistake is.
-  correctAnswer: one of the 4 options.
+- mistakeText is a single wrong claim based on the document
+- options exactly 4 explanations of the mistake
+- correctAnswer one of options
+- Do NOT glue multiple claims into one option
 
 matching:
-  prompt: "Match each item with its correct pair:" (or Romanian equivalent)
-  pairs: exactly 4 objects, each { "left": "string", "right": "string" }
-  options: []
-  correctAnswer: ""
-  The left items and right items will be shown shuffled to the player.
+- prompt: "Match each item with its correct pair:" or Romanian equivalent
+- pairs exactly 4 objects: { "left": "string", "right": "string" }
+- options: []
+- correctAnswer: ""
 
 multiple_select:
-  prompt MUST start with "Select ALL that apply:" (or Romanian: "Selectează TOATE variantele corecte:")
-  options: 4 or 5 strings
-  correctAnswers: array of 2 or 3 correct options (subset of options)
-  correctAnswer: "" (leave empty)
-
-Also add a "category" field to the root JSON object. Choose ONE:
-Mathematics, Programming, Science, History, Literature, Language, Economics, Philosophy, Art, General Knowledge, Medicine, Law, Engineering, Physics, Chemistry, Biology, Other
+- prompt MUST start with "Select ALL that apply:" or "Selectează TOATE variantele corecte:"
+- options: 4 or 5 strings
+- correctAnswers: 2 or 3 correct options, subset of options
+- correctAnswer: ""
+- Order of selected answers must not matter.
 
 DOCUMENT:
 ${documentSlice}
@@ -118,31 +146,60 @@ export function buildRepairPrompt(badJson, validationError, text, gameMode = "ar
   const documentContext = prepareTinyDocumentSlice(text);
 
   return `
-Repair this learning pack JSON. Return ONLY valid JSON, no markdown.
+Repair this learning pack JSON.
 
-Validation error: ${validationError}
+Return ONLY valid JSON.
+No markdown.
+No prose outside JSON.
 
-Requirements:
+Validation error:
+${validationError}
+
+Hard requirements:
 - exactly 8 challenges
 - types: 2×multiple_choice, 1×true_false, 1×fill_blank, 1×order_steps, 1×spot_mistake, 1×matching, 1×multiple_select
-- base content only on the document below
-- no external knowledge, no links
+- use only the document context
+- no external knowledge
+- no invented numbers
+- every challenge must be self-contained
+- sourceSnippet must contain the evidence
+- explanations must not add facts missing from prompt/sourceSnippet
 
-Schema per type:
-multiple_choice: 4 options, correctAnswer one of them
-true_false: 2 options, correctAnswer one of them
-fill_blank: prompt has ____, options [], acceptedAnswers includes correctAnswer
-order_steps: 3 steps, correctOrder same 3 strings in order
-spot_mistake: mistakeText not empty, 4 options, correctAnswer one of them
-matching: pairs array with 4 {left,right} objects, options [], correctAnswer ""
-multiple_select: options array 4-5, correctAnswers array 2-3 (subset of options), correctAnswer ""
+Very important:
+- If a question has multiple correct options, it must be multiple_select, not multiple_choice.
+- If a math question requires numbers, all needed numbers must appear in the prompt.
+- If this cannot be guaranteed, replace the challenge with a conceptual one from the document.
 
-Every challenge must have ALL fields: id, type, concept, difficulty, prompt, options, correctAnswer, correctAnswers, pairs, acceptedAnswers, steps, correctOrder, mistakeText, explanation, sourceSnippet
+Schema:
+{
+  "title": "string",
+  "summary": "string",
+  "concepts": ["string"],
+  "challenges": [
+    {
+      "id": "c1",
+      "type": "multiple_choice",
+      "concept": "string",
+      "difficulty": "easy",
+      "prompt": "string",
+      "options": ["string","string","string","string"],
+      "correctAnswer": "string",
+      "correctAnswers": [],
+      "pairs": [],
+      "acceptedAnswers": [],
+      "steps": [],
+      "correctOrder": [],
+      "mistakeText": "",
+      "explanation": "string",
+      "sourceSnippet": "string"
+    }
+  ]
+}
 
 Invalid JSON:
-${String(badJson || "").slice(0, 4000)}
+${String(badJson || "").slice(0, 4500)}
 
-Document:
+Document context:
 ${documentContext}
 `;
 }
@@ -152,6 +209,7 @@ export function buildRecoveryLessonPrompt(room, player) {
     .filter(a => !a.isCorrect)
     .map(a => {
       const challenge = room.pack.challenges[a.challengeIndex];
+
       return {
         type: challenge.type,
         concept: challenge.concept,
@@ -169,7 +227,9 @@ Create a short recovery lesson based ONLY on missed challenges.
 
 Rules:
 - Same language as challenges.
-- Only use provided data, no external knowledge, no links.
+- Only use provided data.
+- No external knowledge.
+- No links.
 - Output ONLY valid JSON.
 - Keep concise.
 

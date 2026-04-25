@@ -2,23 +2,176 @@ import { normalizeString, shuffleArray } from "../utils/textUtils.js";
 
 function normalizeConcepts(concepts) {
   if (!Array.isArray(concepts)) return ["Concepte principale"];
+
   const normalized = concepts
     .map(item => {
       if (typeof item === "string") return item;
-      if (item && typeof item.name === "string") return item.name;
+
+      if (item && typeof item.name === "string") {
+        return item.name;
+      }
+
       return "";
     })
     .map(item => item.trim())
     .filter(Boolean);
-  return normalized.length > 0 ? normalized.slice(0, 8) : ["Concepte principale"];
+
+  return normalized.length > 0
+    ? normalized.slice(0, 8)
+    : ["Concepte principale"];
+}
+
+function uniqueArray(array) {
+  return [...new Set(array.map(normalizeString).filter(Boolean))];
+}
+
+function enforceSingleBlank(prompt) {
+  let result = normalizeString(prompt).replace(/_{2,}/g, "____");
+
+  const parts = result.split("____");
+
+  if (parts.length <= 2) return result;
+
+  return (
+    parts[0] +
+    "____" +
+    parts
+      .slice(1)
+      .join(" ")
+      .replace(/____/g, "")
+      .replace(/\s+/g, " ")
+      .trim()
+  );
+}
+
+function addBlankToPrompt(prompt, correctAnswer) {
+  let result = enforceSingleBlank(prompt);
+
+  if (result.includes("____")) {
+    return result;
+  }
+
+  const answer = normalizeString(correctAnswer);
+
+  if (answer) {
+    const escaped = answer.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const regex = new RegExp(escaped, "i");
+
+    if (regex.test(result)) {
+      return enforceSingleBlank(result.replace(regex, "____"));
+    }
+  }
+
+  return enforceSingleBlank(`${result} ____`);
+}
+
+function countNumbers(text) {
+  const matches = String(text || "").match(/-?\d+([.,]\d+)?/g);
+
+  return matches ? matches.length : 0;
+}
+
+function looksLikeCalculationQuestion(text) {
+  const value = String(text || "").toLowerCase();
+
+  return [
+    "cât",
+    "cat",
+    "câți",
+    "cati",
+    "câte",
+    "cate",
+    "lei",
+    "bani",
+    "rămân",
+    "raman",
+    "calculează",
+    "calculeaza",
+    "total",
+    "sumă",
+    "suma",
+    "difference",
+    "remaining",
+    "calculate",
+    "money"
+  ].some(word => value.includes(word));
+}
+
+function asksForMultipleAnswers(text) {
+  const value = String(text || "").toLowerCase();
+
+  return [
+    "select all",
+    "all that apply",
+    "which statements are true",
+    "which of the following are",
+    "selectează toate",
+    "selecteaza toate",
+    "toate variantele",
+    "care dintre afirmațiile",
+    "care dintre afirmatiile",
+    "sunt adevărate",
+    "sunt adevarate",
+    "sunt corecte"
+  ].some(fragment => value.includes(fragment));
+}
+
+function hasBadOptionShape(option) {
+  const value = normalizeString(option);
+
+  if (!value) return true;
+  if (value.length > 170) return true;
+
+  const commaCount = (value.match(/,/g) || []).length;
+  const mathSigns = (value.match(/[<>+=×x*]/g) || []).length;
+
+  if (commaCount >= 3 && mathSigns >= 3) return true;
+
+  return false;
+}
+
+function validateSelfContainedFillBlank(challenge, index) {
+  const prompt = challenge.prompt;
+  const combinedVisibleText = `${challenge.prompt} ${challenge.sourceSnippet} ${challenge.explanation}`;
+
+  if (looksLikeCalculationQuestion(prompt)) {
+    const visibleNumbersInPrompt = countNumbers(prompt);
+
+    if (visibleNumbersInPrompt < 2) {
+      throw new Error(
+        `Fill blank ${index + 1} is not self-contained: calculation question lacks visible numbers.`
+      );
+    }
+  }
+
+  if (!challenge.sourceSnippet || challenge.sourceSnippet.length < 12) {
+    throw new Error(`Fill blank ${index + 1} needs a useful sourceSnippet.`);
+  }
+
+  if (
+    challenge.correctAnswer &&
+    !combinedVisibleText
+      .toLowerCase()
+      .includes(challenge.correctAnswer.toLowerCase().split(" ")[0])
+  ) {
+    // Nu respingem agresiv toate cazurile, dar măcar prindem răspunsurile complet izolate.
+    if (challenge.correctAnswer.length <= 25 && !looksLikeCalculationQuestion(prompt)) {
+      throw new Error(`Fill blank ${index + 1} answer is not grounded in prompt/snippet.`);
+    }
+  }
 }
 
 function normalizeChallenge(raw, index) {
   const type = normalizeString(raw.type);
 
   const allowedTypes = [
-    "multiple_choice", "true_false", "fill_blank",
-    "order_steps", "spot_mistake", "matching", "multiple_select"
+    "multiple_choice",
+    "true_false",
+    "fill_blank",
+    "order_steps",
+    "spot_mistake",
+    "matching",
+    "multiple_select"
   ];
 
   if (!allowedTypes.includes(type)) {
@@ -29,19 +182,30 @@ function normalizeChallenge(raw, index) {
     id: `c${index + 1}`,
     type,
     concept: normalizeString(raw.concept) || "Concept",
-    difficulty: normalizeString(raw.difficulty) || "medium",
+    difficulty: ["easy", "medium", "hard"].includes(normalizeString(raw.difficulty))
+      ? normalizeString(raw.difficulty)
+      : "medium",
     prompt: normalizeString(raw.prompt),
-    options: Array.isArray(raw.options) ? raw.options.map(normalizeString).filter(Boolean) : [],
+    options: Array.isArray(raw.options) ? uniqueArray(raw.options) : [],
     correctAnswer: normalizeString(raw.correctAnswer),
-    correctAnswers: Array.isArray(raw.correctAnswers) ? raw.correctAnswers.map(normalizeString).filter(Boolean) : [],
+    correctAnswers: Array.isArray(raw.correctAnswers)
+      ? uniqueArray(raw.correctAnswers)
+      : [],
     pairs: Array.isArray(raw.pairs)
-      ? raw.pairs.map(p => ({ left: normalizeString(p?.left), right: normalizeString(p?.right) }))
+      ? raw.pairs
+          .map(p => ({
+            left: normalizeString(p?.left),
+            right: normalizeString(p?.right)
+          }))
           .filter(p => p.left && p.right)
       : [],
     acceptedAnswers: Array.isArray(raw.acceptedAnswers)
-      ? raw.acceptedAnswers.map(normalizeString).filter(Boolean) : [],
-    steps: Array.isArray(raw.steps) ? raw.steps.map(normalizeString).filter(Boolean) : [],
-    correctOrder: Array.isArray(raw.correctOrder) ? raw.correctOrder.map(normalizeString).filter(Boolean) : [],
+      ? uniqueArray(raw.acceptedAnswers)
+      : [],
+    steps: Array.isArray(raw.steps) ? uniqueArray(raw.steps) : [],
+    correctOrder: Array.isArray(raw.correctOrder)
+      ? uniqueArray(raw.correctOrder)
+      : [],
     mistakeText: normalizeString(raw.mistakeText),
     explanation: normalizeString(raw.explanation),
     sourceSnippet: normalizeString(raw.sourceSnippet)
@@ -52,103 +216,180 @@ function normalizeChallenge(raw, index) {
   }
 
   if (type === "multiple_choice") {
-    if (challenge.options.length !== 4)
-      throw new Error(`Multiple choice ${index + 1} must have 4 options.`);
-    if (!challenge.options.includes(challenge.correctAnswer))
+    if (asksForMultipleAnswers(challenge.prompt)) {
+      throw new Error(
+        `Multiple choice ${index + 1} asks for multiple answers. Use multiple_select.`
+      );
+    }
+
+    challenge.options = challenge.options.filter(option => !hasBadOptionShape(option));
+
+    if (challenge.options.length !== 4) {
+      throw new Error(`Multiple choice ${index + 1} must have 4 clean options.`);
+    }
+
+    if (!challenge.options.includes(challenge.correctAnswer)) {
       throw new Error(`Multiple choice ${index + 1} correctAnswer must be one option.`);
+    }
   }
 
   if (type === "true_false") {
-    if (challenge.options.length !== 2)
+    if (challenge.options.length !== 2) {
       throw new Error(`True/false ${index + 1} must have 2 options.`);
-    if (!challenge.options.includes(challenge.correctAnswer))
+    }
+
+    if (!challenge.options.includes(challenge.correctAnswer)) {
       throw new Error(`True/false ${index + 1} correctAnswer must be one option.`);
+    }
   }
 
   if (type === "fill_blank") {
-    if (!challenge.prompt.includes("____"))
-      throw new Error(`Fill blank ${index + 1} must contain ____.`);
-    if (!challenge.correctAnswer)
+    if (!challenge.correctAnswer) {
       throw new Error(`Fill blank ${index + 1} needs correctAnswer.`);
-    if (!challenge.acceptedAnswers.includes(challenge.correctAnswer))
+    }
+
+    challenge.prompt = addBlankToPrompt(challenge.prompt, challenge.correctAnswer);
+
+    if (!challenge.prompt.includes("____")) {
+      throw new Error(`Fill blank ${index + 1} must contain ____.`);
+    }
+
+    if (!challenge.acceptedAnswers.includes(challenge.correctAnswer)) {
       challenge.acceptedAnswers.unshift(challenge.correctAnswer);
+    }
+
     challenge.options = [];
+    validateSelfContainedFillBlank(challenge, index);
   }
 
   if (type === "order_steps") {
-    if (challenge.steps.length < 3 || challenge.steps.length > 5)
-      throw new Error(`Order steps ${index + 1} must have 3-5 steps.`);
-    if (challenge.correctOrder.length !== challenge.steps.length)
+    if (challenge.steps.length !== 3) {
+      throw new Error(`Order steps ${index + 1} must have exactly 3 steps.`);
+    }
+
+    if (challenge.correctOrder.length !== challenge.steps.length) {
       throw new Error(`Order steps ${index + 1} correctOrder mismatch.`);
+    }
+
     const stepSet = new Set(challenge.steps);
     const orderSet = new Set(challenge.correctOrder);
-    if (stepSet.size !== orderSet.size)
+
+    if (stepSet.size !== orderSet.size) {
       throw new Error(`Order steps ${index + 1} duplicate or mismatched steps.`);
-    for (const step of stepSet) {
-      if (!orderSet.has(step))
-        throw new Error(`Order steps ${index + 1} correctOrder must contain same steps.`);
     }
+
+    for (const step of stepSet) {
+      if (!orderSet.has(step)) {
+        throw new Error(`Order steps ${index + 1} correctOrder must contain same steps.`);
+      }
+    }
+
     challenge.options = [];
     challenge.steps = shuffleArray(challenge.steps);
   }
 
   if (type === "spot_mistake") {
-    if (!challenge.mistakeText)
+    if (!challenge.mistakeText) {
       throw new Error(`Spot mistake ${index + 1} needs mistakeText.`);
-    if (challenge.options.length !== 4)
-      throw new Error(`Spot mistake ${index + 1} must have 4 options.`);
-    if (!challenge.options.includes(challenge.correctAnswer))
+    }
+
+    challenge.options = challenge.options.filter(option => !hasBadOptionShape(option));
+
+    if (challenge.options.length !== 4) {
+      throw new Error(`Spot mistake ${index + 1} must have 4 clean options.`);
+    }
+
+    if (!challenge.options.includes(challenge.correctAnswer)) {
       throw new Error(`Spot mistake ${index + 1} correctAnswer must be one option.`);
+    }
   }
 
   if (type === "matching") {
-    if (challenge.pairs.length < 3)
-      throw new Error(`Matching ${index + 1} must have at least 3 pairs.`);
+    if (challenge.pairs.length !== 4) {
+      throw new Error(`Matching ${index + 1} must have exactly 4 pairs.`);
+    }
+
     challenge.options = [];
     challenge.correctAnswer = "";
-    // Shuffle the right-side items so they're not in order
+    challenge.correctAnswers = [];
     challenge.shuffledRight = shuffleArray(challenge.pairs.map(p => p.right));
   }
 
   if (type === "multiple_select") {
-    if (challenge.options.length < 3)
-      throw new Error(`Multiple select ${index + 1} must have at least 3 options.`);
-    if (!Array.isArray(challenge.correctAnswers) || challenge.correctAnswers.length < 1)
-      throw new Error(`Multiple select ${index + 1} needs correctAnswers array.`);
-    for (const ans of challenge.correctAnswers) {
-      if (!challenge.options.includes(ans))
-        throw new Error(`Multiple select ${index + 1}: correctAnswers must be subset of options.`);
+    if (!asksForMultipleAnswers(challenge.prompt)) {
+      const romanian = "Selectează TOATE variantele corecte:";
+      const english = "Select ALL that apply:";
+
+      challenge.prompt =
+        `${romanian} ${challenge.prompt}`.slice(0, 170) ||
+        `${english} ${challenge.prompt}`.slice(0, 170);
     }
+
+    challenge.options = challenge.options.filter(option => !hasBadOptionShape(option));
+
+    if (challenge.options.length < 4 || challenge.options.length > 5) {
+      throw new Error(`Multiple select ${index + 1} must have 4-5 clean options.`);
+    }
+
+    if (challenge.correctAnswers.length < 2 || challenge.correctAnswers.length > 3) {
+      throw new Error(`Multiple select ${index + 1} needs 2-3 correctAnswers.`);
+    }
+
+    for (const answer of challenge.correctAnswers) {
+      if (!challenge.options.includes(answer)) {
+        throw new Error(`Multiple select ${index + 1}: correctAnswers must be subset of options.`);
+      }
+    }
+
     challenge.correctAnswer = "";
   }
 
-  if (!challenge.explanation) challenge.explanation = "Explicația nu a fost generată complet.";
-  if (!challenge.sourceSnippet) challenge.sourceSnippet = "Fragment relevant din document.";
+  if (!challenge.explanation) {
+    challenge.explanation = "Explicația nu a fost generată complet.";
+  }
+
+  if (!challenge.sourceSnippet) {
+    challenge.sourceSnippet = "Fragment relevant din document.";
+  }
 
   return challenge;
 }
 
 export function normalizeLearningPack(rawPack) {
-  if (!rawPack || typeof rawPack !== "object")
+  if (!rawPack || typeof rawPack !== "object") {
     throw new Error("Learning pack is not an object.");
-  if (!Array.isArray(rawPack.challenges))
+  }
+
+  if (!Array.isArray(rawPack.challenges)) {
     throw new Error("Learning pack missing challenges.");
-  if (rawPack.challenges.length !== 8)
+  }
+
+  if (rawPack.challenges.length !== 8) {
     throw new Error("Learning pack must contain exactly 8 challenges.");
+  }
 
   const challenges = rawPack.challenges.map(normalizeChallenge);
 
-  const typeCounts = challenges.reduce((acc, c) => {
-    acc[c.type] = (acc[c.type] || 0) + 1;
+  const typeCounts = challenges.reduce((acc, challenge) => {
+    acc[challenge.type] = (acc[challenge.type] || 0) + 1;
     return acc;
   }, {});
 
-  if ((typeCounts.multiple_choice || 0) < 2)
-    throw new Error("Need at least 2 multiple_choice challenges.");
+  if ((typeCounts.multiple_choice || 0) !== 2) {
+    throw new Error("Need exactly 2 multiple_choice challenges.");
+  }
 
-  for (const required of ["true_false", "fill_blank", "order_steps", "spot_mistake"]) {
-    if (!typeCounts[required])
-      throw new Error(`Missing challenge type: ${required}`);
+  for (const required of [
+    "true_false",
+    "fill_blank",
+    "order_steps",
+    "spot_mistake",
+    "matching",
+    "multiple_select"
+  ]) {
+    if ((typeCounts[required] || 0) !== 1) {
+      throw new Error(`Need exactly 1 ${required} challenge.`);
+    }
   }
 
   return {
@@ -160,16 +401,24 @@ export function normalizeLearningPack(rawPack) {
 }
 
 export function cleanJson(rawText) {
-  const text = String(rawText || "").replace(/```json/g, "").replace(/```/g, "").trim();
+  const text = String(rawText || "")
+    .replace(/```json/g, "")
+    .replace(/```/g, "")
+    .trim();
+
   const firstBrace = text.indexOf("{");
-  const lastBrace  = text.lastIndexOf("}");
-  if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace)
+  const lastBrace = text.lastIndexOf("}");
+
+  if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
     return text.slice(firstBrace, lastBrace + 1);
+  }
+
   return text;
 }
 
 export function parseAndNormalizePack(rawText) {
   const cleaned = cleanJson(rawText);
-  const parsed  = JSON.parse(cleaned);
+  const parsed = JSON.parse(cleaned);
+
   return normalizeLearningPack(parsed);
 }

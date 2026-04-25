@@ -96,13 +96,15 @@ export function renderChallenge(onSubmitAnswer) {
   dom.challengeNumberText.textContent = state.currentChallengeIndex + 1;
 
   // Render prompt with code/math formatting
-  if (challenge.type === "fill_blank") {
-    const blanks   = "_".repeat(challenge.correctAnswer.length);
-    const blankSpan = `<span style="letter-spacing:2px;border-bottom:4px solid var(--text);padding-bottom:2px;">${blanks}</span>`;
-    dom.challengePromptText.innerHTML = formatPromptHTML(challenge.prompt || "").replace("____", blankSpan);
-  } else {
-    dom.challengePromptText.innerHTML = formatPromptHTML(challenge.prompt || "");
-  }
+if (challenge.type === "fill_blank") {
+  const blankSpan = `<span class="blank-token">____</span>`;
+
+  dom.challengePromptText.innerHTML = formatPromptHTML(challenge.prompt || "")
+    .replace(/_{2,}/g, "____")
+    .replace("____", blankSpan);
+} else {
+  dom.challengePromptText.innerHTML = formatPromptHTML(challenge.prompt || "");
+}
 
   const progress = Math.round((state.currentChallengeIndex / state.currentPack.challenges.length) * 100);
   dom.progressText.textContent = `${progress}%`;
