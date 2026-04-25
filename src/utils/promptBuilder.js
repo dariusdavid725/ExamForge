@@ -9,7 +9,7 @@ export function buildLearningPackPrompt(text, gameMode = "arena_mix") {
   const documentSlice = prepareDocumentSlice(text);
 
   return `
-You are a strict university-level educational game designer.
+You are a strict educational game designer.
 
 Return ONLY valid JSON.
 No markdown.
@@ -17,128 +17,158 @@ No prose outside JSON.
 
 Language:
 - Use the same main language as the document.
-- If the document is Romanian, write Romanian.
+- If Romanian, write Romanian.
 
-Core rule:
-Every challenge must be answerable by a player who sees ONLY:
-1. the prompt
-2. the visible answer options / pairs / steps
-3. the mistakeText, if present
+CRITICAL QUALITY RULES:
+Every challenge must be self-contained.
+The player will NOT see the document while answering.
+The player only sees:
+- prompt
+- options / pairs / steps
+- mistakeText, if present
 
-The player does NOT see the source document during the game.
-Therefore:
-- Do NOT ask questions that require hidden values from the source.
-- Do NOT create math word problems unless ALL numbers needed for the calculation are inside the prompt.
-- Do NOT invent prices, quantities, dates, names, formulas, or assumptions.
-- If a value is not explicitly visible in the prompt/options, do not require it as the answer.
-- sourceSnippet must contain the exact evidence from the document.
-- explanation must not introduce new facts that are missing from prompt/sourceSnippet.
+So:
+- Do NOT ask for hidden values from the document.
+- Do NOT invent numbers, prices, quantities, examples, dates, names, or formulas.
+- Do NOT create math word problems unless ALL numbers needed are visible in the prompt.
+- Do NOT create sequence questions like "from 12 to ____" unless the missing value is directly visible and obvious from the prompt.
+- Do NOT ask "which statements are true?" as multiple_choice. Use multiple_select.
+- Do NOT put multiple statements glued into one option.
+- Do NOT make one option contain a list separated by many commas.
+- Each sourceSnippet must support the answer.
+- Explanation must not introduce new facts missing from prompt/sourceSnippet.
 
-Ignore completely:
-watermarks, page numbers, headers, footers, copyright notices, URLs, bibliography, image captions, decorative text, repeated boilerplate.
-
-Quality rules:
-- Each question must test a real concept from the document.
-- Questions must be self-contained.
-- Wrong options must be plausible but clearly wrong.
-- Do NOT generate nonsense arithmetic unless the document is actually about that arithmetic.
-- For code: ask about behavior, output, purpose, complexity, invariants, steps, or edge cases.
-- For formulas: ask about meaning, variables, or calculations where all needed values are visible.
+Use ONLY the document.
+Ignore watermarks, headers, footers, page numbers, URLs, bibliography, copyright notices.
 
 Game mode: ${gameMode}
 Seed: ${seed}
 
 Generate exactly 8 challenges:
-- 2 × multiple_choice
-- 1 × true_false
-- 1 × fill_blank
-- 1 × order_steps
-- 1 × spot_mistake
-- 1 × matching
-- 1 × multiple_select
+- 2 multiple_choice
+- 1 true_false
+- 1 fill_blank
+- 1 order_steps
+- 1 spot_mistake
+- 1 matching
+- 1 multiple_select
 
-Field length limits:
-- prompt: max 170 chars
-- explanation: max 220 chars
-- sourceSnippet: max 180 chars
-- options / steps / pair items: max 100 chars
-- concept: max 40 chars
+Field limits:
+- prompt max 170 chars
+- explanation max 220 chars
+- sourceSnippet max 180 chars
+- options max 100 chars each
+- concept max 40 chars
 
-JSON schema:
+Root JSON:
 {
   "title": "string",
   "summary": "string",
+  "category": "string",
   "concepts": ["string"],
-  "challenges": [
-    {
-      "id": "c1",
-      "type": "multiple_choice",
-      "concept": "string",
-      "difficulty": "easy|medium|hard",
-      "prompt": "string",
-      "options": ["string","string","string","string"],
-      "correctAnswer": "string",
-      "correctAnswers": [],
-      "pairs": [],
-      "acceptedAnswers": [],
-      "steps": [],
-      "correctOrder": [],
-      "mistakeText": "",
-      "explanation": "string",
-      "sourceSnippet": "string"
-    }
-  ]
+  "challenges": []
+}
+
+Challenge object:
+{
+  "id": "c1",
+  "type": "multiple_choice",
+  "concept": "string",
+  "difficulty": "easy",
+  "prompt": "string",
+  "options": ["string"],
+  "correctAnswer": "string",
+  "correctAnswers": [],
+  "pairs": [],
+  "acceptedAnswers": [],
+  "steps": [],
+  "correctOrder": [],
+  "mistakeText": "",
+  "explanation": "string",
+  "sourceSnippet": "string"
 }
 
 Type rules:
 
 multiple_choice:
 - exactly 4 options
-- exactly 1 correct option
+- exactly 1 correct answer
 - correctAnswer must be one of options
-- Do NOT use multiple_choice if more than one option is true.
-- Do NOT ask "which statements are true?" here. Use multiple_select instead.
+- do NOT use if 2+ options are correct
 
 true_false:
 - options ["Adevărat","Fals"] or ["True","False"]
-- correctAnswer must be one of options
-- statement must be clearly true or false from the document
+- correctAnswer must be one option
 
 fill_blank:
 - prompt contains exactly one blank token: ____
-- options: []
-- correctAnswer is only the missing word/phrase, not a full sentence
-- acceptedAnswers includes synonyms/alternate forms
-- Do NOT make a fill_blank math problem unless all needed values are visible in the prompt
-- Bad example: "Vasile had 100 lei and bought notebooks and books. How much remains? ____" if prices are not in prompt.
+- options []
+- correctAnswer is only the missing word/phrase
+- acceptedAnswers contains valid alternatives
+- do NOT ask incomplete math/sequence questions
+- bad: "Scrieți numerele din 3 în 3 de la 12 până la ____"
+- good: "Următorul număr după 12, 15, 18 este ____"
 
 order_steps:
 - exactly 3 steps
-- steps is shuffled
-- correctOrder contains same exact 3 strings in correct order
-- options: []
+- steps shuffled
+- correctOrder has same exact 3 steps in correct order
+- options []
 
 spot_mistake:
-- mistakeText is a single wrong claim based on the document
-- options exactly 4 explanations of the mistake
+- mistakeText is one wrong claim
+- options exactly 4 explanations
 - correctAnswer one of options
-- Do NOT glue multiple claims into one option
 
 matching:
-- prompt: "Match each item with its correct pair:" or Romanian equivalent
-- pairs exactly 4 objects: { "left": "string", "right": "string" }
-- options: []
-- correctAnswer: ""
+- pairs exactly 4 objects { "left": "string", "right": "string" }
+- options []
+- correctAnswer ""
 
 multiple_select:
-- prompt MUST start with "Select ALL that apply:" or "Selectează TOATE variantele corecte:"
-- options: 4 or 5 strings
-- correctAnswers: 2 or 3 correct options, subset of options
-- correctAnswer: ""
-- Order of selected answers must not matter.
+- prompt starts with "Selectează TOATE variantele corecte:" or "Select ALL that apply:"
+- options 4 or 5 strings
+- correctAnswers 2 or 3 strings, subset of options
+- correctAnswer ""
+- order must not matter
 
 DOCUMENT:
 ${documentSlice}
+`;
+}
+
+export function buildAuditPrompt(text, pack) {
+  const documentContext = prepareTinyDocumentSlice(text);
+
+  return `
+You are a strict QA auditor for educational quiz packs.
+
+Return ONLY valid JSON.
+
+Check if the pack is safe to show to students.
+
+Mark valid=false if ANY challenge:
+- is not self-contained
+- requires hidden values from the document
+- invents facts, numbers, examples, prices, quantities, formulas
+- has a fill_blank where the missing answer cannot be inferred from prompt alone
+- has a math question without all needed values in prompt
+- has a multiple_choice with more than one correct option
+- should be multiple_select but is multiple_choice
+- has options glued together or confusing
+- has sourceSnippet that does not support the answer
+
+JSON schema:
+{
+  "valid": true,
+  "problems": ["string"]
+}
+
+DOCUMENT:
+${documentContext}
+
+PACK:
+${JSON.stringify(pack, null, 2)}
 `;
 }
 
@@ -152,54 +182,41 @@ Return ONLY valid JSON.
 No markdown.
 No prose outside JSON.
 
-Validation error:
+Reason it failed:
 ${validationError}
 
 Hard requirements:
 - exactly 8 challenges
-- types: 2×multiple_choice, 1×true_false, 1×fill_blank, 1×order_steps, 1×spot_mistake, 1×matching, 1×multiple_select
-- use only the document context
-- no external knowledge
-- no invented numbers
+- 2 multiple_choice
+- 1 true_false
+- 1 fill_blank
+- 1 order_steps
+- 1 spot_mistake
+- 1 matching
+- 1 multiple_select
 - every challenge must be self-contained
-- sourceSnippet must contain the evidence
-- explanations must not add facts missing from prompt/sourceSnippet
+- use only the document
+- no invented facts
+- no hidden values
+- no incomplete math or sequence questions
+- if a question has multiple correct answers, make it multiple_select
 
-Very important:
-- If a question has multiple correct options, it must be multiple_select, not multiple_choice.
-- If a math question requires numbers, all needed numbers must appear in the prompt.
-- If this cannot be guaranteed, replace the challenge with a conceptual one from the document.
-
-Schema:
+Root JSON:
 {
   "title": "string",
   "summary": "string",
+  "category": "string",
   "concepts": ["string"],
-  "challenges": [
-    {
-      "id": "c1",
-      "type": "multiple_choice",
-      "concept": "string",
-      "difficulty": "easy",
-      "prompt": "string",
-      "options": ["string","string","string","string"],
-      "correctAnswer": "string",
-      "correctAnswers": [],
-      "pairs": [],
-      "acceptedAnswers": [],
-      "steps": [],
-      "correctOrder": [],
-      "mistakeText": "",
-      "explanation": "string",
-      "sourceSnippet": "string"
-    }
-  ]
+  "challenges": []
 }
 
-Invalid JSON:
+Every challenge must include:
+id, type, concept, difficulty, prompt, options, correctAnswer, correctAnswers, pairs, acceptedAnswers, steps, correctOrder, mistakeText, explanation, sourceSnippet
+
+Previous invalid JSON:
 ${String(badJson || "").slice(0, 4500)}
 
-Document context:
+Document:
 ${documentContext}
 `;
 }
@@ -231,7 +248,6 @@ Rules:
 - No external knowledge.
 - No links.
 - Output ONLY valid JSON.
-- Keep concise.
 
 JSON schema:
 {
@@ -248,7 +264,7 @@ JSON schema:
   ]
 }
 
-MISSED CHALLENGES:
+MISSED:
 ${JSON.stringify(wrongAnswers, null, 2)}
 `;
 }

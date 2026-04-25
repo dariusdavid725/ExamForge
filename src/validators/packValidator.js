@@ -27,7 +27,6 @@ function uniqueArray(array) {
 
 function enforceSingleBlank(prompt) {
   let result = normalizeString(prompt).replace(/_{2,}/g, "____");
-
   const parts = result.split("____");
 
   if (parts.length <= 2) return result;
@@ -44,57 +43,10 @@ function enforceSingleBlank(prompt) {
   );
 }
 
-function addBlankToPrompt(prompt, correctAnswer) {
-  let result = enforceSingleBlank(prompt);
-
-  if (result.includes("____")) {
-    return result;
-  }
-
-  const answer = normalizeString(correctAnswer);
-
-  if (answer) {
-    const escaped = answer.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    const regex = new RegExp(escaped, "i");
-
-    if (regex.test(result)) {
-      return enforceSingleBlank(result.replace(regex, "____"));
-    }
-  }
-
-  return enforceSingleBlank(`${result} ____`);
-}
-
 function countNumbers(text) {
   const matches = String(text || "").match(/-?\d+([.,]\d+)?/g);
 
   return matches ? matches.length : 0;
-}
-
-function looksLikeCalculationQuestion(text) {
-  const value = String(text || "").toLowerCase();
-
-  return [
-    "cât",
-    "cat",
-    "câți",
-    "cati",
-    "câte",
-    "cate",
-    "lei",
-    "bani",
-    "rămân",
-    "raman",
-    "calculează",
-    "calculeaza",
-    "total",
-    "sumă",
-    "suma",
-    "difference",
-    "remaining",
-    "calculate",
-    "money"
-  ].some(word => value.includes(word));
 }
 
 function asksForMultipleAnswers(text) {
@@ -116,6 +68,40 @@ function asksForMultipleAnswers(text) {
   ].some(fragment => value.includes(fragment));
 }
 
+function looksLikeCalculationQuestion(text) {
+  const value = String(text || "").toLowerCase();
+
+  return [
+    "cât",
+    "cat",
+    "câți",
+    "cati",
+    "câte",
+    "cate",
+    "lei",
+    "bani",
+    "rămân",
+    "raman",
+    "calculează",
+    "calculeaza",
+    "total",
+    "sumă",
+    "suma",
+    "remaining",
+    "calculate"
+  ].some(word => value.includes(word));
+}
+
+function looksLikeBrokenSequenceQuestion(text) {
+  const value = String(text || "").toLowerCase();
+
+  if (/(până|pana)\s+la\s+____/.test(value)) return true;
+  if (/de\s+la\s+.+(până|pana)\s+la\s+____/.test(value)) return true;
+  if (/din\s+\d+\s+(în|in)\s+\d+.+____/.test(value)) return true;
+
+  return false;
+}
+
 function hasBadOptionShape(option) {
   const value = normalizeString(option);
 
@@ -130,34 +116,27 @@ function hasBadOptionShape(option) {
   return false;
 }
 
-function validateSelfContainedFillBlank(challenge, index) {
-  const prompt = challenge.prompt;
-  const combinedVisibleText = `${challenge.prompt} ${challenge.sourceSnippet} ${challenge.explanation}`;
+function validateFillBlank(challenge, index) {
+  challenge.prompt = enforceSingleBlank(challenge.prompt);
 
-  if (looksLikeCalculationQuestion(prompt)) {
-    const visibleNumbersInPrompt = countNumbers(prompt);
+  if (!challenge.prompt.includes("____")) {
+    throw new Error(`Fill blank ${index + 1} must contain ____.`);
+  }
 
-    if (visibleNumbersInPrompt < 2) {
-      throw new Error(
-        `Fill blank ${index + 1} is not self-contained: calculation question lacks visible numbers.`
-      );
-    }
+  if (!challenge.correctAnswer) {
+    throw new Error(`Fill blank ${index + 1} needs correctAnswer.`);
+  }
+
+  if (looksLikeBrokenSequenceQuestion(challenge.prompt)) {
+    throw new Error(`Fill blank ${index + 1} is an incomplete sequence question.`);
+  }
+
+  if (looksLikeCalculationQuestion(challenge.prompt) && countNumbers(challenge.prompt) < 2) {
+    throw new Error(`Fill blank ${index + 1} is not self-contained.`);
   }
 
   if (!challenge.sourceSnippet || challenge.sourceSnippet.length < 12) {
-    throw new Error(`Fill blank ${index + 1} needs a useful sourceSnippet.`);
-  }
-
-  if (
-    challenge.correctAnswer &&
-    !combinedVisibleText
-      .toLowerCase()
-      .includes(challenge.correctAnswer.toLowerCase().split(" ")[0])
-  ) {
-    // Nu respingem agresiv toate cazurile, dar măcar prindem răspunsurile complet izolate.
-    if (challenge.correctAnswer.length <= 25 && !looksLikeCalculationQuestion(prompt)) {
-      throw new Error(`Fill blank ${index + 1} answer is not grounded in prompt/snippet.`);
-    }
+    throw new Error(`Fill blank ${index + 1} needs useful sourceSnippet.`);
   }
 }
 
@@ -217,9 +196,7 @@ function normalizeChallenge(raw, index) {
 
   if (type === "multiple_choice") {
     if (asksForMultipleAnswers(challenge.prompt)) {
-      throw new Error(
-        `Multiple choice ${index + 1} asks for multiple answers. Use multiple_select.`
-      );
+      throw new Error(`Multiple choice ${index + 1} asks for multiple answers.`);
     }
 
     challenge.options = challenge.options.filter(option => !hasBadOptionShape(option));
@@ -244,22 +221,13 @@ function normalizeChallenge(raw, index) {
   }
 
   if (type === "fill_blank") {
-    if (!challenge.correctAnswer) {
-      throw new Error(`Fill blank ${index + 1} needs correctAnswer.`);
-    }
-
-    challenge.prompt = addBlankToPrompt(challenge.prompt, challenge.correctAnswer);
-
-    if (!challenge.prompt.includes("____")) {
-      throw new Error(`Fill blank ${index + 1} must contain ____.`);
-    }
+    validateFillBlank(challenge, index);
 
     if (!challenge.acceptedAnswers.includes(challenge.correctAnswer)) {
       challenge.acceptedAnswers.unshift(challenge.correctAnswer);
     }
 
     challenge.options = [];
-    validateSelfContainedFillBlank(challenge, index);
   }
 
   if (type === "order_steps") {
@@ -317,12 +285,7 @@ function normalizeChallenge(raw, index) {
 
   if (type === "multiple_select") {
     if (!asksForMultipleAnswers(challenge.prompt)) {
-      const romanian = "Selectează TOATE variantele corecte:";
-      const english = "Select ALL that apply:";
-
-      challenge.prompt =
-        `${romanian} ${challenge.prompt}`.slice(0, 170) ||
-        `${english} ${challenge.prompt}`.slice(0, 170);
+      challenge.prompt = `Selectează TOATE variantele corecte: ${challenge.prompt}`.slice(0, 170);
     }
 
     challenge.options = challenge.options.filter(option => !hasBadOptionShape(option));
@@ -395,6 +358,7 @@ export function normalizeLearningPack(rawPack) {
   return {
     title: normalizeString(rawPack.title) || "ExamForge Arena",
     summary: normalizeString(rawPack.summary) || "AI-generated learning challenges.",
+    category: normalizeString(rawPack.category) || "Other",
     concepts: normalizeConcepts(rawPack.concepts),
     challenges
   };

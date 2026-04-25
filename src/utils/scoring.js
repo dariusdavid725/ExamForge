@@ -21,7 +21,6 @@ function exactSetEquals(a, b) {
   return true;
 }
 
-// Returns { correct, partial, ratio }
 export function evaluateAnswer(challenge, selectedAnswer) {
   if (!challenge) {
     return {
@@ -51,9 +50,7 @@ export function evaluateAnswer(challenge, selectedAnswer) {
       ...(challenge.acceptedAnswers || [])
     ];
 
-    const ok = accepted.some(answer => {
-      return answersEquivalent(answer, selectedAnswer);
-    });
+    const ok = accepted.some(answer => answersEquivalent(answer, selectedAnswer));
 
     return {
       correct: ok,
@@ -158,9 +155,6 @@ export function evaluateAnswer(challenge, selectedAnswer) {
       }
     }
 
-    // Punctaj parțial:
-    // +1 pentru fiecare corect bifat
-    // -0.5 pentru fiecare opțiune greșită bifată
     const rawRatio = (hits - wrong * 0.5) / correctSet.size;
     const ratio = Math.max(0, Math.min(1, rawRatio));
 
