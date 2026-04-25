@@ -28,16 +28,21 @@ export async function showHistoryDetailModal(sessionId, supabase) {
   overlay.className = "ef-history-overlay";
 
   overlay.innerHTML = `
-    <div class="ef-history-modal">
-      <div class="ef-history-header">
+    <div class="ef-history-modal card">
+      <div class="row" style="justify-content:space-between; align-items:flex-start;">
         <div>
           <p class="eyebrow">Match details</p>
-          <h2>${escapeHTML(session.title || "Quiz")}</h2>
-          <p class="muted">
+
+          <h2 style="margin-top:14px;">
+            ${escapeHTML(session.title || "Quiz")}
+          </h2>
+
+          <p class="muted" style="margin-top:8px;">
             ${escapeHTML(session.category || "Quiz")}
             · ${session.player_count || 0} players
             · ${formatDateTime(session.played_at)}
           </p>
+
           <p class="muted">
             Document: ${escapeHTML(session.document_name || "document")}
           </p>
@@ -48,20 +53,22 @@ export async function showHistoryDetailModal(sessionId, supabase) {
         </button>
       </div>
 
-      <div class="ef-history-stats">
-        <div class="ef-history-stat">
-          <strong>${session.challenge_count || challenges.length || 0}</strong>
-          <span>Challenges</span>
+      <div class="dash-stats-row" style="margin-top:22px;">
+        <div class="dash-stat">
+          <div class="dash-stat-val">${session.challenge_count || challenges.length || 0}</div>
+          <div class="dash-stat-label">Challenges</div>
         </div>
 
-        <div class="ef-history-stat">
-          <strong>${session.player_count || sortedResults.length || 0}</strong>
-          <span>Players</span>
+        <div class="dash-stat">
+          <div class="dash-stat-val">${session.player_count || sortedResults.length || 0}</div>
+          <div class="dash-stat-label">Players</div>
         </div>
 
-        <div class="ef-history-stat">
-          <strong>${escapeHTML(session.room_code || "-")}</strong>
-          <span>Room code</span>
+        <div class="dash-stat">
+          <div class="dash-stat-val" style="font-size:20px;">
+            ${escapeHTML(session.room_code || "-")}
+          </div>
+          <div class="dash-stat-label">Room code</div>
         </div>
       </div>
 
@@ -98,7 +105,7 @@ export async function showHistoryDetailModal(sessionId, supabase) {
 
               <div class="row" style="margin-top:12px;">
                 <button id="copyDocumentBtn" class="btn btn-secondary" type="button">
-                  Copy document text
+                  Copy text
                 </button>
 
                 <button id="downloadDocumentBtn" class="btn" type="button">
@@ -177,19 +184,22 @@ function renderResults(results) {
   return results
     .map(result => {
       return `
-        <div class="ef-history-row">
-          <span class="rank">#${result.rank}</span>
+        <div class="dash-session-row" style="cursor:default;">
+          <div class="row" style="gap:12px; min-width:0;">
+            <span class="rank">#${result.rank}</span>
 
-          <div>
-            <strong>${escapeHTML(result.player_name || "Player")}</strong>
-            <p class="muted">
-              ${result.correct_count || 0}/${result.total_answered || 0} correct
-              ${
-                Array.isArray(result.weak_concepts) && result.weak_concepts.length
-                  ? `· Weak: ${escapeHTML(result.weak_concepts.join(", "))}`
-                  : ""
-              }
-            </p>
+            <div style="min-width:0;">
+              <strong>${escapeHTML(result.player_name || "Player")}</strong>
+
+              <p class="muted">
+                ${result.correct_count || 0}/${result.total_answered || 0} correct
+                ${
+                  Array.isArray(result.weak_concepts) && result.weak_concepts.length
+                    ? `· Weak: ${escapeHTML(result.weak_concepts.join(", "))}`
+                    : ""
+                }
+              </p>
+            </div>
           </div>
 
           <strong>${result.score || 0} pts</strong>
@@ -418,45 +428,10 @@ function injectHistoryDetailStyles() {
 
     .ef-history-modal {
       max-width: 1050px;
+      width: min(1050px, calc(100vw - 56px));
       margin: 0 auto;
-      background: var(--surface, #fff);
-      color: var(--text, #111);
-      border: 3px solid var(--text, #111);
-      border-radius: 22px;
-      box-shadow: 10px 10px 0 var(--text, #111);
-      padding: 28px;
-    }
-
-    .ef-history-header {
-      display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
-      gap: 18px;
-    }
-
-    .ef-history-stats {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 12px;
-      margin-top: 20px;
-    }
-
-    .ef-history-stat {
-      border: 2px solid var(--text, #111);
-      border-radius: 16px;
-      padding: 16px;
-      background: #fff;
-      display: grid;
-      gap: 4px;
-    }
-
-    .ef-history-stat strong {
-      font-size: 1.4rem;
-    }
-
-    .ef-history-stat span {
-      color: var(--muted, #666);
-      font-size: 0.92rem;
+      max-height: calc(100vh - 56px);
+      overflow: auto;
     }
 
     .ef-history-section {
@@ -469,22 +444,12 @@ function injectHistoryDetailStyles() {
       margin-top: 12px;
     }
 
-    .ef-history-row {
-      display: grid;
-      grid-template-columns: auto 1fr auto;
-      align-items: center;
-      gap: 14px;
-      border: 2px solid var(--text, #111);
-      border-radius: 16px;
-      padding: 14px;
-      background: #fff;
-    }
-
     .ef-history-details-card {
-      border: 2px solid var(--text, #111);
-      border-radius: 16px;
+      border: 3px solid var(--text, #111);
+      border-radius: 14px;
       padding: 14px;
-      background: #fff;
+      background: var(--paper, #fffaf0);
+      box-shadow: 4px 4px 0 var(--text, #111);
     }
 
     .ef-history-details-card summary {
@@ -492,6 +457,7 @@ function injectHistoryDetailStyles() {
       display: flex;
       justify-content: space-between;
       gap: 16px;
+      font-weight: 900;
     }
 
     .ef-history-detail-body {
@@ -505,19 +471,20 @@ function injectHistoryDetailStyles() {
       max-height: 260px;
       overflow: auto;
       white-space: pre-wrap;
-      border: 2px solid var(--text, #111);
-      border-radius: 16px;
+      border: 3px solid var(--text, #111);
+      border-radius: 14px;
       padding: 14px;
-      background: #f8f8f8;
+      background: white;
       font-size: 0.92rem;
       line-height: 1.5;
+      font-weight: 700;
     }
 
     .ef-answer-review {
-      border: 2px solid var(--text, #111);
+      border: 3px solid var(--text, #111);
       border-radius: 14px;
       padding: 12px;
-      background: #fff;
+      background: white;
       display: grid;
       gap: 6px;
     }
@@ -539,12 +506,9 @@ function injectHistoryDetailStyles() {
         padding: 14px;
       }
 
-      .ef-history-header {
-        flex-direction: column;
-      }
-
-      .ef-history-stats {
-        grid-template-columns: 1fr;
+      .ef-history-modal {
+        width: calc(100vw - 28px);
+        max-height: calc(100vh - 28px);
       }
     }
   `;

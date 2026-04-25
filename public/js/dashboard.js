@@ -115,14 +115,14 @@ async function updateStatsForLoggedPlayers(sb, results, hostId, hostProfile) {
         userProfile = data;
       }
 
-      await updateStreak(sb, userId, userProfile, stats.score);
+      await updateStreakAndStats(sb, userId, userProfile, stats.score);
     } catch (error) {
       console.error("Could not update stats for", userId, error);
     }
   }
 }
 
-async function updateStreak(sb, userId, profile, addedPoints = 0) {
+async function updateStreakAndStats(sb, userId, profile, addedPoints = 0) {
   const today = new Date().toISOString().split("T")[0];
   const yesterday = new Date(Date.now() - 86400000).toISOString().split("T")[0];
 
@@ -159,66 +159,64 @@ export async function renderDashboard(
   const sb = await getSupabase();
 
   const sessions = await getSessionsForUser(sb, user.id, 5);
-
-  const { data: friendships } = await sb
-    .from("friendships")
-    .select("requester_id, addressee_id, status")
-    .or(`requester_id.eq.${user.id},addressee_id.eq.${user.id}`)
-    .eq("status", "accepted");
-
-  const friendIds = (friendships || []).map(friendship =>
-    friendship.requester_id === user.id
-      ? friendship.addressee_id
-      : friendship.requester_id
-  );
-
-  friendIds.push(user.id);
-
-  const { data: friendProfiles } = await sb
-    .from("profiles")
-    .select("*")
-    .in("id", friendIds);
+  const friendProfiles = await getFriendProfiles(sb, user.id);
 
   const streak = profile?.streak_count || 0;
   const maxStreak = profile?.max_streak || 0;
   const totalQuizzes = profile?.total_quizzes || 0;
+  const totalPoints = profile?.total_points || 0;
   const avatarLetter = (profile?.username || user.email || "U")[0].toUpperCase();
   const avatarColor = profile?.avatar_color || "#4f46e5";
 
   container.innerHTML = `
     <div class="dashboard-grid">
-      <div class="card profile-card">
-        <div class="profile-avatar" style="background:${avatarColor}">
-          ${escapeHTML(avatarLetter)}
+      <div class="card dash-profile-card">
+        <div class="row" style="align-items:center; gap:16px;">
+          <div class="dash-avatar" style="background:${avatarColor};">
+            ${escapeHTML(avatarLetter)}
+          </div>
+
+          <div>
+            <h2>${escapeHTML(profile?.username || "Player")}</h2>
+            <p class="muted">${escapeHTML(user.email || "")}</p>
+          </div>
         </div>
 
-        <h2>${escapeHTML(profile?.username || "Player")}</h2>
-        <p class="muted">${escapeHTML(user.email || "")}</p>
+        <div class="dash-stats-row" style="margin-top:22px;">
+          <div class="dash-stat">
+            <div class="dash-stat-val">${streak}</div>
+            <div class="dash-stat-label">Day streak</div>
+          </div>
 
-        <button id="logoutBtn" class="btn btn-secondary" type="button">
+          <div class="dash-stat">
+            <div class="dash-stat-val">${maxStreak}</div>
+            <div class="dash-stat-label">Best streak</div>
+          </div>
+
+          <div class="dash-stat">
+            <div class="dash-stat-val">${totalQuizzes}</div>
+            <div class="dash-stat-label">Quizzes</div>
+          </div>
+        </div>
+
+        <p class="muted" style="margin-top:14px;">
+          Total points: ${totalPoints}
+        </p>
+
+        <button
+          id="logoutBtn"
+          class="btn btn-secondary"
+          type="button"
+          style="margin-top:18px;"
+        >
           Logout
         </button>
       </div>
 
-      <div class="stat-card">
-        <strong>${streak}</strong>
-        <span>Day streak</span>
-      </div>
-
-      <div class="stat-card">
-        <strong>${maxStreak}</strong>
-        <span>Best streak</span>
-      </div>
-
-      <div class="stat-card">
-        <strong>${totalQuizzes}</strong>
-        <span>Quizzes played</span>
-      </div>
-
-      <div class="card wide-card">
+      <div class="card">
         <h2>Quick start</h2>
 
-        <div class="row" style="margin-top:16px;">
+        <div class="row" style="margin-top:18px;">
           <button id="dashCreateBtn" class="btn" type="button">
             ⚡ Create Arena
           </button>
@@ -233,33 +231,14 @@ export async function renderDashboard(
         </div>
       </div>
 
-      <div class="card wide-card">
+      <div class="card">
         <h2>Recent quizzes</h2>
 
-        <div style="display:grid; gap:12px; margin-top:14px;">
+        <div style="display:grid; gap:12px; margin-top:16px;">
           ${
             sessions.length > 0
               ? sessions
-                  .map(session => {
-                    return `
-                      <button
-                        class="dash-session-row"
-                        data-session-id="${session.id}"
-                        type="button"
-                      >
-                        <div>
-                          <strong>${escapeHTML(session.title || "Quiz")}</strong>
-                          <p class="muted">
-                            ${escapeHTML(session.category || "")}
-                            · ${session.player_count || 0} players
-                            · ${formatDate(session.played_at)}
-                          </p>
-                        </div>
-
-                        <span>Details</span>
-                      </button>
-                    `;
-                  })
+                  .map(session => renderSessionRow(session, "Details"))
                   .join("")
               : `
                 <p class="muted">
@@ -270,8 +249,8 @@ export async function renderDashboard(
         </div>
       </div>
 
-      <div class="card wide-card">
-        <div class="row" style="justify-content:space-between;">
+      <div class="card">
+        <div class="row" style="justify-content:space-between; align-items:center;">
           <h2>Friends leaderboard</h2>
 
           <button id="addFriendBtn" class="btn btn-secondary" type="button">
@@ -279,14 +258,21 @@ export async function renderDashboard(
           </button>
         </div>
 
-        <div style="display:grid; gap:10px; margin-top:14px;">
-          ${renderFriendsLb(friendProfiles || [], user.id)}
+        <div style="display:grid; gap:10px; margin-top:16px;">
+          ${renderFriendsLb(friendProfiles, user.id)}
         </div>
       </div>
 
-      <div id="pendingRequestsCard" class="card wide-card" style="display:none;">
+      <div
+        id="pendingRequestsCard"
+        class="card"
+        style="display:none;"
+      >
         <h2>Friend requests</h2>
-        <div id="pendingRequestsList" style="display:grid; gap:10px; margin-top:14px;"></div>
+        <div
+          id="pendingRequestsList"
+          style="display:grid; gap:10px; margin-top:16px;"
+        ></div>
       </div>
     </div>
   `;
@@ -336,58 +322,68 @@ export async function renderHistoryPage(container, user) {
   }
 
   container.innerHTML = `
-    <div style="display:grid; gap:14px;">
-      ${sessions
-        .map(session => {
-          const myResult = (session.game_results || []).find(result => {
-            return result.user_id === user.id;
-          });
+    <div class="card">
+      <h2>My History</h2>
+      <p class="muted" style="margin-top:8px;">
+        Quizzes you hosted or participated in.
+      </p>
 
-          return `
-            <button
-              class="dash-session-row"
-              data-history-session-id="${session.id}"
-              type="button"
-            >
-              <div>
-                <strong>${escapeHTML(session.title || "Quiz")}</strong>
-                <p class="muted">
-                  ${escapeHTML(session.category || "Quiz")}
-                  · ${session.player_count || 0} players
-                  · ${formatDate(session.played_at)}
-                </p>
+      <div style="display:grid; gap:12px; margin-top:18px;">
+        ${sessions
+          .map(session => {
+            const myResult = (session.game_results || []).find(result => {
+              return result.user_id === user.id;
+            });
 
-                ${
-                  myResult
-                    ? `
-                      <p class="muted">
-                        Your result: #${myResult.rank}
-                        · ${myResult.score} pts
-                        · ${myResult.correct_count}/${myResult.total_answered} correct
-                      </p>
-                    `
-                    : `
-                      <p class="muted">
-                        Hosted by you
-                      </p>
-                    `
-                }
-              </div>
+            const subtitle = myResult
+              ? `Your result: #${myResult.rank} · ${myResult.score} pts · ${myResult.correct_count}/${myResult.total_answered} correct`
+              : `Hosted by you · ${session.player_count || 0} players`;
 
-              <span>Details</span>
-            </button>
-          `;
-        })
-        .join("")}
+            return renderSessionRow(session, "Details", subtitle);
+          })
+          .join("")}
+      </div>
     </div>
   `;
 
-  container.querySelectorAll("[data-history-session-id]").forEach(button => {
+  container.querySelectorAll("[data-session-id]").forEach(button => {
     button.addEventListener("click", () => {
-      showHistoryDetailModal(button.dataset.historySessionId, sb);
+      showHistoryDetailModal(button.dataset.sessionId, sb);
     });
   });
 }
+
+function renderSessionRow(session, actionText = "Details", extraLine = "") {
+  return `
+    <button
+      class="dash-session-row"
+      data-session-id="${session.id}"
+      type="button"
+    >
+      <div style="text-align:left; min-width:0;">
+        <strong>${escapeHTML(session.title || "Quiz")}</strong>
+
+        <p class="muted">
+          ${escapeHTML(session.category || "Quiz")}
+          · ${session.player_count || 0} players
+          · ${formatDate(session.played_at)}
+        </p>
+
+        ${
+          extraLine
+            ? `<p class="muted">${escapeHTML(extraLine)}</p>`
+            : ""
+        }
+      </div>
+
+      <span style="font-weight:900; flex-shrink:0;">
+        ${escapeHTML(actionText)}
+      </span>
+    </button>
+  `;
+}
+
+// ─── Data helpers ─────────────────────────────────────────────────────────────
 
 async function getSessionsForUser(sb, userId, limit = 5) {
   const { data: hostedSessions } = await sb
@@ -434,6 +430,33 @@ async function getSessionsForUser(sb, userId, limit = 5) {
     .slice(0, limit);
 }
 
+async function getFriendProfiles(sb, userId) {
+  const { data: friendships } = await sb
+    .from("friendships")
+    .select("requester_id, addressee_id, status")
+    .or(`requester_id.eq.${userId},addressee_id.eq.${userId}`)
+    .eq("status", "accepted");
+
+  const friendIds = (friendships || []).map(friendship =>
+    friendship.requester_id === userId
+      ? friendship.addressee_id
+      : friendship.requester_id
+  );
+
+  friendIds.push(userId);
+
+  const uniqueFriendIds = [...new Set(friendIds)];
+
+  if (uniqueFriendIds.length === 0) return [];
+
+  const { data: profiles } = await sb
+    .from("profiles")
+    .select("*")
+    .in("id", uniqueFriendIds);
+
+  return profiles || [];
+}
+
 // ─── Friends ──────────────────────────────────────────────────────────────────
 
 function renderFriendsLb(profiles, currentUserId) {
@@ -464,23 +487,31 @@ function renderFriendsLb(profiles, currentUserId) {
         (profile.total_quizzes || 0) * 50 +
         (profile.streak_count || 0) * 10;
 
+      const letter = (profile.username || "U")[0].toUpperCase();
+      const color = profile.avatar_color || "#4f46e5";
+
       return `
-        <div class="friend-row">
-          <span class="rank">${index + 1}</span>
+        <div class="dash-session-row" style="cursor:default;">
+          <div class="row" style="gap:12px; min-width:0;">
+            <span class="rank">${index + 1}</span>
 
-          <div class="mini-avatar">
-            ${escapeHTML((profile.username || "U")[0].toUpperCase())}
-          </div>
+            <div
+              class="dash-avatar-sm"
+              style="background:${color};"
+            >
+              ${escapeHTML(letter)}
+            </div>
 
-          <div>
-            <strong>
-              ${escapeHTML(profile.username || "Player")}
-              ${profile.id === currentUserId ? " (you)" : ""}
-            </strong>
+            <div style="min-width:0;">
+              <strong>
+                ${escapeHTML(profile.username || "Player")}
+                ${profile.id === currentUserId ? " (you)" : ""}
+              </strong>
 
-            <p class="muted">
-              ${profile.total_quizzes || 0} quizzes · ${profile.streak_count || 0} streak
-            </p>
+              <p class="muted">
+                ${profile.total_quizzes || 0} quizzes · ${profile.streak_count || 0} streak
+              </p>
+            </div>
           </div>
 
           <strong>${rating}</strong>
@@ -509,7 +540,7 @@ async function loadPendingRequests(sb, userId, container) {
   list.innerHTML = requests
     .map(request => {
       return `
-        <div class="friend-row">
+        <div class="dash-session-row" style="cursor:default;">
           <strong>${escapeHTML(request.profiles?.username || "Unknown")}</strong>
 
           <div class="row">
