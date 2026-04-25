@@ -17,19 +17,22 @@ const LB_DURATION     = 5;
 // ─── Auth initialization ──────────────────────────────────────────────────────
 
 async function initApp() {
-  const session = await getSession();
+  // Show auth screen immediately while loading
+  showScreen(dom.screens.auth, false);
+  setupAuthListeners();
 
-  if (!session) {
-    showScreen(dom.screens.auth, false);
-    setupAuthListeners();
-    return;
+  try {
+    const session = await getSession();
+    if (!session) return; // already showing auth
+
+    state.currentUser  = session.user;
+    state.userProfile  = await getProfile(session.user.id);
+    setupHeader();
+    await showDashboard();
+  } catch (err) {
+    console.error("initApp error:", err);
+    // Stay on auth screen — user can still log in
   }
-
-  state.currentUser   = session.user;
-  state.userProfile   = await getProfile(session.user.id);
-
-  setupHeader();
-  await showDashboard();
 }
 
 function setupHeader() {

@@ -6,6 +6,10 @@ export async function getSupabase() {
   const res    = await fetch("/api/config");
   const config = await res.json();
 
+  if (!config.supabaseUrl || !config.supabaseAnonKey) {
+    throw new Error("Supabase config missing — add SUPABASE_ANON_KEY to environment variables.");
+  }
+
   const { createClient } = window.supabase;
   _client = createClient(config.supabaseUrl, config.supabaseAnonKey);
   return _client;
