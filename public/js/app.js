@@ -7,14 +7,15 @@ import {
   renderChallenge,
   renderPlayerList,
   renderConceptPills,
-  renderAnswerFeedback,
+  renderLockedState,
   renderResultPhase,
   renderMiniLeaderboard,
+  renderAnswerFeedback,
   renderPodium,
   renderRecoveryLesson
 } from "./renderer.js";
 
-// Must match backend constants
+// Must match backend constants exactly
 const QUESTION_TIME   = 20;
 const RESULT_DURATION = 3;
 const LB_DURATION     = 5;
@@ -34,9 +35,7 @@ function saveSession() {
   }));
 }
 
-function clearSession() {
-  sessionStorage.removeItem("ef_session");
-}
+function clearSession() { sessionStorage.removeItem("ef_session"); }
 
 async function restoreSession() {
   const raw = sessionStorage.getItem("ef_session");
@@ -60,35 +59,26 @@ async function restoreSession() {
     const { response, data } = await api.fetchRoom(state.currentRoomCode);
     if (!response.ok) { clearSession(); return; }
 
-    if (data.status === "lobby") {
-      await showLobby(); startLobbyPolling(); return;
-    }
+    if (data.status === "lobby") { await showLobby(); startLobbyPolling(); return; }
 
     if (data.status === "started" || data.status === "finished") {
       const { response: pr, data: pd } = await api.fetchPack(state.currentRoomCode);
       if (!pr.ok) { clearSession(); return; }
-
-      state.currentPack   = pd.pack;
-      state.questionTime  = pd.questionTime || 20;
-      if (pd.startedAt) state.startedAt  = pd.startedAt;
+      state.currentPack  = pd.pack;
+      state.questionTime = pd.questionTime || 20;
+      if (pd.startedAt) state.startedAt   = pd.startedAt;
       if (pd.endsAt)    state.arenaEndsAt = pd.endsAt;
 
-      if (data.status === "finished") {
-        await showLeaderboard();
-      } else {
-        dom.playerNameText.textContent = state.currentPlayerName || "Player";
-        showScreen(dom.screens.challenge);
-        startSyncedLoop();
-      }
+      if (data.status === "finished") { await showLeaderboard(); }
+      else { dom.playerNameText.textContent = state.currentPlayerName || "Player"; showScreen(dom.screens.challenge); startSyncedLoop(); }
     }
   } catch { clearSession(); }
 }
 
 // ─── Synced game loop ─────────────────────────────────────────────────────────
 
-function getArenaPhase() {
+function getTimedPhase() {
   if (!state.startedAt || !state.currentPack) return { phase: "waiting" };
-
   const elapsed     = Date.now() - state.startedAt;
   const total       = state.currentPack.challenges.length;
   const cycleMs     = (QUESTION_TIME + RESULT_DURATION + LB_DURATION) * 1000;
@@ -98,26 +88,28 @@ function getArenaPhase() {
   if (cycleIndex >= total) return { phase: "done" };
 
   if (timeInCycle < QUESTION_TIME * 1000) {
-    return {
-      phase: "question",
-      challengeIndex: cycleIndex,
-      timeLeft: Math.max(0, Math.ceil((QUESTION_TIME * 1000 - timeInCycle) / 1000))
-    };
+    return { phase: "question", challengeIndex: cycleIndex,
+      timeLeft: Math.max(0, Math.ceil((QUESTION_TIME * 1000 - timeInCycle) / 1000)) };
   }
-
   if (timeInCycle < (QUESTION_TIME + RESULT_DURATION) * 1000) {
-    return {
-      phase: "result",
-      challengeIndex: cycleIndex,
-      timeLeft: Math.max(0, Math.ceil(((QUESTION_TIME + RESULT_DURATION) * 1000 - timeInCycle) / 1000))
-    };
+    return { phase: "result", challengeIndex: cycleIndex,
+      timeLeft: Math.max(0, Math.ceil(((QUESTION_TIME + RESULT_DURATION) * 1000 - timeInCycle) / 1000)) };
   }
+  return { phase: "leaderboard", challengeIndex: cycleIndex,
+    timeLeft: Math.max(0, Math.ceil((cycleMs - timeInCycle) / 1000)) };
+}
 
-  return {
-    phase: "leaderboard",
-    challengeIndex: cycleIndex,
-    timeLeft: Math.max(0, Math.ceil((cycleMs - timeInCycle) / 1000))
-  };
+function getArenaPhase() {
+  const timed = getTimedPhase();
+  // Early result: all players answered before timer, override question → result
+  if (timed.phase === "question" && state.earlyResult) {
+    return { ...timed, phase: "result", timeLeft: RESULT_DURATION };
+  }
+  // Reset early flag when a new question starts
+  if (timed.phase === "question" && state.currentChallengeIndex !== timed.challengeIndex) {
+    state.earlyResult = false;
+  }
+  return timed;
 }
 
 function startSyncedLoop() {
@@ -131,82 +123,88 @@ function startSyncedLoop() {
 
     if (arena.phase === "done") {
       clearInterval(state.syncLoop); state.syncLoop = null;
-      await showLeaderboard();
-      return;
+      await showLeaderboard(); return;
     }
 
     const phaseChanged     = arena.phase !== trackedPhase;
     const challengeChanged = arena.challengeIndex !== trackedChallenge;
 
-    // ── QUESTION phase ────────────────────────────────────────────────────────
+    // ── QUESTION ────────────────────────────────────────────────────────────
     if (arena.phase === "question") {
       if (phaseChanged || challengeChanged) {
-        trackedPhase     = "question";
-        trackedChallenge = arena.challengeIndex;
-
-        state.currentChallengeIndex       = arena.challengeIndex;
-        state.answeredCurrentChallenge    = false;
-        state.lastSubmitResult            = null;
-        state.cachedLeaderboard           = null;
-
+        trackedPhase = "question"; trackedChallenge = arena.challengeIndex;
+        state.currentChallengeIndex    = arena.challengeIndex;
+        state.answeredCurrentChallenge = false;
+        state.lastSubmitResult         = null;
+        state.cachedLeaderboard        = null;
+        state.earlyResult              = false;
+        state.lastPollTime             = 0;
         saveSession();
 
-        const progress = Math.round((arena.challengeIndex / state.currentPack.challenges.length) * 100);
-        dom.progressText.textContent = `${progress}%`;
-        dom.progressBar.style.width  = `${progress}%`;
+        const pct = Math.round((arena.challengeIndex / state.currentPack.challenges.length) * 100);
+        dom.progressText.textContent = `${pct}%`;
+        dom.progressBar.style.width  = `${pct}%`;
         dom.scoreText.textContent    = state.localScore;
         dom.challengeNumberText.textContent = arena.challengeIndex + 1;
 
         renderChallenge(submitCurrentAnswer);
       }
 
-      if (!state.answeredCurrentChallenge) {
-        state.timeLeft = arena.timeLeft;
-        updateTimerUI();
+      // Timer always visible (even after answering — so everyone sees it)
+      state.timeLeft = arena.timeLeft;
+      updateTimerUI();
 
+      if (!state.answeredCurrentChallenge) {
+        // Auto-timeout
         if (arena.timeLeft <= 0) {
           state.answeredCurrentChallenge = true;
-          const challenge = state.currentPack.challenges[arena.challengeIndex];
-          if (challenge.type === "order_steps") {
-            state.selectedAnswer = [...state.currentOrderSelection];
-          } else if (!state.selectedAnswer) {
-            state.selectedAnswer = "__TIMEOUT__";
-          }
+          const ch = state.currentPack.challenges[arena.challengeIndex];
+          if (ch.type === "order_steps") state.selectedAnswer = [...state.currentOrderSelection];
+          else if (!state.selectedAnswer) state.selectedAnswer = "__TIMEOUT__";
           submitCurrentAnswer();
+        }
+      } else {
+        // Player answered — show "waiting" UI and poll for all-answered
+        const now = Date.now();
+        if (now - state.lastPollTime > 900) {
+          state.lastPollTime = now;
+          try {
+            const { response, data } = await api.fetchRoom(state.currentRoomCode);
+            if (response.ok && data.allAnsweredCurrentQuestion) {
+              state.earlyResult = true; // triggers immediate result phase
+            }
+          } catch { /* ignore */ }
         }
       }
     }
 
-    // ── RESULT phase ──────────────────────────────────────────────────────────
+    // ── RESULT (correct/wrong reveal) ────────────────────────────────────────
     if (arena.phase === "result") {
-      if (phaseChanged || challengeChanged) {
-        trackedPhase     = "result";
-        trackedChallenge = arena.challengeIndex;
-        const challenge  = state.currentPack.challenges[arena.challengeIndex];
+      if (phaseChanged || challengeChanged || (state.earlyResult && trackedPhase !== "result")) {
+        trackedPhase = "result"; trackedChallenge = arena.challengeIndex;
+        const challenge = state.currentPack.challenges[arena.challengeIndex];
         renderResultPhase(challenge, state.lastSubmitResult);
       }
     }
 
-    // ── LEADERBOARD phase ─────────────────────────────────────────────────────
+    // ── LEADERBOARD (mini rankings) ──────────────────────────────────────────
     if (arena.phase === "leaderboard") {
       if (phaseChanged || challengeChanged) {
-        trackedPhase     = "leaderboard";
-        trackedChallenge = arena.challengeIndex;
+        trackedPhase = "leaderboard"; trackedChallenge = arena.challengeIndex;
+        state.earlyResult = false;
 
-        // Fetch leaderboard once per cycle
         if (!state.cachedLeaderboard) {
           try {
             const { response, data } = await api.fetchLeaderboard(state.currentRoomCode);
             if (response.ok) state.cachedLeaderboard = data;
           } catch { /* ignore */ }
         }
-
         const isLast = arena.challengeIndex >= state.currentPack.challenges.length - 1;
         renderMiniLeaderboard(state.cachedLeaderboard, state.currentPack, isLast);
       }
 
       // Update countdown
-      const lbEl = window.lbCountdownText;
+      const lbEl = document.getElementById("lbCountdown");
       if (lbEl) lbEl.textContent = `Next in ${arena.timeLeft}s`;
     }
   }, 200);
@@ -215,50 +213,36 @@ function startSyncedLoop() {
 // ─── Answer submission ────────────────────────────────────────────────────────
 
 function hasValidAnswer(challenge) {
-  if (challenge.type === "order_steps") {
+  if (challenge.type === "order_steps")
     return Array.isArray(state.selectedAnswer) && state.selectedAnswer.length > 0;
-  }
   return state.selectedAnswer !== null && state.selectedAnswer !== "";
 }
 
 async function submitCurrentAnswer() {
   const challenge = state.currentPack.challenges[state.currentChallengeIndex];
-
-  if (challenge.type === "order_steps") {
-    state.selectedAnswer = [...state.currentOrderSelection];
-  }
-
+  if (challenge.type === "order_steps") state.selectedAnswer = [...state.currentOrderSelection];
   if (!hasValidAnswer(challenge)) return;
   if (state.answeredCurrentChallenge) return;
 
   state.answeredCurrentChallenge = true;
-  dom.submitAnswerBtn.disabled = true;
+  dom.submitAnswerBtn.disabled   = true;
+
+  // ⚠️ Kahoot style: show ONLY "locked" — no correct/wrong yet
+  renderLockedState();
 
   try {
     const { response, data } = await api.submitAnswer(
-      state.currentRoomCode,
-      state.currentPlayerId,
-      state.currentChallengeIndex,
-      state.selectedAnswer,
-      state.timeLeft
+      state.currentRoomCode, state.currentPlayerId,
+      state.currentChallengeIndex, state.selectedAnswer, state.timeLeft
     );
-
     if (!response.ok) throw new Error(data.error || "Could not submit answer.");
-
     state.localScore       = data.score;
     state.lastSubmitResult = data;
     dom.scoreText.textContent = state.localScore;
-
-    // Show inline feedback (correct/wrong) — loop will transition to result phase
-    renderAnswerFeedback(data, false);
-    dom.nextChallengeBtn.classList.add("hidden");
   } catch (error) {
     state.answeredCurrentChallenge = false;
     dom.submitAnswerBtn.disabled   = false;
     console.error(error);
-    dom.feedbackTitle.textContent  = "Eroare la trimitere";
-    dom.explanationText.textContent = error.message || "Încearcă din nou.";
-    dom.feedbackBox.classList.remove("hidden");
   }
 }
 
@@ -270,12 +254,7 @@ async function loadPackAndStart() {
   if (state.lobbyPoll) clearInterval(state.lobbyPoll);
 
   const { response, data } = await api.fetchPack(state.currentRoomCode);
-
-  if (!response.ok) {
-    dom.lobbyStatusText.textContent = data.error || "Pack not available.";
-    state.packLoading = false;
-    return;
-  }
+  if (!response.ok) { dom.lobbyStatusText.textContent = data.error || "Pack not available."; state.packLoading = false; return; }
 
   state.currentPack  = data.pack;
   state.startedAt    = data.startedAt;
@@ -289,36 +268,28 @@ async function loadPackAndStart() {
   startSyncedLoop();
 }
 
-// ─── Screens ──────────────────────────────────────────────────────────────────
+// ─── Screens ─────────────────────────────────────────────────────────────────
 
 async function showLobby() {
   showScreen(dom.screens.lobby);
   dom.roomCodeText.textContent = state.currentRoomCode;
-
-  const joinLink = `${window.location.origin}${window.location.pathname}?room=${state.currentRoomCode}`;
-  dom.joinLinkText.textContent = joinLink;
-  QRCode.toCanvas(dom.qrCanvas, joinLink, { width: 190, margin: 1 });
-
+  const link = `${window.location.origin}${window.location.pathname}?room=${state.currentRoomCode}`;
+  dom.joinLinkText.textContent = link;
+  QRCode.toCanvas(dom.qrCanvas, link, { width: 190, margin: 1 });
   dom.startArenaBtn.classList.toggle("hidden", !state.isHost);
   dom.lobbyStatusText.textContent = state.isHost ? "Waiting for players." : "Waiting for host to start.";
-
   await refreshRoomInfo();
 }
 
 async function refreshRoomInfo() {
   const { response, data } = await api.fetchRoom(state.currentRoomCode);
   if (!response.ok) { dom.lobbyStatusText.textContent = data.error || "Room not found."; return; }
-
   dom.roomTitleText.textContent   = data.packTitle || "Generated arena";
   dom.roomSummaryText.textContent = data.packSummary || "";
-
   renderPlayerList(data.players);
   renderConceptPills(data.concepts);
   if (data.endsAt) state.arenaEndsAt = data.endsAt;
-
-  if (data.status === "started" && !state.currentPack) {
-    await loadPackAndStart();
-  }
+  if (data.status === "started" && !state.currentPack) await loadPackAndStart();
 }
 
 function startLobbyPolling() {
@@ -327,13 +298,10 @@ function startLobbyPolling() {
 }
 
 async function showLeaderboard() {
-  if (state.syncLoop)           { clearInterval(state.syncLoop);           state.syncLoop = null; }
-  if (state.arenaEndWatcher)    { clearInterval(state.arenaEndWatcher);    state.arenaEndWatcher = null; }
-  if (state.waitingResultsTimer){ clearInterval(state.waitingResultsTimer);state.waitingResultsTimer = null; }
-
+  if (state.syncLoop)        { clearInterval(state.syncLoop);     state.syncLoop = null; }
+  if (state.arenaEndWatcher) { clearInterval(state.arenaEndWatcher); state.arenaEndWatcher = null; }
   const { response, data } = await api.fetchLeaderboard(state.currentRoomCode);
   if (!response.ok) { alert(data.error || "Could not load leaderboard."); return; }
-
   showScreen(dom.screens.leaderboard);
   renderPodium(data, state.currentPack);
 }
@@ -343,83 +311,52 @@ async function showLeaderboard() {
 async function createArena() {
   const file     = dom.fileInput.files[0];
   const hostName = dom.hostNameInput.value.trim() || "Host";
-
   if (!file) { dom.hostStatusText.textContent = "Choose a document first."; return; }
-
-  dom.createArenaBtn.disabled     = true;
-  dom.hostStatusText.textContent  = "Starting...";
-
+  dom.createArenaBtn.disabled = true; dom.hostStatusText.textContent = "Starting...";
   try {
     const formData = new FormData();
     formData.append("document", file);
     formData.append("gameMode", state.selectedGameMode);
-
     const packData = await api.generatePack(formData, msg => { dom.hostStatusText.textContent = msg; });
-
     dom.hostStatusText.textContent = "Creating arena...";
     const { response: rr, data: rd } = await api.createRoom(packData.pack);
     if (!rr.ok) throw new Error(rd.error || "Could not create room.");
-
-    state.currentRoomCode = rd.code;
-    state.isHost          = true;
-
+    state.currentRoomCode = rd.code; state.isHost = true;
     await joinRoomWithName(state.currentRoomCode, hostName);
-    await showLobby();
-    startLobbyPolling();
-  } catch (error) {
-    console.error(error);
-    dom.hostStatusText.textContent = error.message || "Something went wrong.";
-  } finally {
-    dom.createArenaBtn.disabled = false;
-  }
+    await showLobby(); startLobbyPolling();
+  } catch (e) { console.error(e); dom.hostStatusText.textContent = e.message || "Something went wrong."; }
+  finally { dom.createArenaBtn.disabled = false; }
 }
 
 async function joinArena() {
   const code = dom.joinCodeInput.value.trim().toUpperCase();
   const name = dom.joinNameInput.value.trim();
-
   if (!code || !name) { dom.joinStatusText.textContent = "Enter room code and nickname."; return; }
-
-  dom.joinArenaBtn.disabled       = true;
-  dom.joinStatusText.textContent  = "Joining room...";
-
+  dom.joinArenaBtn.disabled = true; dom.joinStatusText.textContent = "Joining...";
   try {
     state.isHost = false;
     await joinRoomWithName(code, name);
     state.currentRoomCode = code;
-    await showLobby();
-    startLobbyPolling();
-  } catch (error) {
-    console.error(error);
-    dom.joinStatusText.textContent = error.message || "Could not join room.";
-  } finally {
-    dom.joinArenaBtn.disabled = false;
-  }
+    await showLobby(); startLobbyPolling();
+  } catch (e) { console.error(e); dom.joinStatusText.textContent = e.message || "Could not join room."; }
+  finally { dom.joinArenaBtn.disabled = false; }
 }
 
 async function joinRoomWithName(code, name) {
   const { response, data } = await api.joinRoom(code, name);
   if (!response.ok) throw new Error(data.error || "Could not join room.");
-  state.currentPlayerId   = data.playerId;
-  state.currentPlayerName = name;
-  saveSession();
+  state.currentPlayerId = data.playerId; state.currentPlayerName = name; saveSession();
 }
 
 async function startArena() {
-  dom.startArenaBtn.disabled      = true;
-  dom.lobbyStatusText.textContent = "Starting...";
-
+  dom.startArenaBtn.disabled = true; dom.lobbyStatusText.textContent = "Starting...";
   try {
     const { response, data } = await api.startRoom(state.currentRoomCode);
     if (!response.ok) throw new Error(data.error || "Could not start arena.");
     state.arenaEndsAt = data.endsAt;
     await loadPackAndStart();
-  } catch (error) {
-    console.error(error);
-    dom.lobbyStatusText.textContent = error.message || "Could not start arena.";
-  } finally {
-    dom.startArenaBtn.disabled = false;
-  }
+  } catch (e) { console.error(e); dom.lobbyStatusText.textContent = e.message || "Could not start."; }
+  finally { dom.startArenaBtn.disabled = false; }
 }
 
 async function copyJoinLink() {
@@ -429,23 +366,16 @@ async function copyJoinLink() {
 }
 
 async function generateRecoveryLesson() {
-  dom.generateLessonBtn.disabled      = true;
-  dom.generateLessonBtn.textContent   = "Generating...";
-  dom.lessonBox.innerHTML             = "";
-
+  dom.generateLessonBtn.disabled = true; dom.generateLessonBtn.textContent = "Generating...";
+  dom.lessonBox.innerHTML = "";
   try {
     const { response, data } = await api.generateLesson(state.currentRoomCode, state.currentPlayerId);
     if (!response.ok) throw new Error(data.error || "Could not generate lesson.");
     renderRecoveryLesson(data.lesson);
-  } catch (error) {
-    const p = document.createElement("p");
-    p.className   = "muted";
-    p.textContent = error.message || "Could not generate lesson.";
+  } catch (e) {
+    const p = document.createElement("p"); p.className = "muted"; p.textContent = e.message || "Could not generate.";
     dom.lessonBox.appendChild(p);
-  } finally {
-    dom.generateLessonBtn.disabled    = false;
-    dom.generateLessonBtn.textContent = "Generate AI lesson";
-  }
+  } finally { dom.generateLessonBtn.disabled = false; dom.generateLessonBtn.textContent = "Generate AI lesson"; }
 }
 
 // ─── History ──────────────────────────────────────────────────────────────────
@@ -455,15 +385,12 @@ history.replaceState({ screen: "home" }, "", window.location.href);
 window.addEventListener("popstate", event => {
   const name   = event.state?.screen || "home";
   const screen = dom.screens[name] || dom.screens.home;
-
   if (state.syncLoop)        clearInterval(state.syncLoop);
   if (state.lobbyPoll)       clearInterval(state.lobbyPoll);
   if (state.arenaEndWatcher) clearInterval(state.arenaEndWatcher);
-
   showScreen(screen, false);
-
   if (name === "lobby"       && state.currentRoomCode) { startLobbyPolling(); refreshRoomInfo(); }
-  if (name === "leaderboard" && state.currentRoomCode) { showLeaderboard(); }
+  if (name === "leaderboard" && state.currentRoomCode) showLeaderboard();
 });
 
 // ─── Event listeners ─────────────────────────────────────────────────────────
@@ -471,16 +398,13 @@ window.addEventListener("popstate", event => {
 dom.dropZone.addEventListener("click",    () => dom.fileInput.click());
 dom.dropZone.addEventListener("dragover", e => e.preventDefault());
 dom.dropZone.addEventListener("dragleave",() => { dom.dropZone.style.borderColor = "var(--text)"; });
-dom.dropZone.addEventListener("drop",     e => {
-  e.preventDefault();
-  dom.dropZone.style.borderColor = "var(--text)";
-  const file = e.dataTransfer.files[0];
-  if (!file) return;
+dom.dropZone.addEventListener("drop", e => {
+  e.preventDefault(); dom.dropZone.style.borderColor = "var(--text)";
+  const file = e.dataTransfer.files[0]; if (!file) return;
   dom.fileInput.files = e.dataTransfer.files;
-  dom.fileName.textContent       = file.name;
-  dom.hostStatusText.textContent = "File selected. Ready to create AI arena.";
+  dom.fileName.textContent = file.name;
+  dom.hostStatusText.textContent = "File selected.";
 });
-
 dom.fileInput.addEventListener("change", () => {
   const file = dom.fileInput.files[0];
   if (file) { dom.fileName.textContent = file.name; dom.hostStatusText.textContent = "File selected."; }
@@ -497,19 +421,11 @@ dom.generateLessonBtn.addEventListener("click",  generateRecoveryLesson);
 document.querySelectorAll(".mode-option").forEach(btn => {
   btn.addEventListener("click", () => {
     document.querySelectorAll(".mode-option").forEach(b => b.classList.remove("selected"));
-    btn.classList.add("selected");
-    state.selectedGameMode = btn.dataset.mode;
+    btn.classList.add("selected"); state.selectedGameMode = btn.dataset.mode;
   });
 });
 
-// ─── URL param ────────────────────────────────────────────────────────────────
-
 const roomParam = new URLSearchParams(window.location.search).get("room");
-if (roomParam) {
-  dom.joinCodeInput.value        = roomParam.toUpperCase();
-  dom.joinStatusText.textContent = "Room code detected. Enter your nickname to join.";
-}
-
-// ─── Restore session ─────────────────────────────────────────────────────────
+if (roomParam) { dom.joinCodeInput.value = roomParam.toUpperCase(); dom.joinStatusText.textContent = "Room code detected. Enter your nickname to join."; }
 
 restoreSession();

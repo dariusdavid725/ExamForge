@@ -18,14 +18,12 @@ export const state = {
   answeredCurrentChallenge: false,
   lastSubmitResult: null,
   cachedLeaderboard: null,
+  earlyResult: false,          // all players answered before timer
+  lastPollTime: 0,
   syncLoop: null,
 
-  // Guard
   packLoading: false,
-
-  // Intervals
   lobbyPoll: null,
   arenaEndWatcher: null,
-  waitingResultsTimer: null,
   timer: null
 };

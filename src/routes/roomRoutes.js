@@ -8,6 +8,7 @@ import {
   updatePlayer,
   finishRoomIfAllDone
 } from "../services/roomService.js";
+import { QUESTION_TIME_SECONDS, RESULT_DURATION_SECONDS, LEADERBOARD_DURATION_SECONDS } from "../config/constants.js";
 import { normalizeLearningPack } from "../validators/packValidator.js";
 import { generateRecoveryLessonWithAI } from "../services/aiService.js";
 import { isAnswerCorrect, getCorrectAnswerDisplay, calculatePoints } from "../utils/scoring.js";
@@ -62,6 +63,22 @@ router.get("/:code", async (req, res) => {
       return res.status(404).json({ error: "Camera nu există." });
     }
 
+    // Detect if all players have answered the current question
+    let allAnsweredCurrentQuestion = false;
+    let currentChallengeIndex = 0;
+
+    if (room.status === "started" && room.started_at && room.pack?.challenges?.length) {
+      const cycleMs = (QUESTION_TIME_SECONDS + RESULT_DURATION_SECONDS + LEADERBOARD_DURATION_SECONDS) * 1000;
+      const elapsed = Date.now() - room.started_at;
+      currentChallengeIndex = Math.min(
+        Math.floor(elapsed / cycleMs),
+        room.pack.challenges.length - 1
+      );
+      allAnsweredCurrentQuestion =
+        room.players.length > 0 &&
+        room.players.every(p => p.totalAnswered > currentChallengeIndex);
+    }
+
     return res.json({
       code: room.code,
       status: room.status,
@@ -74,11 +91,14 @@ router.get("/:code", async (req, res) => {
       endsAt: room.ends_at,
       questionTime: room.question_time,
       totalChallenges: room.pack.challenges.length,
+      allAnsweredCurrentQuestion,
+      currentChallengeIndex,
       players: room.players.map(p => ({
         id: p.id,
         name: p.name,
         score: p.score,
-        finished: p.finished
+        finished: p.finished,
+        totalAnswered: p.totalAnswered
       }))
     });
   } catch (error) {

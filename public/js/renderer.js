@@ -238,6 +238,31 @@ export function renderOrderSteps(steps) {
   refreshSteps();
 }
 
+export function renderLockedState() {
+  // Kahoot style: answer is locked, NO correct/wrong revealed yet
+  // Just grey out options and show a waiting indicator
+  document.querySelectorAll(".option").forEach(btn => {
+    btn.disabled = true;
+    btn.style.opacity = btn.classList.contains("selected") ? "1" : "0.4";
+  });
+  document.querySelectorAll(".step-option, .chosen-step").forEach(btn => { btn.disabled = true; });
+  const fillInput = document.getElementById("fillBlankInput");
+  if (fillInput) fillInput.disabled = true;
+
+  dom.submitAnswerBtn.classList.add("hidden");
+  dom.feedbackBox.classList.add("hidden");
+
+  // Show "waiting" badge below the options
+  const existing = document.getElementById("waitingBadge");
+  if (!existing) {
+    const badge = document.createElement("div");
+    badge.id        = "waitingBadge";
+    badge.className = "waiting-badge";
+    badge.innerHTML = `<span class="waiting-dot"></span> Answer locked — waiting for others...`;
+    dom.answerBox.appendChild(badge);
+  }
+}
+
 export function renderResultPhase(challenge, submitResult) {
   // Clear the answer area and show full-screen result card
   dom.answerBox.innerHTML = "";
