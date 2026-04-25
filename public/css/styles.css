@@ -819,3 +819,98 @@ blockquote {
   0%, 100% { transform: scale(1); opacity: 1; }
   50%       { transform: scale(1.4); opacity: 0.6; }
 }
+
+/* ── Code & Math formatting ──────────────────────────────────────────────────── */
+
+.code-block {
+  background: #1e1e2e;
+  color: #cdd6f4;
+  border: 3px solid var(--text);
+  border-radius: 12px;
+  padding: 16px;
+  font-family: "JetBrains Mono", "Fira Code", monospace;
+  font-size: 14px;
+  overflow-x: auto;
+  white-space: pre;
+  margin: 12px 0;
+  box-shadow: 4px 4px 0 var(--text);
+  text-align: left;
+}
+
+.inline-code {
+  background: #e8e0d0;
+  border: 2px solid var(--text);
+  border-radius: 6px;
+  padding: 2px 7px;
+  font-family: "JetBrains Mono", "Fira Code", monospace;
+  font-size: 0.9em;
+}
+
+.math-inline {
+  background: #f0e8ff;
+  border: 2px solid #b48cff;
+  border-radius: 6px;
+  padding: 2px 8px;
+  font-family: "JetBrains Mono", "Fira Code", monospace;
+  color: #6b3ac2;
+  font-size: 0.95em;
+}
+
+/* ── Matching type ─────────────────────────────────────────────────────────── */
+
+.matching-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-top: 14px;
+}
+
+.matching-col { display: grid; gap: 10px; }
+
+.matching-item { font-size: 14px; padding: 14px 16px; }
+
+.matched-pairs-box {
+  margin-top: 16px;
+  display: grid;
+  gap: 8px;
+}
+
+.matched-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--green);
+  border: 3px solid var(--text);
+  border-radius: 12px;
+  padding: 10px 14px;
+  font-weight: 900;
+  font-size: 14px;
+}
+
+.match-arrow { color: var(--text); font-size: 18px; flex-shrink: 0; }
+
+.match-remove {
+  margin-left: auto;
+  background: none;
+  border: 2px solid var(--text);
+  border-radius: 8px;
+  padding: 2px 8px;
+  cursor: pointer;
+  font-weight: 900;
+  font-family: inherit;
+}
+
+/* ── Multiple select ─────────────────────────────────────────────────────────── */
+
+.multi-select-option.selected {
+  background: var(--blue);
+  color: white;
+}
+
+/* ── Partial score color ─────────────────────────────────────────────────────── */
+
+.result-partial { background: var(--orange); }
+
+@media (max-width: 600px) {
+  .matching-grid { grid-template-columns: 1fr; }
+}

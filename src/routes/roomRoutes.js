@@ -11,7 +11,7 @@ import {
 import { QUESTION_TIME_SECONDS, RESULT_DURATION_SECONDS, LEADERBOARD_DURATION_SECONDS } from "../config/constants.js";
 import { normalizeLearningPack } from "../validators/packValidator.js";
 import { generateRecoveryLessonWithAI } from "../services/aiService.js";
-import { isAnswerCorrect, getCorrectAnswerDisplay, calculatePoints } from "../utils/scoring.js";
+import { evaluateAnswer, getCorrectAnswerDisplay, calculatePoints } from "../utils/scoring.js";
 
 const router = express.Router();
 
@@ -263,46 +263,52 @@ router.post("/:code/submit", async (req, res) => {
       return res.status(400).json({ error: "Ai răspuns deja la challenge-ul acesta." });
     }
 
-    const correct = isAnswerCorrect(challenge, selectedAnswer);
-    const points = correct ? calculatePoints(timeLeft) : 0;
+    const evaluation    = evaluateAnswer(challenge, selectedAnswer);
+    const points        = calculatePoints(timeLeft, evaluation.ratio);
 
     const newAnswer = {
       challengeIndex: index,
       selectedAnswer,
       correctAnswer: getCorrectAnswerDisplay(challenge),
-      isCorrect: correct,
+      isCorrect:  evaluation.correct,
+      isPartial:  evaluation.partial,
+      ratio:      evaluation.ratio,
       points,
-      concept: challenge.concept,
-      type: challenge.type,
+      concept:    challenge.concept,
+      type:       challenge.type,
       answeredAt: Date.now()
     };
 
-    const newTotalAnswered = (player.total_answered || 0) + 1;
-    const newScore = (player.score || 0) + points;
-    const newCorrect = (player.correct || 0) + (correct ? 1 : 0);
-    const newWeakConcepts = correct
+    const newTotalAnswered  = (player.total_answered || 0) + 1;
+    const newScore          = (player.score || 0) + points;
+    const newCorrect        = (player.correct || 0) + (evaluation.correct ? 1 : 0);
+    const newWeakConcepts   = evaluation.correct
       ? (player.weak_concepts || [])
       : [...(player.weak_concepts || []), challenge.concept || "Unknown concept"];
 
     await updatePlayer(playerId, {
-      score: newScore,
-      correct: newCorrect,
+      score:          newScore,
+      correct:        newCorrect,
       total_answered: newTotalAnswered,
-      finished: newTotalAnswered >= room.pack.challenges.length,
-      answers: [...answers, newAnswer],
-      weak_concepts: newWeakConcepts
+      finished:       newTotalAnswered >= room.pack.challenges.length,
+      answers:        [...answers, newAnswer],
+      weak_concepts:  newWeakConcepts
     });
 
     await finishRoomIfAllDone(room.code);
 
     return res.json({
-      isCorrect: correct,
+      isCorrect:     evaluation.correct,
+      isPartial:     evaluation.partial,
+      ratio:         evaluation.ratio,
       points,
-      score: newScore,
+      score:         newScore,
       correctAnswer: getCorrectAnswerDisplay(challenge),
-      explanation: challenge.explanation,
+      explanation:   challenge.explanation,
       sourceSnippet: challenge.sourceSnippet,
-      type: challenge.type
+      type:          challenge.type,
+      correctAnswers: challenge.correctAnswers || [],
+      pairs:         challenge.pairs || []
     });
   } catch (error) {
     console.error("EROARE submit:", error);
