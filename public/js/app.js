@@ -65,12 +65,35 @@ function setupHeader() {
 }
 
 async function showDashboard() {
+  if (!state.currentUser) { showScreen(dom.screens.auth, false); return; }
   showScreen(dom.screens.dashboard, false);
-  await renderDashboard(dom.dashboardContent, state.currentUser, state.userProfile, {
-    onCreateArena: () => { showScreen(dom.screens.home); },
-    onJoinArena:   () => { showScreen(dom.screens.home); dom.joinCodeInput?.focus(); },
-    onHistory:     () => showHistoryScreen()
-  });
+
+  if (!dom.dashboardContent) return;
+  dom.dashboardContent.innerHTML = `<div style="padding:40px;text-align:center;" class="muted">Loading dashboard...</div>`;
+
+  try {
+    await renderDashboard(dom.dashboardContent, state.currentUser, state.userProfile, {
+      onCreateArena: () => showScreen(dom.screens.home),
+      onJoinArena:   () => { showScreen(dom.screens.home); setTimeout(() => dom.joinCodeInput?.focus(), 100); },
+      onHistory:     () => showHistoryScreen()
+    });
+  } catch (err) {
+    console.error("Dashboard error:", err);
+    dom.dashboardContent.innerHTML = `
+      <div class="card" style="max-width:500px;margin:40px auto;">
+        <h2>Welcome!</h2>
+        <p class="muted" style="margin-top:8px;">Logged in as ${state.currentUser.email}</p>
+        <div style="display:grid;gap:12px;margin-top:24px;">
+          <button class="btn" onclick="document.getElementById('toHomeBtn').click()">⚡ Create Arena</button>
+          <button class="btn btn-secondary" onclick="document.getElementById('toJoinBtn').click()">🎮 Join Arena</button>
+        </div>
+        <button id="toHomeBtn" class="hidden"></button>
+        <button id="toJoinBtn" class="hidden"></button>
+      </div>
+    `;
+    document.getElementById("toHomeBtn")?.addEventListener("click", () => showScreen(dom.screens.home));
+    document.getElementById("toJoinBtn")?.addEventListener("click", () => showScreen(dom.screens.home));
+  }
 }
 
 async function showHistoryScreen() {
@@ -100,55 +123,88 @@ async function showHistoryScreen() {
 // ─── Auth listeners ───────────────────────────────────────────────────────────
 
 function setupAuthListeners() {
+  // Tab switching
   dom.authTabLogin?.addEventListener("click", () => {
     dom.authTabLogin.classList.add("auth-tab-active");
-    dom.authTabRegister.classList.remove("auth-tab-active");
-    dom.loginForm.classList.remove("hidden");
-    dom.registerForm.classList.add("hidden");
+    dom.authTabRegister?.classList.remove("auth-tab-active");
+    dom.loginForm?.classList.remove("hidden");
+    dom.registerForm?.classList.add("hidden");
+    if (dom.loginError) dom.loginError.textContent = "";
   });
 
   dom.authTabRegister?.addEventListener("click", () => {
     dom.authTabRegister.classList.add("auth-tab-active");
-    dom.authTabLogin.classList.remove("auth-tab-active");
-    dom.registerForm.classList.remove("hidden");
-    dom.loginForm.classList.add("hidden");
+    dom.authTabLogin?.classList.remove("auth-tab-active");
+    dom.registerForm?.classList.remove("hidden");
+    dom.loginForm?.classList.add("hidden");
+    if (dom.registerError) dom.registerError.textContent = "";
   });
 
-  dom.loginBtn?.addEventListener("click", async () => {
-    dom.loginError.textContent = "";
-    dom.loginBtn.disabled      = true;
-    try {
-      const user = await login(dom.loginEmail.value.trim(), dom.loginPassword.value);
-      state.currentUser  = user;
-      state.userProfile  = await getProfile(user.id);
-      setupHeader();
-      await showDashboard();
-    } catch (e) {
-      dom.loginError.textContent = e.message;
-    } finally {
-      dom.loginBtn.disabled = false;
-    }
-  });
+  // Login
+  dom.loginBtn?.addEventListener("click", handleLogin);
+  dom.loginPassword?.addEventListener("keydown", e => { if (e.key === "Enter") handleLogin(); });
 
-  dom.registerBtn?.addEventListener("click", async () => {
-    dom.registerError.textContent = "";
-    dom.registerBtn.disabled      = true;
-    try {
-      const user = await register(
-        dom.registerEmail.value.trim(),
-        dom.registerPassword.value,
-        dom.registerUsername.value.trim()
-      );
-      state.currentUser  = user;
-      state.userProfile  = await getProfile(user.id);
-      setupHeader();
-      await showDashboard();
-    } catch (e) {
-      dom.registerError.textContent = e.message;
-    } finally {
-      dom.registerBtn.disabled = false;
+  // Register
+  dom.registerBtn?.addEventListener("click", handleRegister);
+  dom.registerPassword?.addEventListener("keydown", e => { if (e.key === "Enter") handleRegister(); });
+}
+
+async function handleLogin() {
+  const email    = dom.loginEmail?.value?.trim()    || "";
+  const password = dom.loginPassword?.value          || "";
+
+  if (!email || !password) {
+    if (dom.loginError) dom.loginError.textContent = "Enter your email and password.";
+    return;
+  }
+
+  if (dom.loginError)   dom.loginError.textContent  = "";
+  if (dom.loginBtn)     dom.loginBtn.textContent     = "Logging in...";
+  if (dom.loginBtn)     dom.loginBtn.disabled        = true;
+
+  try {
+    const user          = await login(email, password);
+    state.currentUser   = user;
+    state.userProfile   = await getProfile(user.id);
+    setupHeader();
+    await showDashboard();
+  } catch (e) {
+    if (dom.loginError) dom.loginError.textContent = e.message || "Login failed.";
+  } finally {
+    if (dom.loginBtn) { dom.loginBtn.disabled = false; dom.loginBtn.textContent = "Login"; }
+  }
+}
+
+async function handleRegister() {
+  const username = dom.registerUsername?.value?.trim() || "";
+  const email    = dom.registerEmail?.value?.trim()    || "";
+  const password = dom.registerPassword?.value          || "";
+
+  if (!username || !email || !password) {
+    if (dom.registerError) dom.registerError.textContent = "All fields are required.";
+    return;
+  }
+
+  if (dom.registerError) dom.registerError.textContent  = "";
+  if (dom.registerBtn)   dom.registerBtn.textContent    = "Creating account...";
+  if (dom.registerBtn)   dom.registerBtn.disabled       = true;
+
+  try {
+    const user          = await register(email, password, username);
+    state.currentUser   = user;
+    // Profile might take a moment (trigger), retry once
+    state.userProfile   = await getProfile(user.id);
+    if (!state.userProfile) {
+      await new Promise(r => setTimeout(r, 800));
+      state.userProfile = await getProfile(user.id);
     }
-  });
+    setupHeader();
+    await showDashboard();
+  } catch (e) {
+    if (dom.registerError) dom.registerError.textContent = e.message || "Registration failed.";
+  } finally {
+    if (dom.registerBtn) { dom.registerBtn.disabled = false; dom.registerBtn.textContent = "Create account"; }
+  }
 }
 
 // ─── Session persistence ──────────────────────────────────────────────────────

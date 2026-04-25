@@ -3,11 +3,16 @@ let _client = null;
 export async function getSupabase() {
   if (_client) return _client;
 
-  const res    = await fetch("/api/config");
-  const config = await res.json();
+  let config;
+  try {
+    const res = await fetch("/api/config");
+    config    = await res.json();
+  } catch {
+    throw new Error("Could not connect to server. Check your internet connection.");
+  }
 
   if (!config.supabaseUrl || !config.supabaseAnonKey) {
-    throw new Error("Supabase config missing — add SUPABASE_ANON_KEY to environment variables.");
+    throw new Error("Server configuration error. Contact the administrator.");
   }
 
   const { createClient } = window.supabase;
@@ -23,6 +28,12 @@ export async function getCurrentUser() {
 
 export async function getProfile(userId) {
   const sb = await getSupabase();
-  const { data } = await sb.from("profiles").select("*").eq("id", userId).single();
-  return data;
+  const { data, error } = await sb
+    .from("profiles")
+    .select("*")
+    .eq("id", userId)
+    .maybeSingle();
+
+  if (error) console.warn("getProfile error:", error.message);
+  return data || null;
 }
