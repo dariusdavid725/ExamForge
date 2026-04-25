@@ -141,6 +141,50 @@ ${documentSlice}
 `;
 }
 
+export function buildAuditPrompt(text, pack) {
+  const documentContext = prepareTinyDocumentSlice(text);
+
+  return `
+You are a strict QA auditor for educational quiz packs.
+
+Return ONLY valid JSON.
+No markdown.
+No prose outside JSON.
+
+Check if this pack is safe to show to students.
+
+Mark valid=false if ANY challenge:
+- is not self-contained
+- requires the player to see hidden document content
+- references hidden source positions such as "line 10", "linia 10", "pagina 4", "slide 2", "codul de mai sus", "fragmentul de mai sus"
+- invents facts, numbers, examples, prices, quantities, dates, names, formulas, or assumptions
+- has a fill_blank where the missing answer cannot be inferred from prompt alone
+- has a math question without all needed values in prompt
+- has a multiple_choice with more than one correct option
+- should be multiple_select but is multiple_choice
+- has options glued together or confusing
+- has sourceSnippet that does not support the answer
+
+Important:
+- The player sees ONLY prompt/options/steps/pairs/mistakeText.
+- The player does NOT see sourceSnippet while answering.
+- sourceSnippet is only evidence for audit/history.
+- A challenge can cite sourceSnippet, but the prompt must still make sense alone.
+
+JSON schema:
+{
+  "valid": true,
+  "problems": ["string"]
+}
+
+DOCUMENT:
+${documentContext}
+
+PACK:
+${JSON.stringify(pack, null, 2)}
+`;
+}
+
 export function buildRepairPrompt(badJson, validationError, text, gameMode = "arena_mix") {
   const documentContext = prepareTinyDocumentSlice(text);
 
