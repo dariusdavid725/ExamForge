@@ -27,7 +27,7 @@ function generatePlayerId() {
   return "p_" + Math.random().toString(36).slice(2, 10);
 }
 
-function getCycleMs() {
+export function getCycleMs() {
   return (
     QUESTION_TIME_SECONDS +
     RESULT_DURATION_SECONDS +
@@ -35,31 +35,119 @@ function getCycleMs() {
   ) * 1000;
 }
 
-function getCurrentChallengeIndex(room) {
-  if (!room?.started_at || !room?.pack?.challenges?.length) {
-    return 0;
-  }
-
-  const elapsed = Date.now() - Number(room.started_at);
-  const cycleMs = getCycleMs();
-
-  return Math.min(
-    Math.floor(elapsed / cycleMs),
-    room.pack.challenges.length - 1
-  );
+function normalizePlayer(player) {
+  return {
+    id: player.id,
+    userId: player.user_id || null,
+    name: player.name,
+    score: player.score,
+    correct: player.correct,
+    totalAnswered: player.total_answered,
+    finished: player.finished,
+    answers: player.answers || [],
+    weakConcepts: player.weak_concepts || []
+  };
 }
 
-function normalizePlayer(p) {
+export function getRoomTiming(room, serverNow = Date.now()) {
+  const totalChallenges = room?.pack?.challenges?.length || 0;
+  const questionTime = Number(room?.question_time || QUESTION_TIME_SECONDS);
+  const resultDuration = RESULT_DURATION_SECONDS;
+  const leaderboardDuration = LEADERBOARD_DURATION_SECONDS;
+  const cycleMs = (questionTime + resultDuration + leaderboardDuration) * 1000;
+
+  if (!room || room.status === "lobby" || !room.started_at || totalChallenges === 0) {
+    return {
+      serverNow,
+      phase: "lobby",
+      currentChallengeIndex: 0,
+      timeLeft: questionTime,
+      cycleMs,
+      questionTime,
+      resultDuration,
+      leaderboardDuration,
+      totalChallenges
+    };
+  }
+
+  if (room.status === "finished") {
+    return {
+      serverNow,
+      phase: "done",
+      currentChallengeIndex: Math.max(0, totalChallenges - 1),
+      timeLeft: 0,
+      cycleMs,
+      questionTime,
+      resultDuration,
+      leaderboardDuration,
+      totalChallenges
+    };
+  }
+
+  const elapsed = Math.max(0, serverNow - Number(room.started_at));
+  const totalDuration = totalChallenges * cycleMs;
+
+  if (elapsed >= totalDuration) {
+    return {
+      serverNow,
+      phase: "done",
+      currentChallengeIndex: Math.max(0, totalChallenges - 1),
+      timeLeft: 0,
+      cycleMs,
+      questionTime,
+      resultDuration,
+      leaderboardDuration,
+      totalChallenges
+    };
+  }
+
+  const currentChallengeIndex = Math.min(
+    Math.floor(elapsed / cycleMs),
+    totalChallenges - 1
+  );
+
+  const timeInCycle = elapsed % cycleMs;
+  const questionMs = questionTime * 1000;
+  const resultMs = resultDuration * 1000;
+
+  if (timeInCycle < questionMs) {
+    return {
+      serverNow,
+      phase: "question",
+      currentChallengeIndex,
+      timeLeft: Math.max(0, Math.ceil((questionMs - timeInCycle) / 1000)),
+      cycleMs,
+      questionTime,
+      resultDuration,
+      leaderboardDuration,
+      totalChallenges
+    };
+  }
+
+  if (timeInCycle < questionMs + resultMs) {
+    return {
+      serverNow,
+      phase: "result",
+      currentChallengeIndex,
+      timeLeft: Math.max(0, Math.ceil((questionMs + resultMs - timeInCycle) / 1000)),
+      cycleMs,
+      questionTime,
+      resultDuration,
+      leaderboardDuration,
+      totalChallenges
+    };
+  }
+
   return {
-    id: p.id,
-    userId: p.user_id || null,
-    name: p.name,
-    score: p.score,
-    correct: p.correct,
-    totalAnswered: p.total_answered,
-    finished: p.finished,
-    answers: p.answers || [],
-    weakConcepts: p.weak_concepts || []
+    serverNow,
+    phase: "leaderboard",
+    currentChallengeIndex,
+    timeLeft: Math.max(0, Math.ceil((cycleMs - timeInCycle) / 1000)),
+    cycleMs,
+    questionTime,
+    resultDuration,
+    leaderboardDuration,
+    totalChallenges
   };
 }
 
@@ -161,7 +249,6 @@ export async function startRoom(code) {
   }
 
   const cycleMs = getCycleMs();
-
   const endsAt =
     now +
     room.pack.challenges.length * cycleMs +
@@ -185,7 +272,8 @@ export async function startRoom(code) {
     status: "started",
     startedAt: now,
     endsAt,
-    questionTime: QUESTION_TIME_SECONDS
+    questionTime: QUESTION_TIME_SECONDS,
+    serverNow: now
   };
 }
 
@@ -210,103 +298,39 @@ export async function updatePlayer(playerId, updates) {
   }
 }
 
-export async function fastForwardToResultIfAllAnswered(roomCode, challengeIndex) {
+function hasPlayerAnsweredChallenge(player, challengeIndex) {
+  return (player.answers || []).some(answer => {
+    return Number(answer.challengeIndex) === Number(challengeIndex);
+  });
+}
+
+export async function advanceRoomAfterSubmit(roomCode, challengeIndex) {
   const room = await getRoom(roomCode);
 
   if (!room || room.status !== "started") {
     return null;
   }
 
-  if (!room.pack?.challenges?.length || !room.started_at) {
-    return null;
-  }
+  const totalChallenges = room.pack?.challenges?.length || 0;
 
-  const totalChallenges = room.pack.challenges.length;
-
-  if (challengeIndex >= totalChallenges - 1) {
+  if (!totalChallenges) {
     return null;
   }
 
   const allAnswered =
     room.players.length > 0 &&
     room.players.every(player => {
-      return (player.answers || []).some(answer => {
-        return Number(answer.challengeIndex) === Number(challengeIndex);
-      });
+      return hasPlayerAnsweredChallenge(player, challengeIndex);
     });
 
   if (!allAnswered) {
     return null;
   }
 
-  const cycleMs = getCycleMs();
   const now = Date.now();
+  const cycleMs = getCycleMs();
 
-  const resultPositionMs =
-    challengeIndex * cycleMs +
-    QUESTION_TIME_SECONDS * 1000;
-
-  const newStartedAt = now - resultPositionMs;
-
-  const newEndsAt =
-    newStartedAt +
-    totalChallenges * cycleMs +
-    EXTRA_RESULTS_BUFFER_MS;
-
-  const { error } = await supabase
-    .from("rooms")
-    .update({
-      started_at: newStartedAt,
-      ends_at: newEndsAt
-    })
-    .eq("code", room.code);
-
-  if (error) {
-    throw new Error(`Failed to fast-forward room: ${error.message}`);
-  }
-
-  return {
-    startedAt: newStartedAt,
-    endsAt: newEndsAt
-  };
-}
-
-export async function forceNextForSinglePlayer(roomCode, playerId) {
-  const room = await getRoom(roomCode);
-
-  if (!room) {
-    throw new Error("Camera nu există.");
-  }
-
-  if (room.status !== "started") {
-    throw new Error("Arena nu este pornită.");
-  }
-
-  if (room.players.length !== 1) {
-    throw new Error("Next manual este permis doar când există un singur player.");
-  }
-
-  const player = room.players[0];
-
-  if (player.id !== playerId) {
-    throw new Error("Player invalid.");
-  }
-
-  const currentIndex = getCurrentChallengeIndex(room);
-
-  const answeredCurrent = (player.answers || []).some(answer => {
-    return Number(answer.challengeIndex) === Number(currentIndex);
-  });
-
-  if (!answeredCurrent) {
-    throw new Error("Răspunde întâi la întrebarea curentă.");
-  }
-
-  const totalChallenges = room.pack.challenges.length;
-
-  if (currentIndex >= totalChallenges - 1) {
-    const now = Date.now();
-
+  if (challengeIndex >= totalChallenges - 1) {
     const { error } = await supabase
       .from("rooms")
       .update({
@@ -320,18 +344,19 @@ export async function forceNextForSinglePlayer(roomCode, playerId) {
     }
 
     return {
-      finished: true,
-      currentChallengeIndex: currentIndex,
+      status: "finished",
       startedAt: room.started_at,
-      endsAt: now
+      endsAt: now,
+      serverNow: now,
+      phase: "done",
+      currentChallengeIndex: challengeIndex,
+      timeLeft: 0
     };
   }
 
-  const nextIndex = currentIndex + 1;
-  const cycleMs = getCycleMs();
-  const now = Date.now();
-
-  const newStartedAt = now - nextIndex * cycleMs;
+  const newStartedAt =
+    now -
+    (challengeIndex * cycleMs + QUESTION_TIME_SECONDS * 1000);
 
   const newEndsAt =
     newStartedAt +
@@ -347,14 +372,17 @@ export async function forceNextForSinglePlayer(roomCode, playerId) {
     .eq("code", room.code);
 
   if (error) {
-    throw new Error(`Failed to go next: ${error.message}`);
+    throw new Error(`Failed to advance room: ${error.message}`);
   }
 
   return {
-    finished: false,
-    currentChallengeIndex: nextIndex,
+    status: "started",
     startedAt: newStartedAt,
-    endsAt: newEndsAt
+    endsAt: newEndsAt,
+    serverNow: now,
+    phase: "result",
+    currentChallengeIndex: challengeIndex,
+    timeLeft: RESULT_DURATION_SECONDS
   };
 }
 
@@ -366,7 +394,7 @@ export async function finishRoomIfAllDone(roomCode) {
     .select("finished")
     .eq("room_code", upperCode);
 
-  if (players && players.length > 0 && players.every(p => p.finished)) {
+  if (players && players.length > 0 && players.every(player => player.finished)) {
     await supabase
       .from("rooms")
       .update({
@@ -375,4 +403,33 @@ export async function finishRoomIfAllDone(roomCode) {
       })
       .eq("code", upperCode);
   }
+}
+
+export async function finishRoomIfTimeExpired(roomCode) {
+  const room = await getRoom(roomCode);
+
+  if (!room || room.status !== "started") {
+    return null;
+  }
+
+  const timing = getRoomTiming(room);
+
+  if (timing.phase !== "done") {
+    return null;
+  }
+
+  const now = Date.now();
+
+  await supabase
+    .from("rooms")
+    .update({
+      status: "finished",
+      ends_at: now
+    })
+    .eq("code", room.code);
+
+  return {
+    status: "finished",
+    serverNow: now
+  };
 }

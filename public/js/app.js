@@ -96,6 +96,7 @@ async function showDashboard() {
     return;
   }
 
+  stopGameLoops();
   showScreen(dom.screens.dashboard, false);
 
   if (!dom.dashboardContent) return;
@@ -145,6 +146,7 @@ async function showDashboard() {
 }
 
 async function showHistoryScreen() {
+  stopGameLoops();
   showScreen(dom.screens.history, false);
 
   const container = document.getElementById("historyContent");
@@ -297,7 +299,8 @@ function saveSession() {
       localScore: state.localScore,
       questionTime: state.questionTime,
       startedAt: state.startedAt,
-      arenaEndsAt: state.arenaEndsAt
+      arenaEndsAt: state.arenaEndsAt,
+      serverClockOffset: state.serverClockOffset || 0
     })
   );
 }
@@ -327,9 +330,10 @@ async function restoreSession() {
     currentPlayerName: saved.currentPlayerName,
     isHost: saved.isHost,
     localScore: saved.localScore || 0,
-    questionTime: saved.questionTime || 20,
+    questionTime: saved.questionTime || QUESTION_TIME,
     startedAt: saved.startedAt,
-    arenaEndsAt: saved.arenaEndsAt
+    arenaEndsAt: saved.arenaEndsAt,
+    serverClockOffset: saved.serverClockOffset || 0
   });
 
   try {
@@ -340,15 +344,7 @@ async function restoreSession() {
       return;
     }
 
-    state.playerCount = data.players?.length || 0;
-
-    if (data.startedAt) {
-      state.startedAt = data.startedAt;
-    }
-
-    if (data.endsAt) {
-      state.arenaEndsAt = data.endsAt;
-    }
+    applyRoomSync(data);
 
     if (data.status === "lobby") {
       await showLobby();
@@ -367,17 +363,10 @@ async function restoreSession() {
       }
 
       state.currentPack = packData.pack;
-      state.questionTime = packData.questionTime || 20;
+      state.questionTime = packData.questionTime || QUESTION_TIME;
+      applyRoomSync(packData);
 
-      if (packData.startedAt) {
-        state.startedAt = packData.startedAt;
-      }
-
-      if (packData.endsAt) {
-        state.arenaEndsAt = packData.endsAt;
-      }
-
-      if (data.status === "finished") {
+      if (data.status === "finished" || data.phase === "done") {
         await showLeaderboard();
       } else {
         dom.playerNameText.textContent = state.currentPlayerName || "Player";
@@ -390,17 +379,59 @@ async function restoreSession() {
   }
 }
 
-// ─── Synced game loop ─────────────────────────────────────────────────────────
+// ─── Server authoritative timing ──────────────────────────────────────────────
+
+function syncClock(serverNow) {
+  if (typeof serverNow !== "number") return;
+
+  state.serverClockOffset = serverNow - Date.now();
+}
+
+function serverNow() {
+  return Date.now() + Number(state.serverClockOffset || 0);
+}
+
+function applyRoomSync(data) {
+  if (!data) return;
+
+  syncClock(data.serverNow);
+
+  if (data.startedAt) {
+    state.startedAt = Number(data.startedAt);
+  }
+
+  if (data.endsAt) {
+    state.arenaEndsAt = Number(data.endsAt);
+  }
+
+  if (data.questionTime) {
+    state.questionTime = Number(data.questionTime);
+  }
+
+  if (Array.isArray(data.players)) {
+    state.playerCount = data.players.length;
+  }
+
+  if (typeof data.currentChallengeIndex === "number") {
+    state.serverChallengeIndex = data.currentChallengeIndex;
+  }
+
+  if (data.phase) {
+    state.serverPhase = data.phase;
+  }
+}
 
 function getTimedPhase() {
   if (!state.startedAt || !state.currentPack) {
     return {
-      phase: "waiting"
+      phase: "waiting",
+      challengeIndex: 0,
+      timeLeft: state.questionTime || QUESTION_TIME
     };
   }
 
   const questionTime = state.questionTime || QUESTION_TIME;
-  const elapsed = Date.now() - Number(state.startedAt);
+  const elapsed = Math.max(0, serverNow() - Number(state.startedAt));
   const total = state.currentPack.challenges.length;
   const cycleMs = (questionTime + RESULT_DURATION + LB_DURATION) * 1000;
   const cycleIndex = Math.floor(elapsed / cycleMs);
@@ -408,7 +439,9 @@ function getTimedPhase() {
 
   if (cycleIndex >= total) {
     return {
-      phase: "done"
+      phase: "done",
+      challengeIndex: total - 1,
+      timeLeft: 0
     };
   }
 
@@ -438,83 +471,65 @@ function getTimedPhase() {
   };
 }
 
-function getArenaPhase() {
-  const timed = getTimedPhase();
+async function syncRoomFromServer(force = false) {
+  if (!state.currentRoomCode) return null;
 
-  if (timed.phase === "question" && state.earlyResult) {
-    return {
-      ...timed,
-      phase: "result",
-      timeLeft: RESULT_DURATION
-    };
+  const now = Date.now();
+
+  if (!force && now - Number(state.lastPollTime || 0) < 650) {
+    return null;
   }
 
-  if (timed.phase === "question" && state.currentChallengeIndex !== timed.challengeIndex) {
-    state.earlyResult = false;
-  }
-
-  return timed;
-}
-
-function updateManualNextButton(arena) {
-  if (!dom.nextChallengeBtn) return;
-
-  const isSolo = Number(state.playerCount || 0) === 1;
-
-  const canShow =
-    isSolo &&
-    (arena.phase === "result" || arena.phase === "leaderboard");
-
-  dom.nextChallengeBtn.classList.toggle("hidden", !canShow);
-
-  if (!canShow) return;
-
-  const isLast =
-    arena.challengeIndex >= state.currentPack.challenges.length - 1;
-
-  dom.nextChallengeBtn.textContent = isLast
-    ? "Finish quiz"
-    : "Next question";
-}
-
-async function goNextManual() {
-  if (!state.currentRoomCode || !state.currentPlayerId) return;
-
-  if (!dom.nextChallengeBtn) return;
-
-  dom.nextChallengeBtn.disabled = true;
-  dom.nextChallengeBtn.textContent = "Loading...";
+  state.lastPollTime = now;
 
   try {
-    const { response, data } = await api.nextRoom(
-      state.currentRoomCode,
-      state.currentPlayerId
-    );
+    const { response, data } = await api.fetchRoom(state.currentRoomCode);
 
     if (!response.ok) {
-      throw new Error(data.error || "Could not go next.");
+      return null;
     }
 
-    if (data.finished) {
-      await showLeaderboard();
-      return;
+    applyRoomSync(data);
+
+    if (data.status === "finished" || data.phase === "done") {
+      return {
+        ...data,
+        shouldShowLeaderboard: true
+      };
     }
 
-    state.startedAt = data.startedAt;
-    state.arenaEndsAt = data.endsAt;
-    state.currentChallengeIndex = data.currentChallengeIndex;
-    state.earlyResult = false;
-    state.cachedLeaderboard = null;
-    state.answeredCurrentChallenge = false;
-    state.lastSubmitResult = null;
-
-    saveSession();
-  } catch (error) {
-    console.error(error);
-    dom.nextChallengeBtn.textContent = error.message || "Error";
-  } finally {
-    dom.nextChallengeBtn.disabled = false;
+    return data;
+  } catch {
+    return null;
   }
+}
+
+function resetQuestionLocalState(challengeIndex) {
+  state.currentChallengeIndex = challengeIndex;
+  state.answeredCurrentChallenge = false;
+  state.submittingAnswer = false;
+  state.lastSubmitResult = null;
+  state.cachedLeaderboard = null;
+  state.selectedAnswer = null;
+  state.currentOrderSelection = [];
+}
+
+function hideManualNextButton() {
+  if (dom.nextChallengeBtn) {
+    dom.nextChallengeBtn.classList.add("hidden");
+  }
+}
+
+async function ensureAnswerSubmittedForIndex(challengeIndex) {
+  if (state.answeredCurrentChallenge || state.submittingAnswer) {
+    return;
+  }
+
+  const challenge = state.currentPack?.challenges?.[challengeIndex];
+
+  if (!challenge) return;
+
+  await submitAnswerForIndex(challengeIndex, "__TIMEOUT__", 0, true);
 }
 
 function startSyncedLoop() {
@@ -526,144 +541,118 @@ function startSyncedLoop() {
   let trackedPhase = "";
 
   state.syncLoop = setInterval(async () => {
-    const arena = getArenaPhase();
+    if (state.syncTickRunning) return;
 
-    if (arena.phase === "done") {
-      clearInterval(state.syncLoop);
-      state.syncLoop = null;
-      await showLeaderboard();
-      return;
-    }
+    state.syncTickRunning = true;
 
-    const phaseChanged = arena.phase !== trackedPhase;
-    const challengeChanged = arena.challengeIndex !== trackedChallenge;
+    try {
+      const synced = await syncRoomFromServer(false);
 
-    if (arena.phase === "question") {
-      if (phaseChanged || challengeChanged) {
-        trackedPhase = "question";
-        trackedChallenge = arena.challengeIndex;
-
-        state.currentChallengeIndex = arena.challengeIndex;
-        state.answeredCurrentChallenge = false;
-        state.lastSubmitResult = null;
-        state.cachedLeaderboard = null;
-        state.earlyResult = false;
-        state.lastPollTime = 0;
-
-        saveSession();
-
-        const progress = Math.round(
-          (arena.challengeIndex / state.currentPack.challenges.length) * 100
-        );
-
-        dom.progressText.textContent = `${progress}%`;
-        dom.progressBar.style.width = `${progress}%`;
-        dom.scoreText.textContent = state.localScore;
-        dom.challengeNumberText.textContent = arena.challengeIndex + 1;
-
-        renderChallenge(submitCurrentAnswer);
+      if (synced?.shouldShowLeaderboard) {
+        stopGameLoops();
+        await showLeaderboard();
+        return;
       }
 
-      state.timeLeft = arena.timeLeft;
-      updateTimerUI();
-      updateManualNextButton(arena);
+      const arena = getTimedPhase();
 
-      if (!state.answeredCurrentChallenge && arena.timeLeft <= 0) {
-        state.answeredCurrentChallenge = true;
+      if (arena.phase === "done") {
+        stopGameLoops();
+        await showLeaderboard();
+        return;
+      }
 
-        const challenge = state.currentPack.challenges[arena.challengeIndex];
+      const phaseChanged = arena.phase !== trackedPhase;
+      const challengeChanged = arena.challengeIndex !== trackedChallenge;
 
-        if (challenge.type === "order_steps") {
-          state.selectedAnswer = [...state.currentOrderSelection];
-        } else {
-          state.selectedAnswer = state.selectedAnswer || "__TIMEOUT__";
+      if (arena.phase === "question") {
+        if (phaseChanged || challengeChanged) {
+          trackedPhase = "question";
+          trackedChallenge = arena.challengeIndex;
+
+          resetQuestionLocalState(arena.challengeIndex);
+          saveSession();
+
+          const progress = Math.round(
+            (arena.challengeIndex / state.currentPack.challenges.length) * 100
+          );
+
+          dom.progressText.textContent = `${progress}%`;
+          dom.progressBar.style.width = `${progress}%`;
+          dom.scoreText.textContent = state.localScore;
+          dom.challengeNumberText.textContent = arena.challengeIndex + 1;
+
+          hideManualNextButton();
+          renderChallenge(submitCurrentAnswer);
         }
 
-        submitCurrentAnswer();
-      } else if (state.answeredCurrentChallenge) {
-        const now = Date.now();
+        state.timeLeft = arena.timeLeft;
+        updateTimerUI();
+        hideManualNextButton();
 
-        if (now - state.lastPollTime > 900) {
-          state.lastPollTime = now;
-
-          try {
-            const { response, data } = await api.fetchRoom(state.currentRoomCode);
-
-            if (response.ok) {
-              state.playerCount = data.players?.length || state.playerCount || 0;
-
-              if (data.startedAt) {
-                state.startedAt = data.startedAt;
-              }
-
-              if (data.endsAt) {
-                state.arenaEndsAt = data.endsAt;
-              }
-
-              if (data.status === "finished") {
-                clearInterval(state.syncLoop);
-                state.syncLoop = null;
-                await showLeaderboard();
-                return;
-              }
-
-              if (data.allAnsweredCurrentQuestion) {
-                state.earlyResult = true;
-              }
-            }
-          } catch {
-            // ignore polling errors
-          }
+        if (!state.answeredCurrentChallenge && arena.timeLeft <= 0) {
+          await ensureAnswerSubmittedForIndex(arena.challengeIndex);
         }
       }
-    }
 
-    if (arena.phase === "result") {
-      if (phaseChanged || challengeChanged || (state.earlyResult && trackedPhase !== "result")) {
-        trackedPhase = "result";
-        trackedChallenge = arena.challengeIndex;
+      if (arena.phase === "result") {
+        if (!state.answeredCurrentChallenge) {
+          await ensureAnswerSubmittedForIndex(arena.challengeIndex);
+        }
 
-        renderResultPhase(
-          state.currentPack.challenges[arena.challengeIndex],
-          state.lastSubmitResult
-        );
+        if (phaseChanged || challengeChanged) {
+          trackedPhase = "result";
+          trackedChallenge = arena.challengeIndex;
 
-        updateManualNextButton(arena);
+          state.currentChallengeIndex = arena.challengeIndex;
+          state.timeLeft = arena.timeLeft;
+
+          hideManualNextButton();
+
+          renderResultPhase(
+            state.currentPack.challenges[arena.challengeIndex],
+            state.lastSubmitResult
+          );
+        }
       }
-    }
 
-    if (arena.phase === "leaderboard") {
-      if (phaseChanged || challengeChanged) {
-        trackedPhase = "leaderboard";
-        trackedChallenge = arena.challengeIndex;
-        state.earlyResult = false;
+      if (arena.phase === "leaderboard") {
+        if (phaseChanged || challengeChanged) {
+          trackedPhase = "leaderboard";
+          trackedChallenge = arena.challengeIndex;
 
-        if (!state.cachedLeaderboard) {
+          state.currentChallengeIndex = arena.challengeIndex;
+          state.timeLeft = arena.timeLeft;
+
+          hideManualNextButton();
+
           try {
             const { response, data } = await api.fetchLeaderboard(state.currentRoomCode);
 
             if (response.ok) {
+              syncClock(data.serverNow);
               state.cachedLeaderboard = data;
             }
           } catch {
-            // ignore
+            // ignore temporary leaderboard errors
           }
+
+          const isLast =
+            arena.challengeIndex >= state.currentPack.challenges.length - 1;
+
+          renderMiniLeaderboard(state.cachedLeaderboard, state.currentPack, isLast);
         }
 
-        const isLast =
-          arena.challengeIndex >= state.currentPack.challenges.length - 1;
+        const countdown = document.getElementById("lbCountdown");
 
-        renderMiniLeaderboard(state.cachedLeaderboard, state.currentPack, isLast);
-        updateManualNextButton(arena);
+        if (countdown) {
+          countdown.textContent = `Next in ${arena.timeLeft}s`;
+        }
       }
-
-      const countdown = document.getElementById("lbCountdown");
-
-      if (countdown) {
-        countdown.textContent = `Next in ${arena.timeLeft}s`;
-      }
+    } finally {
+      state.syncTickRunning = false;
     }
-  }, 200);
+  }, 250);
 }
 
 // ─── Answer submission ────────────────────────────────────────────────────────
@@ -688,6 +677,55 @@ function hasValidAnswer(challenge) {
   return state.selectedAnswer !== null && state.selectedAnswer !== "";
 }
 
+async function submitAnswerForIndex(challengeIndex, selectedAnswer, timeLeft, isTimeout = false) {
+  if (state.submittingAnswer) return;
+
+  state.submittingAnswer = true;
+  state.answeredCurrentChallenge = true;
+
+  if (!isTimeout) {
+    dom.submitAnswerBtn.disabled = true;
+    renderLockedState();
+  }
+
+  try {
+    const { response, data } = await api.submitAnswer(
+      state.currentRoomCode,
+      state.currentPlayerId,
+      challengeIndex,
+      selectedAnswer,
+      timeLeft
+    );
+
+    if (!response.ok) {
+      throw new Error(data.error || "Could not submit answer.");
+    }
+
+    if (!data.alreadyAnswered) {
+      state.localScore = data.score;
+      state.lastSubmitResult = data;
+      dom.scoreText.textContent = state.localScore;
+    }
+
+    applyRoomSync(data);
+    saveSession();
+
+    if (data.status === "finished" || data.phase === "done") {
+      stopGameLoops();
+      await showLeaderboard();
+    }
+  } catch (error) {
+    console.error(error);
+
+    if (!isTimeout) {
+      state.answeredCurrentChallenge = false;
+      dom.submitAnswerBtn.disabled = false;
+    }
+  } finally {
+    state.submittingAnswer = false;
+  }
+}
+
 async function submitCurrentAnswer() {
   const challenge = state.currentPack.challenges[state.currentChallengeIndex];
 
@@ -696,46 +734,34 @@ async function submitCurrentAnswer() {
   }
 
   if (!hasValidAnswer(challenge)) return;
-  if (state.answeredCurrentChallenge) return;
+  if (state.answeredCurrentChallenge || state.submittingAnswer) return;
 
-  state.answeredCurrentChallenge = true;
-  dom.submitAnswerBtn.disabled = true;
-
-  renderLockedState();
-
-  try {
-    const { response, data } = await api.submitAnswer(
-      state.currentRoomCode,
-      state.currentPlayerId,
-      state.currentChallengeIndex,
-      state.selectedAnswer,
-      state.timeLeft
-    );
-
-    if (!response.ok) {
-      throw new Error(data.error || "Could not submit answer.");
-    }
-
-    state.localScore = data.score;
-    state.lastSubmitResult = data;
-
-    if (data.startedAt) {
-      state.startedAt = data.startedAt;
-    }
-
-    if (data.endsAt) {
-      state.arenaEndsAt = data.endsAt;
-    }
-
-    dom.scoreText.textContent = state.localScore;
-  } catch (error) {
-    state.answeredCurrentChallenge = false;
-    dom.submitAnswerBtn.disabled = false;
-    console.error(error);
-  }
+  await submitAnswerForIndex(
+    state.currentChallengeIndex,
+    state.selectedAnswer,
+    state.timeLeft,
+    false
+  );
 }
 
 // ─── Room lifecycle ───────────────────────────────────────────────────────────
+
+function stopGameLoops() {
+  if (state.syncLoop) {
+    clearInterval(state.syncLoop);
+    state.syncLoop = null;
+  }
+
+  if (state.lobbyPoll) {
+    clearInterval(state.lobbyPoll);
+    state.lobbyPoll = null;
+  }
+
+  if (state.arenaEndWatcher) {
+    clearInterval(state.arenaEndWatcher);
+    state.arenaEndWatcher = null;
+  }
+}
 
 async function loadPackAndStart() {
   if (state.packLoading) return;
@@ -744,6 +770,7 @@ async function loadPackAndStart() {
 
   if (state.lobbyPoll) {
     clearInterval(state.lobbyPoll);
+    state.lobbyPoll = null;
   }
 
   const { response, data } = await api.fetchPack(state.currentRoomCode);
@@ -755,17 +782,18 @@ async function loadPackAndStart() {
   }
 
   state.currentPack = data.pack;
-  state.startedAt = data.startedAt;
-  state.arenaEndsAt = data.endsAt;
-  state.questionTime = data.questionTime || 20;
+  state.questionTime = data.questionTime || QUESTION_TIME;
   state.localScore = 0;
 
+  applyRoomSync(data);
   saveSession();
 
   dom.playerNameText.textContent = state.currentPlayerName || "Player";
 
   showScreen(dom.screens.challenge);
   startSyncedLoop();
+
+  state.packLoading = false;
 }
 
 // ─── Screens ──────────────────────────────────────────────────────────────────
@@ -801,15 +829,7 @@ async function refreshRoomInfo() {
     return;
   }
 
-  state.playerCount = data.players?.length || 0;
-
-  if (data.startedAt) {
-    state.startedAt = data.startedAt;
-  }
-
-  if (data.endsAt) {
-    state.arenaEndsAt = data.endsAt;
-  }
+  applyRoomSync(data);
 
   dom.roomTitleText.textContent = data.packTitle || "Generated arena";
   dom.roomSummaryText.textContent = data.packSummary || "";
@@ -820,6 +840,10 @@ async function refreshRoomInfo() {
   if (data.status === "started" && !state.currentPack) {
     await loadPackAndStart();
   }
+
+  if (data.status === "finished") {
+    await showLeaderboard();
+  }
 }
 
 function startLobbyPolling() {
@@ -827,19 +851,11 @@ function startLobbyPolling() {
     clearInterval(state.lobbyPoll);
   }
 
-  state.lobbyPoll = setInterval(refreshRoomInfo, 1200);
+  state.lobbyPoll = setInterval(refreshRoomInfo, 800);
 }
 
 async function showLeaderboard() {
-  if (state.syncLoop) {
-    clearInterval(state.syncLoop);
-    state.syncLoop = null;
-  }
-
-  if (state.arenaEndWatcher) {
-    clearInterval(state.arenaEndWatcher);
-    state.arenaEndWatcher = null;
-  }
+  stopGameLoops();
 
   const { response, data } = await api.fetchLeaderboard(state.currentRoomCode);
 
@@ -847,6 +863,8 @@ async function showLeaderboard() {
     alert(data.error || "Could not load leaderboard.");
     return;
   }
+
+  syncClock(data.serverNow);
 
   showScreen(dom.screens.leaderboard);
   renderPodium(data, state.currentPack);
@@ -983,6 +1001,8 @@ async function joinRoomWithName(code, name) {
     throw new Error(data.error || "Could not join room.");
   }
 
+  syncClock(data.serverNow);
+
   state.currentPlayerId = data.playerId;
   state.currentPlayerName = name;
 
@@ -1000,9 +1020,7 @@ async function startArena() {
       throw new Error(data.error || "Could not start arena.");
     }
 
-    state.startedAt = data.startedAt;
-    state.arenaEndsAt = data.endsAt;
-    state.questionTime = data.questionTime || 20;
+    applyRoomSync(data);
 
     await loadPackAndStart();
   } catch (error) {
@@ -1061,13 +1079,7 @@ window.addEventListener("popstate", event => {
   const name = event.state?.screen || "home";
   const screen = dom.screens[name] || dom.screens.home;
 
-  if (state.syncLoop) {
-    clearInterval(state.syncLoop);
-  }
-
-  if (state.lobbyPoll) {
-    clearInterval(state.lobbyPoll);
-  }
+  stopGameLoops();
 
   showScreen(screen, false);
 
@@ -1138,7 +1150,6 @@ dom.joinArenaBtn?.addEventListener("click", joinArena);
 dom.startArenaBtn?.addEventListener("click", startArena);
 dom.copyLinkBtn?.addEventListener("click", copyJoinLink);
 dom.submitAnswerBtn?.addEventListener("click", submitCurrentAnswer);
-dom.nextChallengeBtn?.addEventListener("click", goNextManual);
 dom.viewLeaderboardBtn?.addEventListener("click", showLeaderboard);
 dom.generateLessonBtn?.addEventListener("click", generateRecoveryLesson);
 

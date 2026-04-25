@@ -7,14 +7,10 @@ import {
   getPlayer,
   updatePlayer,
   finishRoomIfAllDone,
-  fastForwardToResultIfAllAnswered,
-  forceNextForSinglePlayer
+  finishRoomIfTimeExpired,
+  advanceRoomAfterSubmit,
+  getRoomTiming
 } from "../services/roomService.js";
-import {
-  QUESTION_TIME_SECONDS,
-  RESULT_DURATION_SECONDS,
-  LEADERBOARD_DURATION_SECONDS
-} from "../config/constants.js";
 import { normalizeLearningPack } from "../validators/packValidator.js";
 import { generateRecoveryLessonWithAI } from "../services/aiService.js";
 import {
@@ -24,14 +20,6 @@ import {
 } from "../utils/scoring.js";
 
 const router = express.Router();
-
-function getCycleMs() {
-  return (
-    QUESTION_TIME_SECONDS +
-    RESULT_DURATION_SECONDS +
-    LEADERBOARD_DURATION_SECONDS
-  ) * 1000;
-}
 
 function playerAnsweredChallenge(player, challengeIndex) {
   return (player.answers || []).some(answer => {
@@ -89,7 +77,7 @@ router.post("/", async (req, res) => {
 
 router.get("/:code", async (req, res) => {
   try {
-    const room = await getRoom(req.params.code);
+    let room = await getRoom(req.params.code);
 
     if (!room) {
       return res.status(404).json({
@@ -97,24 +85,21 @@ router.get("/:code", async (req, res) => {
       });
     }
 
-    let allAnsweredCurrentQuestion = false;
-    let currentChallengeIndex = 0;
+    const expired = await finishRoomIfTimeExpired(room.code);
 
-    if (room.status === "started" && room.started_at && room.pack?.challenges?.length) {
-      const cycleMs = getCycleMs();
-      const elapsed = Date.now() - Number(room.started_at);
-
-      currentChallengeIndex = Math.min(
-        Math.floor(elapsed / cycleMs),
-        room.pack.challenges.length - 1
-      );
-
-      allAnsweredCurrentQuestion =
-        room.players.length > 0 &&
-        room.players.every(player => {
-          return playerAnsweredChallenge(player, currentChallengeIndex);
-        });
+    if (expired) {
+      room = await getRoom(req.params.code);
     }
+
+    const timing = getRoomTiming(room);
+    const currentChallengeIndex = timing.currentChallengeIndex;
+
+    const allAnsweredCurrentQuestion =
+      room.status === "started" &&
+      room.players.length > 0 &&
+      room.players.every(player => {
+        return playerAnsweredChallenge(player, currentChallengeIndex);
+      });
 
     return res.json({
       code: room.code,
@@ -127,9 +112,15 @@ router.get("/:code", async (req, res) => {
       startedAt: room.started_at,
       endsAt: room.ends_at,
       questionTime: room.question_time,
-      totalChallenges: room.pack.challenges.length,
+
+      serverNow: timing.serverNow,
+      phase: timing.phase,
+      timeLeft: timing.timeLeft,
+      currentChallengeIndex: timing.currentChallengeIndex,
+      totalChallenges: timing.totalChallenges,
+
       allAnsweredCurrentQuestion,
-      currentChallengeIndex,
+
       players: room.players.map(player => ({
         id: player.id,
         userId: player.userId || null,
@@ -177,6 +168,7 @@ router.post("/:code/join", async (req, res) => {
 
     return res.json({
       playerId: player.id,
+      serverNow: Date.now(),
       room: {
         code: room.code,
         status: room.status,
@@ -216,7 +208,8 @@ router.post("/:code/start", async (req, res) => {
       status: result.status,
       startedAt: result.startedAt,
       endsAt: result.endsAt,
-      questionTime: result.questionTime
+      questionTime: result.questionTime,
+      serverNow: result.serverNow
     });
   } catch (error) {
     console.error("EROARE start room:", error);
@@ -243,11 +236,17 @@ router.get("/:code/pack", async (req, res) => {
       });
     }
 
+    const timing = getRoomTiming(room);
+
     return res.json({
       pack: room.pack,
       startedAt: room.started_at,
       endsAt: room.ends_at,
-      questionTime: room.question_time
+      questionTime: room.question_time,
+      serverNow: timing.serverNow,
+      phase: timing.phase,
+      timeLeft: timing.timeLeft,
+      currentChallengeIndex: timing.currentChallengeIndex
     });
   } catch (error) {
     console.error("EROARE get pack:", error);
@@ -274,6 +273,8 @@ router.get("/:code/quiz", async (req, res) => {
       });
     }
 
+    const timing = getRoomTiming(room);
+
     return res.json({
       quiz: {
         title: room.pack.title,
@@ -285,7 +286,11 @@ router.get("/:code/quiz", async (req, res) => {
       pack: room.pack,
       startedAt: room.started_at,
       endsAt: room.ends_at,
-      questionTime: room.question_time
+      questionTime: room.question_time,
+      serverNow: timing.serverNow,
+      phase: timing.phase,
+      timeLeft: timing.timeLeft,
+      currentChallengeIndex: timing.currentChallengeIndex
     });
   } catch (error) {
     console.error("EROARE get quiz:", error);
@@ -312,7 +317,13 @@ router.post("/:code/submit", async (req, res) => {
       });
     }
 
-    const { playerId, challengeIndex, questionIndex, selectedAnswer, timeLeft } = req.body;
+    const {
+      playerId,
+      challengeIndex,
+      questionIndex,
+      selectedAnswer,
+      timeLeft
+    } = req.body;
 
     const index =
       typeof challengeIndex === "number"
@@ -344,8 +355,18 @@ router.post("/:code/submit", async (req, res) => {
     });
 
     if (alreadyAnswered) {
-      return res.status(400).json({
-        error: "Ai răspuns deja la challenge-ul acesta."
+      const freshRoom = await getRoom(room.code);
+      const timing = getRoomTiming(freshRoom);
+
+      return res.json({
+        alreadyAnswered: true,
+        score: player.score || 0,
+        startedAt: freshRoom.started_at,
+        endsAt: freshRoom.ends_at,
+        serverNow: timing.serverNow,
+        phase: timing.phase,
+        currentChallengeIndex: timing.currentChallengeIndex,
+        timeLeft: timing.timeLeft
       });
     }
 
@@ -382,9 +403,12 @@ router.post("/:code/submit", async (req, res) => {
       weak_concepts: newWeakConcepts
     });
 
-    const fastForward = await fastForwardToResultIfAllAnswered(room.code, index);
+    const advance = await advanceRoomAfterSubmit(room.code, index);
 
     await finishRoomIfAllDone(room.code);
+
+    const freshRoom = await getRoom(room.code);
+    const timing = getRoomTiming(freshRoom);
 
     return res.json({
       isCorrect: evaluation.correct,
@@ -398,39 +422,26 @@ router.post("/:code/submit", async (req, res) => {
       type: challenge.type,
       correctAnswers: challenge.correctAnswers || [],
       pairs: challenge.pairs || [],
-      startedAt: fastForward?.startedAt || room.started_at,
-      endsAt: fastForward?.endsAt || room.ends_at
+
+      status: advance?.status || freshRoom.status,
+      startedAt: advance?.startedAt || freshRoom.started_at,
+      endsAt: advance?.endsAt || freshRoom.ends_at,
+      serverNow: advance?.serverNow || timing.serverNow,
+      phase: advance?.phase || timing.phase,
+      currentChallengeIndex:
+        typeof advance?.currentChallengeIndex === "number"
+          ? advance.currentChallengeIndex
+          : timing.currentChallengeIndex,
+      timeLeft:
+        typeof advance?.timeLeft === "number"
+          ? advance.timeLeft
+          : timing.timeLeft
     });
   } catch (error) {
     console.error("EROARE submit:", error);
 
     return res.status(500).json({
       error: "Eroare la trimiterea răspunsului."
-    });
-  }
-});
-
-router.post("/:code/next", async (req, res) => {
-  try {
-    const { playerId } = req.body;
-
-    if (!playerId) {
-      return res.status(400).json({
-        error: "Player missing."
-      });
-    }
-
-    const result = await forceNextForSinglePlayer(req.params.code, playerId);
-
-    return res.json({
-      ok: true,
-      ...result
-    });
-  } catch (error) {
-    console.error("EROARE next solo:", error);
-
-    return res.status(400).json({
-      error: error.message || "Nu am putut trece la următoarea întrebare."
     });
   }
 });
@@ -444,6 +455,8 @@ router.get("/:code/leaderboard", async (req, res) => {
         error: "Camera nu există."
       });
     }
+
+    const timing = getRoomTiming(room);
 
     const leaderboard = [...room.players]
       .sort((a, b) => b.score - a.score)
@@ -479,6 +492,7 @@ router.get("/:code/leaderboard", async (req, res) => {
       leaderboard,
       weakConcepts,
       endsAt: room.ends_at,
+      serverNow: timing.serverNow,
       totalChallenges: room.pack.challenges.length
     });
   } catch (error) {
