@@ -25,6 +25,29 @@ function uniqueArray(array) {
   return [...new Set(array.map(normalizeString).filter(Boolean))];
 }
 
+function containsHiddenReference(text) {
+  const value = String(text || "").toLowerCase();
+
+  const forbiddenPatterns = [
+    /\blinia\s*\d+\b/i,
+    /\bline\s*\d+\b/i,
+    /\brândul\s*\d+\b/i,
+    /\brandul\s*\d+\b/i,
+    /\bpagina\s*\d+\b/i,
+    /\bpage\s*\d+\b/i,
+    /\bslide(?:-ul)?\s*\d+\b/i,
+    /\bcodul de mai sus\b/i,
+    /\bfragmentul de mai sus\b/i,
+    /\btextul de mai sus\b/i,
+    /\bexemplul de mai sus\b/i,
+    /\bshown above\b/i,
+    /\babove code\b/i,
+    /\babove fragment\b/i
+  ];
+
+  return forbiddenPatterns.some(pattern => pattern.test(value));
+}
+
 function enforceSingleBlank(prompt) {
   let result = normalizeString(prompt).replace(/_{2,}/g, "____");
   const parts = result.split("____");
@@ -116,6 +139,25 @@ function hasBadOptionShape(option) {
   return false;
 }
 
+function validateVisibleText(challenge, index) {
+  const visibleFields = [
+    challenge.prompt,
+    challenge.mistakeText,
+    ...(challenge.options || []),
+    ...(challenge.steps || []),
+    ...(challenge.correctOrder || []),
+    ...(challenge.pairs || []).flatMap(pair => [pair.left, pair.right])
+  ];
+
+  for (const field of visibleFields) {
+    if (containsHiddenReference(field)) {
+      throw new Error(
+        `Challenge ${index + 1} contains hidden source reference: "${field}"`
+      );
+    }
+  }
+}
+
 function validateFillBlank(challenge, index) {
   challenge.prompt = enforceSingleBlank(challenge.prompt);
 
@@ -135,7 +177,7 @@ function validateFillBlank(challenge, index) {
     throw new Error(`Fill blank ${index + 1} is not self-contained.`);
   }
 
-  if (!challenge.sourceSnippet || challenge.sourceSnippet.length < 12) {
+  if (!challenge.sourceSnippet || challenge.sourceSnippet.length < 8) {
     throw new Error(`Fill blank ${index + 1} needs useful sourceSnippet.`);
   }
 }
@@ -172,11 +214,11 @@ function normalizeChallenge(raw, index) {
       : [],
     pairs: Array.isArray(raw.pairs)
       ? raw.pairs
-          .map(p => ({
-            left: normalizeString(p?.left),
-            right: normalizeString(p?.right)
+          .map(pair => ({
+            left: normalizeString(pair?.left),
+            right: normalizeString(pair?.right)
           }))
-          .filter(p => p.left && p.right)
+          .filter(pair => pair.left && pair.right)
       : [],
     acceptedAnswers: Array.isArray(raw.acceptedAnswers)
       ? uniqueArray(raw.acceptedAnswers)
@@ -193,6 +235,8 @@ function normalizeChallenge(raw, index) {
   if (!challenge.prompt && type !== "spot_mistake") {
     throw new Error(`Challenge ${index + 1} has no prompt.`);
   }
+
+  validateVisibleText(challenge, index);
 
   if (type === "multiple_choice") {
     if (asksForMultipleAnswers(challenge.prompt)) {
@@ -280,12 +324,12 @@ function normalizeChallenge(raw, index) {
     challenge.options = [];
     challenge.correctAnswer = "";
     challenge.correctAnswers = [];
-    challenge.shuffledRight = shuffleArray(challenge.pairs.map(p => p.right));
+    challenge.shuffledRight = shuffleArray(challenge.pairs.map(pair => pair.right));
   }
 
   if (type === "multiple_select") {
     if (!asksForMultipleAnswers(challenge.prompt)) {
-      challenge.prompt = `Selectează TOATE variantele corecte: ${challenge.prompt}`.slice(0, 170);
+      challenge.prompt = `Selectează TOATE variantele corecte: ${challenge.prompt}`.slice(0, 180);
     }
 
     challenge.options = challenge.options.filter(option => !hasBadOptionShape(option));
@@ -358,7 +402,7 @@ export function normalizeLearningPack(rawPack) {
   return {
     title: normalizeString(rawPack.title) || "ExamForge Arena",
     summary: normalizeString(rawPack.summary) || "AI-generated learning challenges.",
-    category: normalizeString(rawPack.category) || "Other",
+    category: normalizeString(rawPack.category) || "General Knowledge",
     concepts: normalizeConcepts(rawPack.concepts),
     challenges
   };

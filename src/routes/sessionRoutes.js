@@ -90,6 +90,36 @@ async function updateStatsForAllLoggedPlayers(results) {
   }
 }
 
+async function getRoomStatus(roomCode) {
+  const { data } = await supabaseAdmin
+    .from("rooms")
+    .select("status")
+    .eq("code", roomCode)
+    .maybeSingle();
+
+  return data?.status || null;
+}
+
+async function getPlayersById(roomCode) {
+  const { data: players, error } = await supabaseAdmin
+    .from("players")
+    .select("id, user_id, abandoned, finished")
+    .eq("room_code", roomCode);
+
+  if (error) {
+    console.error("Could not load room players:", error);
+    return new Map();
+  }
+
+  const map = new Map();
+
+  (players || []).forEach(player => {
+    map.set(player.id, player);
+  });
+
+  return map;
+}
+
 router.post("/sessions/save", async (req, res) => {
   try {
     const {
@@ -119,13 +149,19 @@ router.post("/sessions/save", async (req, res) => {
       });
     }
 
+    const roomStatus = await getRoomStatus(roomCode);
+
+    if (roomStatus === "closed") {
+      return res.json({
+        ok: true,
+        skipped: true,
+        reason: "Room was closed."
+      });
+    }
+
     const leaderboard = normalizeLeaderboard(leaderboardData);
 
-    const eligibleLeaderboard = leaderboard.filter(player => {
-     return !player.abandoned && player.finished;
-    });
-
-    if (eligibleLeaderboard.length === 0) { {
+    if (leaderboard.length === 0) {
       return res.status(400).json({
         error: "Missing leaderboard."
       });
@@ -142,6 +178,32 @@ router.post("/sessions/save", async (req, res) => {
         ok: true,
         alreadySaved: true,
         sessionId: existingSession.id
+      });
+    }
+
+    const playersById = await getPlayersById(roomCode);
+
+    const eligibleLeaderboard = leaderboard
+      .map(player => {
+        const dbPlayer = playersById.get(player.id);
+
+        return {
+          ...player,
+          userId: player.userId || dbPlayer?.user_id || null,
+          abandoned: Boolean(player.abandoned || dbPlayer?.abandoned),
+          finished:
+            typeof player.finished === "boolean"
+              ? player.finished
+              : Boolean(dbPlayer?.finished)
+        };
+      })
+      .filter(player => {
+        return !player.abandoned && player.finished;
+      });
+
+    if (eligibleLeaderboard.length === 0) {
+      return res.status(400).json({
+        error: "No eligible finished players to save."
       });
     }
 
@@ -199,7 +261,8 @@ router.post("/sessions/save", async (req, res) => {
 
     return res.json({
       ok: true,
-      sessionId: session.id
+      sessionId: session.id,
+      savedPlayers: results.length
     });
   } catch (error) {
     console.error("save session route error:", error);

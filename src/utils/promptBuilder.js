@@ -17,26 +17,30 @@ No prose outside JSON.
 
 Language:
 - Use the same main language as the document.
-- If Romanian, write Romanian.
+- If the document is Romanian, write Romanian.
 
-CRITICAL QUALITY RULES:
-Every challenge must be self-contained.
-The player will NOT see the document while answering.
-The player only sees:
+CRITICAL RULE:
+Every challenge must be SELF-CONTAINED.
+
+The player will NOT see the document.
+The player will ONLY see:
 - prompt
 - options / pairs / steps
 - mistakeText, if present
 
-So:
-- Do NOT ask for hidden values from the document.
-- Do NOT invent numbers, prices, quantities, examples, dates, names, or formulas.
-- Do NOT create math word problems unless ALL numbers needed are visible in the prompt.
-- Do NOT create sequence questions like "from 12 to ____" unless the missing value is directly visible and obvious from the prompt.
+Therefore:
+- Do NOT reference hidden source positions.
+- Forbidden: "line 10", "linia 10", "rândul 3", "pagina 4", "slide 2", "codul de mai sus", "fragmentul de mai sus", "în document".
+- If you need to ask about a code line, include the actual code operation in the prompt.
+- Bad: "Linia 10 actualizează părintele lui x dacă x nu este NIL."
+- Good: "Instrucțiunea x.parent = y.parent se execută doar dacă x != NIL."
+- Do NOT ask questions that require seeing a hidden snippet.
+- Do NOT invent numbers, examples, prices, quantities, dates, names, formulas, or assumptions.
+- Do NOT create math word problems unless ALL needed numbers are visible in the prompt.
 - Do NOT ask "which statements are true?" as multiple_choice. Use multiple_select.
 - Do NOT put multiple statements glued into one option.
-- Do NOT make one option contain a list separated by many commas.
-- Each sourceSnippet must support the answer.
-- Explanation must not introduce new facts missing from prompt/sourceSnippet.
+- Do NOT make one option contain a long comma-separated list.
+- sourceSnippet must support the answer, but the answer must still be inferable from the visible prompt/options.
 
 Use ONLY the document.
 Ignore watermarks, headers, footers, page numbers, URLs, bibliography, copyright notices.
@@ -54,7 +58,7 @@ Generate exactly 8 challenges:
 - 1 multiple_select
 
 Field limits:
-- prompt max 170 chars
+- prompt max 180 chars
 - explanation max 220 chars
 - sourceSnippet max 180 chars
 - options max 100 chars each
@@ -99,6 +103,7 @@ multiple_choice:
 true_false:
 - options ["Adevărat","Fals"] or ["True","False"]
 - correctAnswer must be one option
+- prompt must be a complete statement, not a reference to a hidden line
 
 fill_blank:
 - prompt contains exactly one blank token: ____
@@ -106,8 +111,6 @@ fill_blank:
 - correctAnswer is only the missing word/phrase
 - acceptedAnswers contains valid alternatives
 - do NOT ask incomplete math/sequence questions
-- bad: "Scrieți numerele din 3 în 3 de la 12 până la ____"
-- good: "Următorul număr după 12, 15, 18 este ____"
 
 order_steps:
 - exactly 3 steps
@@ -119,6 +122,7 @@ spot_mistake:
 - mistakeText is one wrong claim
 - options exactly 4 explanations
 - correctAnswer one of options
+- mistakeText must not reference hidden lines/pages/snippets
 
 matching:
 - pairs exactly 4 objects { "left": "string", "right": "string" }
@@ -134,41 +138,6 @@ multiple_select:
 
 DOCUMENT:
 ${documentSlice}
-`;
-}
-
-export function buildAuditPrompt(text, pack) {
-  const documentContext = prepareTinyDocumentSlice(text);
-
-  return `
-You are a strict QA auditor for educational quiz packs.
-
-Return ONLY valid JSON.
-
-Check if the pack is safe to show to students.
-
-Mark valid=false if ANY challenge:
-- is not self-contained
-- requires hidden values from the document
-- invents facts, numbers, examples, prices, quantities, formulas
-- has a fill_blank where the missing answer cannot be inferred from prompt alone
-- has a math question without all needed values in prompt
-- has a multiple_choice with more than one correct option
-- should be multiple_select but is multiple_choice
-- has options glued together or confusing
-- has sourceSnippet that does not support the answer
-
-JSON schema:
-{
-  "valid": true,
-  "problems": ["string"]
-}
-
-DOCUMENT:
-${documentContext}
-
-PACK:
-${JSON.stringify(pack, null, 2)}
 `;
 }
 
@@ -197,8 +166,9 @@ Hard requirements:
 - every challenge must be self-contained
 - use only the document
 - no invented facts
-- no hidden values
-- no incomplete math or sequence questions
+- no hidden source references
+- no "linia X", "line X", "pagina X", "codul de mai sus", "fragmentul de mai sus"
+- if a question mentions a code operation, include the actual operation in the prompt
 - if a question has multiple correct answers, make it multiple_select
 
 Root JSON:

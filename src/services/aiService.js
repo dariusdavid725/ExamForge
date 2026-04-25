@@ -216,13 +216,13 @@ async function tryGenerateAndRepair(model, text, gameMode, onProgress) {
   onProgress?.("AI is generating strict challenges...");
 
   const raw = await callJsonSchema(
-    model,
-    buildLearningPackPrompt(text, gameMode),
-    LEARNING_PACK_SCHEMA,
-    "learning_pack",
-    3600,
-    0.25
-  );
+  model,
+  repairPrompt,
+  LEARNING_PACK_SCHEMA,
+  "learning_pack_repair",
+  3600,
+  0.15
+)
 
   let pack = parseAndNormalizePack(raw);
 
@@ -326,13 +326,13 @@ export async function generateRecoveryLessonWithAI(room, player) {
       console.log(`Trying recovery lesson model: ${model}`);
 
       const raw = await callJsonSchema(
-        model,
-        prompt,
-        RECOVERY_SCHEMA,
-        "recovery_lesson",
-        1400,
-        0.25
-      );
+          model,
+          repairPrompt,
+          LEARNING_PACK_SCHEMA,
+          "learning_pack_repair",
+          3600,
+          0.15
+        )
 
       return {
         ...JSON.parse(raw),
