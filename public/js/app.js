@@ -6,6 +6,7 @@ import { getProfile } from "./supabaseClient.js";
 import {
   saveGameSession,
   renderDashboard,
+  renderHistoryPage,
   loadNotificationCount
 } from "./dashboard.js";
 import {
@@ -146,96 +147,11 @@ async function showDashboard() {
 async function showHistoryScreen() {
   showScreen(dom.screens.history, false);
 
-  const { getSupabase } = await import("./supabaseClient.js");
-  const supabase = await getSupabase();
-
-  const { data: ownedSessions } = await supabase
-    .from("game_sessions")
-    .select("*, game_results(*)")
-    .eq("host_id", state.currentUser.id)
-    .order("played_at", { ascending: false });
-
-  const { data: participatedResults } = await supabase
-    .from("game_results")
-    .select("session_id")
-    .eq("user_id", state.currentUser.id);
-
-  const participatedIds = [
-    ...new Set((participatedResults || []).map(result => result.session_id))
-  ];
-
-  let participatedSessions = [];
-
-  if (participatedIds.length > 0) {
-    const { data } = await supabase
-      .from("game_sessions")
-      .select("*, game_results(*)")
-      .in("id", participatedIds)
-      .order("played_at", { ascending: false });
-
-    participatedSessions = data || [];
-  }
-
-  const sessionsMap = new Map();
-
-  [...(ownedSessions || []), ...participatedSessions].forEach(session => {
-    sessionsMap.set(session.id, session);
-  });
-
-  const sessions = [...sessionsMap.values()].sort((a, b) => {
-    return new Date(b.played_at) - new Date(a.played_at);
-  });
-
   const container = document.getElementById("historyContent");
 
   if (!container) return;
 
-  container.innerHTML =
-    sessions && sessions.length
-      ? sessions
-          .map(session => {
-            const myResult = (session.game_results || []).find(result => {
-              return result.user_id === state.currentUser.id;
-            });
-
-            return `
-              <button class="dash-session-row history-session-row" data-id="${session.id}" type="button">
-                <div>
-                  <h3>${session.title}</h3>
-                  <p class="muted" style="margin-top:8px;">
-                    ${session.category || "Quiz"} · ${session.player_count || 0} players ·
-                    ${new Date(session.played_at).toLocaleDateString()}
-                  </p>
-                  ${
-                    myResult
-                      ? `<p class="muted">Your result: #${myResult.rank} · ${myResult.score} pts · ${myResult.correct_count}/${myResult.total_answered}</p>`
-                      : `<p class="muted">Hosted by you</p>`
-                  }
-                </div>
-              </button>
-            `;
-          })
-          .join("")
-      : `
-        <div class="card">
-          <p class="muted">No quizzes yet.</p>
-        </div>
-      `;
-
-  container.querySelectorAll(".history-session-row").forEach(row => {
-    row.addEventListener("click", async () => {
-      const { showHistoryDetailModal } = await import("./historyDetail.js").catch(() => ({
-        showHistoryDetailModal: null
-      }));
-
-      if (showHistoryDetailModal) {
-        showHistoryDetailModal(row.dataset.id, supabase);
-        return;
-      }
-
-      alert("Detailed history modal will be added in the next step.");
-    });
-  });
+  await renderHistoryPage(container, state.currentUser);
 }
 
 // ─── Auth listeners ───────────────────────────────────────────────────────────

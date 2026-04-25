@@ -2,6 +2,8 @@ import { getSupabase } from "./supabaseClient.js";
 import { logout } from "./auth.js";
 import { showHistoryDetailModal } from "./historyDetail.js";
 
+// ─── Save completed game ──────────────────────────────────────────────────────
+
 export async function saveGameSession({
   user,
   profile,
@@ -31,13 +33,13 @@ export async function saveGameSession({
         room_code: roomCode,
         title: pack.title,
         category: pack.category || "General Knowledge",
-        challenge_count: pack.challenges.length,
+        challenge_count: pack.challenges?.length || 0,
         document_name: documentName || "document",
         document_text: documentText || null,
         document_preview: documentText ? documentText.slice(0, 1500) : null,
         pack,
         conspect: pack.conspect || null,
-        player_count: leaderboardData.leaderboard.length
+        player_count: leaderboardData.leaderboard?.length || 0
       })
       .select()
       .single();
@@ -49,7 +51,7 @@ export async function saveGameSession({
 
     if (!session) return null;
 
-    const results = leaderboardData.leaderboard.map(player => ({
+    const results = (leaderboardData.leaderboard || []).map(player => ({
       session_id: session.id,
       user_id: player.userId || (player.id === user.id ? user.id : null),
       player_name: player.name,
@@ -61,12 +63,14 @@ export async function saveGameSession({
       answers: player.answers || []
     }));
 
-    const { error: resultsError } = await sb
-      .from("game_results")
-      .insert(results);
+    if (results.length > 0) {
+      const { error: resultsError } = await sb
+        .from("game_results")
+        .insert(results);
 
-    if (resultsError) {
-      console.error("game_results insert error:", resultsError);
+      if (resultsError) {
+        console.error("game_results insert error:", resultsError);
+      }
     }
 
     await updateStatsForLoggedPlayers(sb, results, user.id, profile);
@@ -97,10 +101,10 @@ async function updateStatsForLoggedPlayers(sb, results, hostId, hostProfile) {
 
   for (const [userId, stats] of grouped.entries()) {
     try {
-      let profile = null;
+      let userProfile = null;
 
       if (userId === hostId && hostProfile) {
-        profile = hostProfile;
+        userProfile = hostProfile;
       } else {
         const { data } = await sb
           .from("profiles")
@@ -108,17 +112,17 @@ async function updateStatsForLoggedPlayers(sb, results, hostId, hostProfile) {
           .eq("id", userId)
           .maybeSingle();
 
-        profile = data;
+        userProfile = data;
       }
 
-      await updateStreakAndStats(sb, userId, profile, stats.score);
+      await updateStreak(sb, userId, userProfile, stats.score);
     } catch (error) {
       console.error("Could not update stats for", userId, error);
     }
   }
 }
 
-async function updateStreakAndStats(sb, userId, profile, addedPoints = 0) {
+async function updateStreak(sb, userId, profile, addedPoints = 0) {
   const today = new Date().toISOString().split("T")[0];
   const yesterday = new Date(Date.now() - 86400000).toISOString().split("T")[0];
 
@@ -144,6 +148,8 @@ async function updateStreakAndStats(sb, userId, profile, addedPoints = 0) {
     .eq("id", userId);
 }
 
+// ─── Dashboard render ─────────────────────────────────────────────────────────
+
 export async function renderDashboard(
   container,
   user,
@@ -152,48 +158,7 @@ export async function renderDashboard(
 ) {
   const sb = await getSupabase();
 
-  const { data: hostedSessions } = await sb
-    .from("game_sessions")
-    .select("*")
-    .eq("host_id", user.id)
-    .order("played_at", {
-      ascending: false
-    })
-    .limit(5);
-
-  const { data: participatedResults } = await sb
-    .from("game_results")
-    .select("session_id")
-    .eq("user_id", user.id);
-
-  const participatedIds = [
-    ...new Set((participatedResults || []).map(result => result.session_id))
-  ];
-
-  let participatedSessions = [];
-
-  if (participatedIds.length > 0) {
-    const { data } = await sb
-      .from("game_sessions")
-      .select("*")
-      .in("id", participatedIds)
-      .order("played_at", {
-        ascending: false
-      })
-      .limit(5);
-
-    participatedSessions = data || [];
-  }
-
-  const sessionsMap = new Map();
-
-  [...(hostedSessions || []), ...participatedSessions].forEach(session => {
-    sessionsMap.set(session.id, session);
-  });
-
-  const sessions = [...sessionsMap.values()]
-    .sort((a, b) => new Date(b.played_at) - new Date(a.played_at))
-    .slice(0, 5);
+  const sessions = await getSessionsForUser(sb, user.id, 5);
 
   const { data: friendships } = await sb
     .from("friendships")
@@ -224,7 +189,7 @@ export async function renderDashboard(
     <div class="dashboard-grid">
       <div class="card profile-card">
         <div class="profile-avatar" style="background:${avatarColor}">
-          ${avatarLetter}
+          ${escapeHTML(avatarLetter)}
         </div>
 
         <h2>${escapeHTML(profile?.username || "Player")}</h2>
@@ -273,13 +238,13 @@ export async function renderDashboard(
 
         <div style="display:grid; gap:12px; margin-top:14px;">
           ${
-            sessions && sessions.length > 0
+            sessions.length > 0
               ? sessions
                   .map(session => {
                     return `
                       <button
                         class="dash-session-row"
-                        data-id="${session.id}"
+                        data-session-id="${session.id}"
                         type="button"
                       >
                         <div>
@@ -287,7 +252,7 @@ export async function renderDashboard(
                           <p class="muted">
                             ${escapeHTML(session.category || "")}
                             · ${session.player_count || 0} players
-                            · ${new Date(session.played_at).toLocaleDateString()}
+                            · ${formatDate(session.played_at)}
                           </p>
                         </div>
 
@@ -339,12 +304,137 @@ export async function renderDashboard(
     showAddFriendModal(sb, user.id);
   });
 
-  container.querySelectorAll(".dash-session-row").forEach(row => {
-    row.addEventListener("click", () => showHistoryDetailModal(row.dataset.id, sb));
+  container.querySelectorAll("[data-session-id]").forEach(button => {
+    button.addEventListener("click", () => {
+      showHistoryDetailModal(button.dataset.sessionId, sb);
+    });
   });
 
   await loadPendingRequests(sb, user.id, container);
 }
+
+// ─── My History page render ───────────────────────────────────────────────────
+
+export async function renderHistoryPage(container, user) {
+  const sb = await getSupabase();
+
+  container.innerHTML = `
+    <div class="card">
+      <p class="muted">Loading history...</p>
+    </div>
+  `;
+
+  const sessions = await getSessionsForUser(sb, user.id, 100);
+
+  if (!sessions.length) {
+    container.innerHTML = `
+      <div class="card">
+        <p class="muted">No quizzes yet.</p>
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = `
+    <div style="display:grid; gap:14px;">
+      ${sessions
+        .map(session => {
+          const myResult = (session.game_results || []).find(result => {
+            return result.user_id === user.id;
+          });
+
+          return `
+            <button
+              class="dash-session-row"
+              data-history-session-id="${session.id}"
+              type="button"
+            >
+              <div>
+                <strong>${escapeHTML(session.title || "Quiz")}</strong>
+                <p class="muted">
+                  ${escapeHTML(session.category || "Quiz")}
+                  · ${session.player_count || 0} players
+                  · ${formatDate(session.played_at)}
+                </p>
+
+                ${
+                  myResult
+                    ? `
+                      <p class="muted">
+                        Your result: #${myResult.rank}
+                        · ${myResult.score} pts
+                        · ${myResult.correct_count}/${myResult.total_answered} correct
+                      </p>
+                    `
+                    : `
+                      <p class="muted">
+                        Hosted by you
+                      </p>
+                    `
+                }
+              </div>
+
+              <span>Details</span>
+            </button>
+          `;
+        })
+        .join("")}
+    </div>
+  `;
+
+  container.querySelectorAll("[data-history-session-id]").forEach(button => {
+    button.addEventListener("click", () => {
+      showHistoryDetailModal(button.dataset.historySessionId, sb);
+    });
+  });
+}
+
+async function getSessionsForUser(sb, userId, limit = 5) {
+  const { data: hostedSessions } = await sb
+    .from("game_sessions")
+    .select("*, game_results(*)")
+    .eq("host_id", userId)
+    .order("played_at", {
+      ascending: false
+    })
+    .limit(limit);
+
+  const { data: participatedResults } = await sb
+    .from("game_results")
+    .select("session_id")
+    .eq("user_id", userId);
+
+  const participatedIds = [
+    ...new Set((participatedResults || []).map(result => result.session_id))
+  ];
+
+  let participatedSessions = [];
+
+  if (participatedIds.length > 0) {
+    const { data } = await sb
+      .from("game_sessions")
+      .select("*, game_results(*)")
+      .in("id", participatedIds)
+      .order("played_at", {
+        ascending: false
+      })
+      .limit(limit);
+
+    participatedSessions = data || [];
+  }
+
+  const sessionsMap = new Map();
+
+  [...(hostedSessions || []), ...participatedSessions].forEach(session => {
+    sessionsMap.set(session.id, session);
+  });
+
+  return [...sessionsMap.values()]
+    .sort((a, b) => new Date(b.played_at) - new Date(a.played_at))
+    .slice(0, limit);
+}
+
+// ─── Friends ──────────────────────────────────────────────────────────────────
 
 function renderFriendsLb(profiles, currentUserId) {
   if (!profiles.length) {
@@ -379,7 +469,7 @@ function renderFriendsLb(profiles, currentUserId) {
           <span class="rank">${index + 1}</span>
 
           <div class="mini-avatar">
-            ${(profile.username || "U")[0].toUpperCase()}
+            ${escapeHTML((profile.username || "U")[0].toUpperCase())}
           </div>
 
           <div>
@@ -426,7 +516,6 @@ async function loadPendingRequests(sb, userId, container) {
             <button
               class="btn btn-secondary"
               data-accept-friend="${request.id}"
-              data-requester-id="${request.requester_id}"
               type="button"
             >
               Accept
@@ -508,6 +597,8 @@ async function showAddFriendModal(sb, userId) {
   alert(`Friend request sent to ${friend.username}!`);
 }
 
+// ─── Bell notifications ───────────────────────────────────────────────────────
+
 export async function loadNotificationCount(userId) {
   const sb = await getSupabase();
 
@@ -518,6 +609,18 @@ export async function loadNotificationCount(userId) {
     .eq("status", "pending");
 
   return (data || []).length;
+}
+
+// ─── Utilities ────────────────────────────────────────────────────────────────
+
+function formatDate(value) {
+  if (!value) return "-";
+
+  try {
+    return new Date(value).toLocaleDateString();
+  } catch {
+    return "-";
+  }
 }
 
 function escapeHTML(value) {

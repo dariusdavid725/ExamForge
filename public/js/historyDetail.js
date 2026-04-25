@@ -14,25 +14,32 @@ export async function showHistoryDetailModal(sessionId, supabase) {
     .from("game_results")
     .select("*")
     .eq("session_id", sessionId)
-    .order("rank", { ascending: true });
+    .order("rank", {
+      ascending: true
+    });
 
   const pack = session.pack || {};
   const challenges = Array.isArray(pack.challenges) ? pack.challenges : [];
   const sortedResults = results || [];
 
+  injectHistoryDetailStyles();
+
   const overlay = document.createElement("div");
-  overlay.className = "history-modal-overlay";
+  overlay.className = "ef-history-overlay";
 
   overlay.innerHTML = `
-    <div class="history-modal">
-      <div class="history-modal-header">
+    <div class="ef-history-modal">
+      <div class="ef-history-header">
         <div>
           <p class="eyebrow">Match details</p>
           <h2>${escapeHTML(session.title || "Quiz")}</h2>
           <p class="muted">
             ${escapeHTML(session.category || "Quiz")}
             · ${session.player_count || 0} players
-            · ${new Date(session.played_at).toLocaleString()}
+            · ${formatDateTime(session.played_at)}
+          </p>
+          <p class="muted">
+            Document: ${escapeHTML(session.document_name || "document")}
           </p>
         </div>
 
@@ -41,55 +48,51 @@ export async function showHistoryDetailModal(sessionId, supabase) {
         </button>
       </div>
 
-      <div class="history-detail-grid">
-        <div class="stat-card">
+      <div class="ef-history-stats">
+        <div class="ef-history-stat">
           <strong>${session.challenge_count || challenges.length || 0}</strong>
           <span>Challenges</span>
         </div>
 
-        <div class="stat-card">
+        <div class="ef-history-stat">
           <strong>${session.player_count || sortedResults.length || 0}</strong>
           <span>Players</span>
         </div>
 
-        <div class="stat-card">
+        <div class="ef-history-stat">
           <strong>${escapeHTML(session.room_code || "-")}</strong>
           <span>Room code</span>
         </div>
       </div>
 
-      <div class="history-section">
+      <section class="ef-history-section">
         <h3>Leaderboard</h3>
-        <div class="history-list">
+        <div class="ef-history-list">
           ${renderResults(sortedResults)}
         </div>
-      </div>
+      </section>
 
-      <div class="history-section">
+      <section class="ef-history-section">
         <h3>Questions</h3>
-        <div class="history-list">
+        <div class="ef-history-list">
           ${renderQuestions(challenges)}
         </div>
-      </div>
+      </section>
 
-      <div class="history-section">
+      <section class="ef-history-section">
         <h3>Player answers</h3>
-        <div class="history-list">
+        <div class="ef-history-list">
           ${renderPlayerAnswers(sortedResults, challenges)}
         </div>
-      </div>
+      </section>
 
-      <div class="history-section">
+      <section class="ef-history-section">
         <h3>Document</h3>
-
-        <p class="muted">
-          ${escapeHTML(session.document_name || "document")}
-        </p>
 
         ${
           session.document_preview || session.document_text
             ? `
-              <div class="document-box">
+              <div class="ef-document-box">
                 ${escapeHTML(session.document_preview || session.document_text)}
               </div>
 
@@ -103,19 +106,21 @@ export async function showHistoryDetailModal(sessionId, supabase) {
                 </button>
               </div>
             `
-            : `<p class="muted">No document text saved for this match.</p>`
+            : `
+              <p class="muted">No document text saved for this match.</p>
+            `
         }
-      </div>
+      </section>
 
       ${
         session.conspect
           ? `
-            <div class="history-section">
+            <section class="ef-history-section">
               <h3>Study notes</h3>
-              <div class="document-box">
+              <div class="ef-document-box">
                 ${escapeHTML(formatConspect(session.conspect))}
               </div>
-            </div>
+            </section>
           `
           : ""
       }
@@ -123,7 +128,6 @@ export async function showHistoryDetailModal(sessionId, supabase) {
   `;
 
   document.body.appendChild(overlay);
-  injectHistoryModalStyles();
 
   overlay.querySelector("#closeHistoryModal")?.addEventListener("click", () => {
     overlay.remove();
@@ -137,7 +141,10 @@ export async function showHistoryDetailModal(sessionId, supabase) {
 
   overlay.querySelector("#copyDocumentBtn")?.addEventListener("click", async () => {
     try {
-      await navigator.clipboard.writeText(session.document_text || session.document_preview || "");
+      await navigator.clipboard.writeText(
+        session.document_text || session.document_preview || ""
+      );
+
       alert("Document copied.");
     } catch {
       alert("Could not copy.");
@@ -146,6 +153,7 @@ export async function showHistoryDetailModal(sessionId, supabase) {
 
   overlay.querySelector("#downloadDocumentBtn")?.addEventListener("click", () => {
     const text = session.document_text || session.document_preview || "";
+
     const blob = new Blob([text], {
       type: "text/plain;charset=utf-8"
     });
@@ -169,7 +177,7 @@ function renderResults(results) {
   return results
     .map(result => {
       return `
-        <div class="history-row">
+        <div class="ef-history-row">
           <span class="rank">#${result.rank}</span>
 
           <div>
@@ -199,13 +207,13 @@ function renderQuestions(challenges) {
   return challenges
     .map((challenge, index) => {
       return `
-        <details class="history-details-card">
+        <details class="ef-history-details-card">
           <summary>
             <strong>Q${index + 1}. ${escapeHTML(challenge.concept || challenge.type || "Challenge")}</strong>
             <span>${escapeHTML(challenge.type || "")}</span>
           </summary>
 
-          <div class="history-detail-body">
+          <div class="ef-history-detail-body">
             <p><strong>Prompt:</strong> ${escapeHTML(challenge.prompt || "")}</p>
 
             ${
@@ -214,14 +222,16 @@ function renderQuestions(challenges) {
                 : ""
             }
 
-            ${renderChallengeCorrectAnswer(challenge)}
+            ${renderCorrectAnswer(challenge)}
 
             ${
               Array.isArray(challenge.options) && challenge.options.length
                 ? `
                   <p><strong>Options:</strong></p>
                   <ul>
-                    ${challenge.options.map(option => `<li>${escapeHTML(option)}</li>`).join("")}
+                    ${challenge.options
+                      .map(option => `<li>${escapeHTML(option)}</li>`)
+                      .join("")}
                   </ul>
                 `
                 : ""
@@ -233,7 +243,9 @@ function renderQuestions(challenges) {
                   <p><strong>Pairs:</strong></p>
                   <ul>
                     ${challenge.pairs
-                      .map(pair => `<li>${escapeHTML(pair.left)} → ${escapeHTML(pair.right)}</li>`)
+                      .map(pair => {
+                        return `<li>${escapeHTML(pair.left)} → ${escapeHTML(pair.right)}</li>`;
+                      })
                       .join("")}
                   </ul>
                 `
@@ -249,20 +261,44 @@ function renderQuestions(challenges) {
     .join("");
 }
 
-function renderChallengeCorrectAnswer(challenge) {
+function renderCorrectAnswer(challenge) {
   if (challenge.type === "multiple_select") {
-    return `<p><strong>Correct answers:</strong> ${escapeHTML((challenge.correctAnswers || []).join(", "))}</p>`;
+    return `
+      <p>
+        <strong>Correct answers:</strong>
+        ${escapeHTML((challenge.correctAnswers || []).join(", "))}
+      </p>
+    `;
   }
 
   if (challenge.type === "order_steps") {
-    return `<p><strong>Correct order:</strong> ${escapeHTML((challenge.correctOrder || []).join(" → "))}</p>`;
+    return `
+      <p>
+        <strong>Correct order:</strong>
+        ${escapeHTML((challenge.correctOrder || []).join(" → "))}
+      </p>
+    `;
   }
 
   if (challenge.type === "matching") {
-    return `<p><strong>Correct pairs:</strong> ${escapeHTML((challenge.pairs || []).map(pair => `${pair.left} → ${pair.right}`).join(", "))}</p>`;
+    return `
+      <p>
+        <strong>Correct pairs:</strong>
+        ${escapeHTML(
+          (challenge.pairs || [])
+            .map(pair => `${pair.left} → ${pair.right}`)
+            .join(", ")
+        )}
+      </p>
+    `;
   }
 
-  return `<p><strong>Correct answer:</strong> ${escapeHTML(challenge.correctAnswer || "")}</p>`;
+  return `
+    <p>
+      <strong>Correct answer:</strong>
+      ${escapeHTML(challenge.correctAnswer || "")}
+    </p>
+  `;
 }
 
 function renderPlayerAnswers(results, challenges) {
@@ -277,19 +313,19 @@ function renderPlayerAnswers(results, challenges) {
   return withAnswers
     .map(result => {
       return `
-        <details class="history-details-card">
+        <details class="ef-history-details-card">
           <summary>
             <strong>${escapeHTML(result.player_name || "Player")}</strong>
             <span>${result.score || 0} pts</span>
           </summary>
 
-          <div class="history-detail-body">
+          <div class="ef-history-detail-body">
             ${result.answers
               .map(answer => {
                 const challenge = challenges[answer.challengeIndex] || {};
 
                 return `
-                  <div class="answer-review ${answer.isCorrect ? "answer-ok" : answer.isPartial ? "answer-partial" : "answer-bad"}">
+                  <div class="ef-answer-review ${answer.isCorrect ? "ef-answer-ok" : answer.isPartial ? "ef-answer-partial" : "ef-answer-bad"}">
                     <p>
                       <strong>Q${Number(answer.challengeIndex) + 1}:</strong>
                       ${escapeHTML(challenge.prompt || "")}
@@ -348,29 +384,39 @@ function formatConspect(conspect) {
   }
 }
 
+function formatDateTime(value) {
+  if (!value) return "-";
+
+  try {
+    return new Date(value).toLocaleString();
+  } catch {
+    return "-";
+  }
+}
+
 function safeFileName(value) {
   return String(value || "document")
     .replace(/[^\w\d-_]+/g, "_")
     .slice(0, 80);
 }
 
-function injectHistoryModalStyles() {
-  if (document.getElementById("history-modal-styles")) return;
+function injectHistoryDetailStyles() {
+  if (document.getElementById("ef-history-detail-styles")) return;
 
   const style = document.createElement("style");
-  style.id = "history-modal-styles";
+  style.id = "ef-history-detail-styles";
 
   style.textContent = `
-    .history-modal-overlay {
+    .ef-history-overlay {
       position: fixed;
       inset: 0;
-      background: rgba(0, 0, 0, 0.55);
       z-index: 9999;
-      padding: 32px;
+      background: rgba(0, 0, 0, 0.55);
+      padding: 28px;
       overflow: auto;
     }
 
-    .history-modal {
+    .ef-history-modal {
       max-width: 1050px;
       margin: 0 auto;
       background: var(--surface, #fff);
@@ -381,62 +427,80 @@ function injectHistoryModalStyles() {
       padding: 28px;
     }
 
-    .history-modal-header {
+    .ef-history-header {
       display: flex;
-      justify-content: space-between;
-      gap: 16px;
       align-items: flex-start;
+      justify-content: space-between;
+      gap: 18px;
     }
 
-    .history-detail-grid {
+    .ef-history-stats {
       display: grid;
       grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 14px;
-      margin-top: 22px;
+      gap: 12px;
+      margin-top: 20px;
     }
 
-    .history-section {
-      margin-top: 28px;
+    .ef-history-stat {
+      border: 2px solid var(--text, #111);
+      border-radius: 16px;
+      padding: 16px;
+      background: #fff;
+      display: grid;
+      gap: 4px;
     }
 
-    .history-list {
+    .ef-history-stat strong {
+      font-size: 1.4rem;
+    }
+
+    .ef-history-stat span {
+      color: var(--muted, #666);
+      font-size: 0.92rem;
+    }
+
+    .ef-history-section {
+      margin-top: 26px;
+    }
+
+    .ef-history-list {
       display: grid;
       gap: 12px;
       margin-top: 12px;
     }
 
-    .history-row {
+    .ef-history-row {
       display: grid;
       grid-template-columns: auto 1fr auto;
-      gap: 14px;
       align-items: center;
+      gap: 14px;
       border: 2px solid var(--text, #111);
       border-radius: 16px;
       padding: 14px;
       background: #fff;
     }
 
-    .history-details-card {
+    .ef-history-details-card {
       border: 2px solid var(--text, #111);
       border-radius: 16px;
       padding: 14px;
       background: #fff;
     }
 
-    .history-details-card summary {
+    .ef-history-details-card summary {
       cursor: pointer;
       display: flex;
       justify-content: space-between;
-      gap: 14px;
+      gap: 16px;
     }
 
-    .history-detail-body {
+    .ef-history-detail-body {
       margin-top: 14px;
       display: grid;
       gap: 10px;
     }
 
-    .document-box {
+    .ef-document-box {
       margin-top: 12px;
       max-height: 260px;
       overflow: auto;
@@ -449,7 +513,7 @@ function injectHistoryModalStyles() {
       line-height: 1.5;
     }
 
-    .answer-review {
+    .ef-answer-review {
       border: 2px solid var(--text, #111);
       border-radius: 14px;
       padding: 12px;
@@ -458,29 +522,29 @@ function injectHistoryModalStyles() {
       gap: 6px;
     }
 
-    .answer-ok {
+    .ef-answer-ok {
       background: #ecfff4;
     }
 
-    .answer-partial {
+    .ef-answer-partial {
       background: #fff8db;
     }
 
-    .answer-bad {
+    .ef-answer-bad {
       background: #fff0f0;
     }
 
     @media (max-width: 720px) {
-      .history-modal-overlay {
+      .ef-history-overlay {
         padding: 14px;
       }
 
-      .history-detail-grid {
-        grid-template-columns: 1fr;
+      .ef-history-header {
+        flex-direction: column;
       }
 
-      .history-modal-header {
-        flex-direction: column;
+      .ef-history-stats {
+        grid-template-columns: 1fr;
       }
     }
   `;
