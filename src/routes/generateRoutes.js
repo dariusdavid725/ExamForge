@@ -7,11 +7,10 @@ import { cleanExtractedText, removeExternalLinks } from "../utils/textUtils.js";
 const router = express.Router();
 
 async function handleGeneratePack(req, res) {
-  // SSE headers — client sees progress in real time
   res.setHeader("Content-Type", "text/event-stream");
   res.setHeader("Cache-Control", "no-cache");
   res.setHeader("Connection", "keep-alive");
-  res.flushHeaders();
+  // Note: no res.flushHeaders() — crashes on Vercel serverless
 
   function send(event, data) {
     res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);

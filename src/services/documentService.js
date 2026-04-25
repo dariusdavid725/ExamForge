@@ -1,8 +1,7 @@
 import { createRequire } from "module";
 
 const require = createRequire(import.meta.url);
-// Use the library path directly to avoid pdf-parse loading test files on import
-const pdfParse = require("pdf-parse/lib/pdf-parse.js");
+const pdfParse = require("pdf-parse");
 
 export async function extractTextFromFile(file) {
   if (file.mimetype === "application/pdf") {
@@ -11,11 +10,16 @@ export async function extractTextFromFile(file) {
   }
 
   if (file.mimetype.startsWith("image/")) {
-    // Dynamic import — avoids crashing serverless on startup (tesseract loads WASM lazily)
-    const { default: Tesseract } = await import("tesseract.js");
-    const result = await Tesseract.recognize(file.buffer, "eng+ron");
-    return result.data.text;
+    // tesseract.js uses worker threads which are not available on Vercel serverless.
+    // Dynamic import + try/catch so the app doesn't crash on startup.
+    try {
+      const { default: Tesseract } = await import("tesseract.js");
+      const result = await Tesseract.recognize(file.buffer, "eng+ron");
+      return result.data.text;
+    } catch {
+      throw new Error("Image OCR is not supported in this deployment. Please upload a PDF instead.");
+    }
   }
 
-  throw new Error("Tip de fișier nesuportat.");
+  throw new Error("Unsupported file type. Please upload a PDF or image.");
 }
