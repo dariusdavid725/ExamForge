@@ -58,8 +58,8 @@ function switchSource(source) {
   if (source === "lesson") renderSavedLessons();
 }
 
-function renderSavedLessons() {
-  const lessons   = getLessonsFromStorage();
+async function renderSavedLessons() {
+  const lessons   = await getLessonsFromStorage(currentUser?.id);
   const container = el("savedLessonsList");
   if (!container) return;
 

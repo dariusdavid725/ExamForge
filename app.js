@@ -11,6 +11,7 @@ import conspectRoutes    from "./src/routes/conspectRoutes.js";
 import sessionRoutes     from "./src/routes/sessionRoutes.js";
 import roomInviteRoutes  from "./src/routes/roomInviteRoutes.js";
 import lessonRoutes      from "./src/routes/lessonRoutes.js";
+import userLessonRoutes  from "./src/routes/userLessonRoutes.js";
 import stripeRoutes      from "./src/routes/stripeRoutes.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -47,6 +48,7 @@ app.use("/api", sessionRoutes);
 app.use("/api", roomInviteRoutes);
 app.use("/api/rooms", roomRoutes);
 app.use("/api/lessons", lessonRoutes);
+app.use("/api", userLessonRoutes);
 
 if (!process.env.VERCEL) {
   const port = process.env.PORT || 3000;

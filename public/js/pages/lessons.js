@@ -20,6 +20,7 @@ let currentLessonId = null;
 let currentUser     = null;
 let userPlan        = "free";
 let weeklyUsage     = { lessons: 0, quizzes: 0 };
+let cachedLessons   = [];   // in-memory cache to avoid re-fetching on every open
 
 // ─── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -103,8 +104,8 @@ async function init() {
   setupButtons();
   updateQuizBtnForPlan();
 
-  const saved = getLessonsFromStorage();
-  if (saved.length > 0) {
+  cachedLessons = await getLessonsFromStorage(currentUser.id);
+  if (cachedLessons.length > 0) {
     showMyLessons();
   } else {
     showSection("uploadSection");
@@ -161,17 +162,17 @@ function updateQuizBtnForPlan() {
 // MY LESSONS VIEW
 // ══════════════════════════════════════════════════════════════════════════════
 
-function showMyLessons() {
-  renderMyLessons();
+async function showMyLessons() {
+  await renderMyLessons();
   showSection("myLessonsSection");
 }
 
-function renderMyLessons() {
-  const lessons = getLessonsFromStorage();
+async function renderMyLessons() {
+  cachedLessons = await getLessonsFromStorage(currentUser?.id);
   const grid    = el("lessonCardsGrid");
   if (!grid) return;
 
-  if (!lessons.length) {
+  if (!cachedLessons.length) {
     grid.innerHTML = `<div class="flat-card" style="text-align:center;padding:32px;">
       <p class="muted">No lessons yet.</p>
       <button id="firstLessonBtn" class="btn" style="margin-top:16px;">Create your first lesson</button>
@@ -180,7 +181,7 @@ function renderMyLessons() {
     return;
   }
 
-  grid.innerHTML = lessons.map(entry => {
+  grid.innerHTML = cachedLessons.map(entry => {
     const { label, btnText, primary } = statusInfo(entry);
     const score   = entry.lastQuizScore;
     const hasPct  = score !== null && score !== undefined;
@@ -238,20 +239,20 @@ function renderMyLessons() {
 
   // Event delegation
   grid.querySelectorAll("[data-open]").forEach(btn => {
-    btn.addEventListener("click", () => openLessonFromStorage(btn.dataset.open));
+    btn.addEventListener("click", () => openLesson(btn.dataset.open));
   });
 
   grid.querySelectorAll("[data-delete]").forEach(btn => {
-    btn.addEventListener("click", () => {
-      deleteLessonFromStorage(btn.dataset.delete);
-      renderMyLessons();
-      if (!getLessonsFromStorage().length) showSection("uploadSection");
+    btn.addEventListener("click", async () => {
+      await deleteLessonFromStorage(btn.dataset.delete, currentUser?.id);
+      await renderMyLessons();
+      if (!cachedLessons.length) showSection("uploadSection");
     });
   });
 }
 
-function openLessonFromStorage(id) {
-  const entry = getLessonsFromStorage().find(l => l.id === id);
+function openLesson(id) {
+  const entry = cachedLessons.find(l => l.id === id);
   if (!entry) return;
 
   currentLessonId = entry.id;
@@ -365,7 +366,7 @@ async function generateLesson() {
     lesson       = data.lesson;
     documentText = data.documentText;
 
-    const entry = saveLessonToStorage(lesson, documentText);
+    const entry = await saveLessonToStorage(lesson, documentText, currentUser?.id);
     currentLessonId = entry.id;
 
     updateLoadingOverlay("Done!", 100);
@@ -557,10 +558,9 @@ async function generateReport() {
       throw new Error(data.error || "Could not generate report.");
     }
 
-    // ── Save progress to localStorage ──────────────────────────────────────
-    if (currentLessonId) {
+    if (currentLessonId && currentUser?.id) {
       const reviewTopics = (data.analysis?.gapAnalysis || []).map(g => g.concept).filter(Boolean);
-      updateLessonProgress(currentLessonId, { percentage: data.percentage, reviewTopics });
+      await updateLessonProgress(currentLessonId, currentUser.id, { percentage: data.percentage, reviewTopics });
     }
 
     renderReport(data);

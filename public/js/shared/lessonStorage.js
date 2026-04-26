@@ -1,57 +1,45 @@
-const KEY      = "ef_lessons";
-const MAX_KEEP = 10;
+// Lessons saved in Supabase via /api/user-lessons
 
-export function saveLessonToStorage(lesson, documentText) {
-  const all   = getLessonsFromStorage();
-  const entry = {
-    id:            Date.now().toString(),
-    title:         lesson.title    || "Lesson",
-    language:      lesson.language || "Unknown",
-    createdAt:     new Date().toISOString(),
-    lesson,
-    documentText:  (documentText || "").slice(0, 8000),
-    lastQuizScore: null,   // 0-100 percentage, null = never taken
-    lastQuizDate:  null,
-    reviewTopics:  []      // topics to review from gap analysis
+export async function saveLessonToStorage(lesson, documentText, userId) {
+  const res = await fetch("/api/user-lessons", {
+    method:  "POST",
+    headers: { "Content-Type": "application/json" },
+    body:    JSON.stringify({ userId, lesson, documentText })
+  });
+  if (!res.ok) throw new Error("Nu am putut salva lectia.");
+  return normalize(await res.json());
+}
+
+export async function getLessonsFromStorage(userId) {
+  if (!userId) return [];
+  const res = await fetch(`/api/user-lessons?userId=${userId}`);
+  if (!res.ok) return [];
+  const data = await res.json();
+  return data.map(normalize);
+}
+
+export async function updateLessonProgress(id, userId, { percentage, reviewTopics = [] }) {
+  await fetch(`/api/user-lessons/${id}`, {
+    method:  "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body:    JSON.stringify({ userId, percentage, reviewTopics })
+  });
+}
+
+export async function deleteLessonFromStorage(id, userId) {
+  await fetch(`/api/user-lessons/${id}?userId=${userId}`, { method: "DELETE" });
+}
+
+function normalize(row) {
+  return {
+    id:            row.id,
+    title:         row.title          || "Lesson",
+    language:      row.language       || "Unknown",
+    createdAt:     row.created_at,
+    lesson:        row.lesson,
+    documentText:  row.document_text  || "",
+    lastQuizScore: row.last_quiz_score ?? null,
+    lastQuizDate:  row.last_quiz_date  ?? null,
+    reviewTopics:  row.review_topics   || []
   };
-
-  const updated = [entry, ...all].slice(0, MAX_KEEP);
-
-  try {
-    localStorage.setItem(KEY, JSON.stringify(updated));
-  } catch {
-    try { localStorage.setItem(KEY, JSON.stringify([entry])); } catch {}
-  }
-
-  return entry;
-}
-
-export function getLessonsFromStorage() {
-  try {
-    return JSON.parse(localStorage.getItem(KEY) || "[]");
-  } catch {
-    return [];
-  }
-}
-
-export function updateLessonProgress(id, { percentage, reviewTopics = [] }) {
-  const all = getLessonsFromStorage();
-  const idx = all.findIndex(l => l.id === id);
-  if (idx === -1) return;
-
-  all[idx] = {
-    ...all[idx],
-    lastQuizScore: percentage,
-    lastQuizDate:  new Date().toISOString(),
-    reviewTopics:  reviewTopics.slice(0, 8)
-  };
-
-  try {
-    localStorage.setItem(KEY, JSON.stringify(all));
-  } catch {}
-}
-
-export function deleteLessonFromStorage(id) {
-  const updated = getLessonsFromStorage().filter(l => l.id !== id);
-  localStorage.setItem(KEY, JSON.stringify(updated));
 }
