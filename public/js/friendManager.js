@@ -18,7 +18,7 @@ export async function showFriendManagerModal(currentUserId) {
           <p class="eyebrow">Social</p>
           <h2 style="margin-top:10px;">Manage friends</h2>
           <p class="muted" style="margin-top:6px;">
-            Adaugă, acceptă, respinge sau șterge prieteni.
+            Add, accept, reject, or remove friends.
           </p>
         </div>
 
@@ -91,7 +91,7 @@ export async function showFriendManagerModal(currentUserId) {
     const username = input.value.trim();
 
     if (!username) {
-      showToast("Scrie un username.", "info");
+      showToast("Enter a username.", "info");
       return;
     }
 
@@ -147,7 +147,7 @@ async function sendFriendRequest(sb, currentUserId, username) {
   }
 
   if (friend.id === currentUserId) {
-    showToast("Asta e contul tău.", "info");
+    showToast("That's your own account.", "info");
     return;
   }
 
@@ -160,7 +160,7 @@ async function sendFriendRequest(sb, currentUserId, username) {
     .maybeSingle();
 
   if (existing) {
-    showToast("Există deja o cerere sau sunteți deja prieteni.", "info");
+    showToast("A request already exists or you're already friends.", "info");
     return;
   }
 
@@ -171,7 +171,7 @@ async function sendFriendRequest(sb, currentUserId, username) {
   });
 
   if (error) {
-    showToast(error.message || "Nu am putut trimite cererea.", "danger");
+    showToast(error.message || "Could not send request.", "danger");
     return;
   }
 
@@ -182,7 +182,7 @@ async function renderFriends(sb, currentUserId, list, status, refresh) {
   const rows = await loadFriendshipRows(sb, currentUserId, "accepted");
 
   if (!rows.length) {
-    status.textContent = "Nu ai încă prieteni acceptați.";
+    status.textContent = "No accepted friends yet.";
     return;
   }
 
@@ -205,7 +205,7 @@ async function renderFriends(sb, currentUserId, list, status, refresh) {
     button.addEventListener("click", async () => {
       const ok = await showConfirm({
         title: "Remove friend?",
-        message: "Prietenul va fi scos din lista ta. Puteți trimite cerere din nou mai târziu.",
+        message: "This friend will be removed from your list. You can send a request again later.",
         confirmText: "Remove",
         cancelText: "Cancel",
         danger: true
@@ -219,7 +219,7 @@ async function renderFriends(sb, currentUserId, list, status, refresh) {
         .eq("id", button.dataset.removeFriend);
 
       if (error) {
-        showToast(error.message || "Nu am putut șterge prietenul.", "danger");
+        showToast(error.message || "Could not remove friend.", "danger");
         return;
       }
 
@@ -233,7 +233,7 @@ async function renderIncoming(sb, currentUserId, list, status, refresh) {
   const rows = await loadIncomingRows(sb, currentUserId);
 
   if (!rows.length) {
-    status.textContent = "Nu ai cereri primite.";
+    status.textContent = "No incoming requests.";
     return;
   }
 
@@ -264,7 +264,7 @@ async function renderIncoming(sb, currentUserId, list, status, refresh) {
         .eq("id", button.dataset.acceptRequest);
 
       if (error) {
-        showToast(error.message || "Nu am putut accepta cererea.", "danger");
+        showToast(error.message || "Could not accept request.", "danger");
         return;
       }
 
@@ -281,7 +281,7 @@ async function renderIncoming(sb, currentUserId, list, status, refresh) {
         .eq("id", button.dataset.rejectRequest);
 
       if (error) {
-        showToast(error.message || "Nu am putut respinge cererea.", "danger");
+        showToast(error.message || "Could not reject request.", "danger");
         return;
       }
 
@@ -295,7 +295,7 @@ async function renderSent(sb, currentUserId, list, status, refresh) {
   const rows = await loadSentRows(sb, currentUserId);
 
   if (!rows.length) {
-    status.textContent = "Nu ai cereri trimise în așteptare.";
+    status.textContent = "No sent requests pending.";
     return;
   }
 
@@ -322,7 +322,7 @@ async function renderSent(sb, currentUserId, list, status, refresh) {
         .eq("id", button.dataset.cancelRequest);
 
       if (error) {
-        showToast(error.message || "Nu am putut anula cererea.", "danger");
+        showToast(error.message || "Could not cancel request.", "danger");
         return;
       }
 

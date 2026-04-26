@@ -1,7 +1,7 @@
 import { normalizeString, shuffleArray } from "../utils/textUtils.js";
 
 function normalizeConcepts(concepts) {
-  if (!Array.isArray(concepts)) return ["Concepte principale"];
+  if (!Array.isArray(concepts)) return ["Main Concepts"];
 
   const normalized = concepts
     .map(item => {
@@ -18,7 +18,7 @@ function normalizeConcepts(concepts) {
 
   return normalized.length > 0
     ? normalized.slice(0, 8)
-    : ["Concepte principale"];
+    : ["Main Concepts"];
 }
 
 function uniqueArray(array) {
@@ -329,7 +329,7 @@ function normalizeChallenge(raw, index) {
 
   if (type === "multiple_select") {
     if (!asksForMultipleAnswers(challenge.prompt)) {
-      challenge.prompt = `Selectează TOATE variantele corecte: ${challenge.prompt}`.slice(0, 180);
+      challenge.prompt = `Select ALL that apply: ${challenge.prompt}`.slice(0, 180);
     }
 
     challenge.options = challenge.options.filter(option => !hasBadOptionShape(option));
@@ -352,11 +352,11 @@ function normalizeChallenge(raw, index) {
   }
 
   if (!challenge.explanation) {
-    challenge.explanation = "Explicația nu a fost generată complet.";
+    challenge.explanation = "Explanation was not fully generated.";
   }
 
   if (!challenge.sourceSnippet) {
-    challenge.sourceSnippet = "Fragment relevant din document.";
+    challenge.sourceSnippet = "Relevant document fragment.";
   }
 
   return challenge;

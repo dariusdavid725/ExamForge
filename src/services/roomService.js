@@ -271,7 +271,7 @@ export async function startRoom(code) {
   }
 
   if (room.status === "closed") {
-    throw new Error("Arena a fost închisă.");
+    throw new Error("The arena has been closed.");
   }
 
   const cycleMs = getCycleMs();
@@ -466,13 +466,13 @@ export async function closeRoom(roomCode, playerId) {
   const room = await getRoom(roomCode);
 
   if (!room) {
-    throw new Error("Camera nu există.");
+    throw new Error("Room not found.");
   }
 
   const host = room.players[0];
 
   if (!host || host.id !== playerId) {
-    throw new Error("Doar creatorul poate închide arena.");
+    throw new Error("Only the host can close the arena.");
   }
 
   const now = Date.now();
@@ -510,13 +510,13 @@ export async function leaveRoom(roomCode, playerId) {
   const room = await getRoom(roomCode);
 
   if (!room) {
-    throw new Error("Camera nu există.");
+    throw new Error("Room not found.");
   }
 
   const player = room.players.find(p => p.id === playerId);
 
   if (!player) {
-    throw new Error("Player inexistent.");
+    throw new Error("Player not found.");
   }
 
   const now = Date.now();

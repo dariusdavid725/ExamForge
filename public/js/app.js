@@ -168,7 +168,7 @@ async function showDashboard() {
 
   if (!state.currentUser) {
     showScreen(dom.screens.auth, false);
-    showToast("Intră în cont ca să vezi dashboard-ul, istoricul și prietenii.", "info");
+    showToast("Sign in to see your dashboard, history, and friends.", "info");
     return;
   }
 
@@ -251,7 +251,7 @@ async function showHistoryScreen() {
 
   if (!state.currentUser) {
     showScreen(dom.screens.auth, false);
-    showToast("Intră în cont ca să vezi istoricul quizurilor.", "info");
+    showToast("Sign in to see your quiz history.", "info");
     return;
   }
 
@@ -334,7 +334,7 @@ async function handleLogin() {
     state.userProfile = await getProfile(user.id);
 
     setupHeader();
-    showToast("Ai intrat în cont.", "success");
+    showToast("Logged in.", "success");
     await showDashboard();
   } catch (error) {
     if (dom.loginError) {
@@ -384,7 +384,7 @@ async function handleRegister() {
     }
 
     setupHeader();
-    showToast("Cont creat cu succes.", "success");
+    showToast("Account created successfully.", "success");
     await showDashboard();
   } catch (error) {
     if (dom.registerError) {
@@ -483,7 +483,7 @@ async function restoreSession() {
     applyRoomSync(data);
 
     if (data.status === "closed" || data.phase === "closed") {
-      await handleRoomClosed("Arena a fost închisă.");
+      await handleRoomClosed("The arena has been closed.");
       return;
     }
 
@@ -700,7 +700,7 @@ function startSyncedLoop() {
       const synced = await syncRoomFromServer(false);
 
       if (synced?.shouldHandleClosed) {
-        await handleRoomClosed("Arena a fost închisă de creator.");
+        await handleRoomClosed("The arena was closed by the host.");
         return;
       }
 
@@ -793,8 +793,8 @@ function startSyncedLoop() {
             if (response.ok) {
               syncClock(data.serverNow);
               state.cachedLeaderboard = data;
-            } else if (data.error?.includes("închis")) {
-              await handleRoomClosed("Arena a fost închisă de creator.");
+            } else if (data.error?.includes("closed")) {
+              await handleRoomClosed("The arena was closed by the host.");
               return;
             }
           } catch {
@@ -862,8 +862,8 @@ async function submitAnswerForIndex(challengeIndex, selectedAnswer, timeLeft, is
     );
 
     if (!response.ok) {
-      if (data.error?.includes("închis")) {
-        await handleRoomClosed("Arena a fost închisă de creator.");
+      if (data.error?.includes("closed")) {
+        await handleRoomClosed("The arena was closed by the host.");
         return;
       }
 
@@ -880,7 +880,7 @@ async function submitAnswerForIndex(challengeIndex, selectedAnswer, timeLeft, is
     saveSession();
 
     if (data.status === "closed" || data.phase === "closed") {
-      await handleRoomClosed("Arena a fost închisă de creator.");
+      await handleRoomClosed("The arena was closed by the host.");
       return;
     }
 
@@ -895,7 +895,7 @@ async function submitAnswerForIndex(challengeIndex, selectedAnswer, timeLeft, is
     if (!isTimeout) {
       state.answeredCurrentChallenge = false;
       dom.submitAnswerBtn.disabled = false;
-      showToast(error.message || "Nu am putut trimite răspunsul.", "danger");
+      showToast(error.message || "Could not submit answer.", "danger");
     }
   } finally {
     state.submittingAnswer = false;
@@ -952,8 +952,8 @@ async function loadPackAndStart() {
   const { response, data } = await api.fetchPack(state.currentRoomCode);
 
   if (!response.ok) {
-    if (data.error?.includes("închis")) {
-      await handleRoomClosed("Arena a fost închisă de creator.");
+    if (data.error?.includes("closed")) {
+      await handleRoomClosed("The arena was closed by the host.");
       return;
     }
 
@@ -1052,7 +1052,7 @@ async function closeCurrentArena() {
   const ok = await showConfirm({
     title: "Close arena?",
     message:
-      "Închizi arena pentru toți playerii. Quizul nu va fi salvat în history și nu va crește streak-ul nimănui.",
+      "This will close the arena for all players. The quiz will not be saved to history and no one's streak will increase.",
     confirmText: "Close arena",
     cancelText: "Cancel",
     danger: true
@@ -1067,7 +1067,7 @@ async function closeCurrentArena() {
     );
 
     if (!response.ok) {
-      throw new Error(data.error || "Nu am putut închide arena.");
+      throw new Error(data.error || "Could not close arena.");
     }
 
     stopGameLoops();
@@ -1075,11 +1075,11 @@ async function closeCurrentArena() {
     resetRoomState();
     removeArenaActionButtons();
 
-    showToast("Arena a fost închisă.", "success");
+    showToast("The arena has been closed.", "success");
     await goHomeAfterArena();
   } catch (error) {
     console.error(error);
-    showToast(error.message || "Nu am putut închide arena.", "danger");
+    showToast(error.message || "Could not close arena.", "danger");
   }
 }
 
@@ -1091,8 +1091,8 @@ async function leaveCurrentArena() {
   const ok = await showConfirm({
     title: isLobby ? "Leave lobby?" : "Abandon quiz?",
     message: isLobby
-      ? "Părăsești lobby-ul?"
-      : "Abandonezi quizul? Nu va fi adăugat la streak sau la quiz count.",
+      ? "Leave the lobby?"
+      : "Abandon the quiz? It will not count toward your streak or quiz total.",
     confirmText: isLobby ? "Leave lobby" : "Abandon quiz",
     cancelText: "Cancel",
     danger: !isLobby
@@ -1107,7 +1107,7 @@ async function leaveCurrentArena() {
     );
 
     if (!response.ok) {
-      throw new Error(data.error || "Nu am putut părăsi arena.");
+      throw new Error(data.error || "Could not leave arena.");
     }
 
     stopGameLoops();
@@ -1115,15 +1115,15 @@ async function leaveCurrentArena() {
     resetRoomState();
     removeArenaActionButtons();
 
-    showToast(isLobby ? "Ai părăsit lobby-ul." : "Ai abandonat quizul.", "success");
+    showToast(isLobby ? "You left the lobby." : "You abandoned the quiz.", "success");
     await goHomeAfterArena();
   } catch (error) {
     console.error(error);
-    showToast(error.message || "Nu am putut părăsi arena.", "danger");
+    showToast(error.message || "Could not leave arena.", "danger");
   }
 }
 
-async function handleRoomClosed(message = "Arena a fost închisă.") {
+async function handleRoomClosed(message = "The arena has been closed.") {
   stopGameLoops();
   clearSession();
   resetRoomState();
@@ -1177,7 +1177,7 @@ async function refreshRoomInfo() {
   applyRoomSync(data);
 
   if (data.status === "closed" || data.phase === "closed") {
-    await handleRoomClosed("Arena a fost închisă de creator.");
+    await handleRoomClosed("The arena was closed by the host.");
     return;
   }
 
@@ -1213,8 +1213,8 @@ async function showLeaderboard() {
   const { response, data } = await api.fetchLeaderboard(state.currentRoomCode);
 
   if (!response.ok) {
-    if (data.error?.includes("închis")) {
-      await handleRoomClosed("Arena a fost închisă de creator.");
+    if (data.error?.includes("closed")) {
+      await handleRoomClosed("The arena was closed by the host.");
       return;
     }
 
@@ -1418,7 +1418,7 @@ async function copyJoinLink() {
     showToast("Link copied.", "success");
   } catch {
     dom.lobbyStatusText.textContent = link;
-    showToast("Nu am putut copia linkul automat.", "danger");
+    showToast("Could not copy the link automatically.", "danger");
   }
 }
 

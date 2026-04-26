@@ -15,7 +15,7 @@ export async function showInviteFriendsModal({ roomCode, currentUser }) {
           <p class="eyebrow">Arena invite</p>
           <h2 style="margin-top:10px;">Invite friends</h2>
           <p class="muted" style="margin-top:6px;">
-            Trimite invitații directe pentru camera ${escapeHTML(roomCode)}.
+            Send direct invites for room ${escapeHTML(roomCode)}.
           </p>
         </div>
 
@@ -57,7 +57,7 @@ export async function showInviteFriendsModal({ roomCode, currentUser }) {
       list.innerHTML = `
         <div class="flat-card">
           <p class="muted">
-            Nu ai încă prieteni acceptați. Adaugă prieteni din dashboard mai întâi.
+            You have no accepted friends yet. Add friends from the dashboard first.
           </p>
         </div>
       `;
@@ -111,14 +111,14 @@ export async function showInviteFriendsModal({ roomCode, currentUser }) {
           );
 
           if (!response.ok) {
-            throw new Error(data.error || "Nu am putut trimite invitația.");
+            throw new Error(data.error || "Could not send invite.");
           }
 
           button.textContent = "Invited";
         } catch (error) {
           button.disabled = false;
           button.textContent = "Invite";
-          alert(error.message || "Nu am putut trimite invitația.");
+          alert(error.message || "Could not send invite.");
         }
       });
     });
@@ -153,7 +153,7 @@ export async function renderRoomInvitesCard(container, currentUser, onJoinInvite
   card.innerHTML = `
     <h2>Arena invites</h2>
     <p class="muted" style="margin-top:8px;">
-      Prietenii tăi te-au invitat în lobby-uri active.
+      Your friends have invited you to active lobbies.
     </p>
 
     <div style="display:grid; gap:12px; margin-top:16px;">

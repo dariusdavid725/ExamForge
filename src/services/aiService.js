@@ -238,7 +238,7 @@ async function repairUntilValid({
   let currentReason = reason;
 
   for (let repairAttempt = 1; repairAttempt <= 3; repairAttempt++) {
-    onProgress?.(`AI repară întrebările neclare... încercarea ${repairAttempt}`);
+    onProgress?.(`AI repairing unclear questions... attempt ${repairAttempt}`);
 
     const repairPrompt = buildRepairPrompt(
       currentRaw,
@@ -293,7 +293,7 @@ async function repairUntilValid({
 }
 
 async function tryGenerateAndRepair(model, text, gameMode, onProgress) {
-  onProgress?.("AI generează challenge-uri...");
+  onProgress?.("AI is generating challenges...");
 
   const raw = await callJsonSchema(
     model,
@@ -321,7 +321,7 @@ async function tryGenerateAndRepair(model, text, gameMode, onProgress) {
     });
   }
 
-  onProgress?.("Verificăm calitatea întrebărilor...");
+  onProgress?.("Checking question quality...");
 
   const audit = await auditPack(model, text, pack);
 
@@ -346,7 +346,7 @@ async function tryGenerateAndRepair(model, text, gameMode, onProgress) {
 
 export async function generateLearningPackWithAI(text, gameMode, onProgress) {
   if (!process.env.OPENAI_API_KEY) {
-    throw new Error("OPENAI_API_KEY lipsește din .env.");
+    throw new Error("OPENAI_API_KEY is missing from .env.");
   }
 
   const errors = [];
@@ -369,11 +369,11 @@ export async function generateLearningPackWithAI(text, gameMode, onProgress) {
   }
 
   if (errors.every(error => error.rateLimit)) {
-    throw new Error("Rate limit reached. Așteaptă și încearcă din nou.");
+    throw new Error("Rate limit reached. Please wait and try again.");
   }
 
   if (errors.every(error => error.tooLarge)) {
-    throw new Error("Documentul este prea mare. Încearcă un PDF mai scurt.");
+    throw new Error("Document is too large. Try a shorter PDF.");
   }
 
   throw new Error(

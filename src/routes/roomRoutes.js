@@ -76,7 +76,7 @@ router.post("/", async (req, res) => {
     console.error("EROARE create room:", error);
 
     return res.status(500).json({
-      error: "Nu am putut crea camera."
+      error: "Could not create room."
     });
   }
 });
@@ -87,7 +87,7 @@ router.get("/:code", async (req, res) => {
 
     if (!room) {
       return res.status(404).json({
-        error: "Camera nu există."
+        error: "Room not found."
       });
     }
 
@@ -139,7 +139,7 @@ router.get("/:code", async (req, res) => {
     console.error("EROARE get room:", error);
 
     return res.status(500).json({
-      error: "Eroare server."
+      error: "Server error."
     });
   }
 });
@@ -150,19 +150,19 @@ router.post("/:code/join", async (req, res) => {
 
     if (!room) {
       return res.status(404).json({
-        error: "Camera nu există."
+        error: "Room not found."
       });
     }
 
     if (room.status === "closed") {
       return res.status(400).json({
-        error: "Arena a fost închisă."
+        error: "The arena has been closed."
       });
     }
 
     if (room.status !== "lobby") {
       return res.status(400).json({
-        error: "Arena a început deja."
+        error: "The arena has already started."
       });
     }
 
@@ -171,7 +171,7 @@ router.post("/:code/join", async (req, res) => {
 
     if (!name) {
       return res.status(400).json({
-        error: "Introdu un nume."
+        error: "Please enter a name."
       });
     }
 
@@ -191,7 +191,7 @@ router.post("/:code/join", async (req, res) => {
     console.error("EROARE join room:", error);
 
     return res.status(500).json({
-      error: "Nu am putut intra în cameră."
+      error: "Could not join room."
     });
   }
 });
@@ -202,19 +202,19 @@ router.post("/:code/start", async (req, res) => {
 
     if (!room) {
       return res.status(404).json({
-        error: "Camera nu există."
+        error: "Room not found."
       });
     }
 
     if (room.status === "closed") {
       return res.status(400).json({
-        error: "Arena a fost închisă."
+        error: "The arena has been closed."
       });
     }
 
     if (room.status !== "lobby") {
       return res.status(400).json({
-        error: "Arena a început deja."
+        error: "The arena has already started."
       });
     }
 
@@ -232,7 +232,7 @@ router.post("/:code/start", async (req, res) => {
     console.error("EROARE start room:", error);
 
     return res.status(500).json({
-      error: "Nu am putut porni arena."
+      error: "Could not start arena."
     });
   }
 });
@@ -257,7 +257,7 @@ router.post("/:code/close", async (req, res) => {
     console.error("EROARE close room:", error);
 
     return res.status(400).json({
-      error: error.message || "Nu am putut închide arena."
+      error: error.message || "Could not close arena."
     });
   }
 });
@@ -282,7 +282,7 @@ router.post("/:code/leave", async (req, res) => {
     console.error("EROARE leave room:", error);
 
     return res.status(400).json({
-      error: error.message || "Nu am putut părăsi arena."
+      error: error.message || "Could not leave arena."
     });
   }
 });
@@ -293,19 +293,19 @@ router.get("/:code/pack", async (req, res) => {
 
     if (!room) {
       return res.status(404).json({
-        error: "Camera nu există."
+        error: "Room not found."
       });
     }
 
     if (room.status === "closed") {
       return res.status(400).json({
-        error: "Arena a fost închisă."
+        error: "The arena has been closed."
       });
     }
 
     if (room.status !== "started" && room.status !== "finished") {
       return res.status(400).json({
-        error: "Arena nu a început încă."
+        error: "The arena has not started yet."
       });
     }
 
@@ -325,7 +325,7 @@ router.get("/:code/pack", async (req, res) => {
     console.error("EROARE get pack:", error);
 
     return res.status(500).json({
-      error: "Eroare server."
+      error: "Server error."
     });
   }
 });
@@ -336,19 +336,19 @@ router.post("/:code/submit", async (req, res) => {
 
     if (!room) {
       return res.status(404).json({
-        error: "Camera nu există."
+        error: "Room not found."
       });
     }
 
     if (room.status === "closed") {
       return res.status(400).json({
-        error: "Arena a fost închisă."
+        error: "The arena has been closed."
       });
     }
 
     if (room.status === "finished") {
       return res.status(400).json({
-        error: "Arena s-a terminat."
+        error: "The arena has finished."
       });
     }
 
@@ -371,13 +371,13 @@ router.post("/:code/submit", async (req, res) => {
 
     if (!player) {
       return res.status(404).json({
-        error: "Player inexistent."
+        error: "Player not found."
       });
     }
 
     if (player.abandoned) {
       return res.status(400).json({
-        error: "Ai părăsit arena."
+        error: "You have left the arena."
       });
     }
 
@@ -481,7 +481,7 @@ router.post("/:code/submit", async (req, res) => {
     console.error("EROARE submit:", error);
 
     return res.status(500).json({
-      error: "Eroare la trimiterea răspunsului."
+      error: "Error submitting answer."
     });
   }
 });
@@ -492,13 +492,13 @@ router.get("/:code/leaderboard", async (req, res) => {
 
     if (!room) {
       return res.status(404).json({
-        error: "Camera nu există."
+        error: "Room not found."
       });
     }
 
     if (room.status === "closed") {
       return res.status(400).json({
-        error: "Arena a fost închisă."
+        error: "The arena has been closed."
       });
     }
 
@@ -547,7 +547,7 @@ router.get("/:code/leaderboard", async (req, res) => {
     console.error("EROARE leaderboard:", error);
 
     return res.status(500).json({
-      error: "Eroare server."
+      error: "Server error."
     });
   }
 });
@@ -558,7 +558,7 @@ router.post("/:code/lesson", async (req, res) => {
 
     if (!room) {
       return res.status(404).json({
-        error: "Camera nu există."
+        error: "Room not found."
       });
     }
 
@@ -567,7 +567,7 @@ router.post("/:code/lesson", async (req, res) => {
 
     if (!player) {
       return res.status(404).json({
-        error: "Player inexistent."
+        error: "Player not found."
       });
     }
 
@@ -581,7 +581,7 @@ router.post("/:code/lesson", async (req, res) => {
     console.error("EROARE recovery lesson:", error);
 
     return res.status(503).json({
-      error: error.message || "AI-ul nu a putut genera lecția acum."
+      error: error.message || "The AI could not generate the lesson right now."
     });
   }
 });

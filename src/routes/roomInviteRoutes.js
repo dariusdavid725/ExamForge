@@ -85,7 +85,7 @@ router.post("/room-invites", async (req, res) => {
 
     if (inviterId === inviteeId) {
       return res.status(400).json({
-        error: "Nu te poți invita singur."
+        error: "You cannot invite yourself."
       });
     }
 
@@ -99,13 +99,13 @@ router.post("/room-invites", async (req, res) => {
 
     if (!room) {
       return res.status(404).json({
-        error: "Camera nu există."
+        error: "Room not found."
       });
     }
 
     if (room.status !== "lobby") {
       return res.status(400).json({
-        error: "Poți invita prieteni doar înainte să înceapă arena."
+        error: "You can only invite friends before the arena starts."
       });
     }
 
@@ -118,7 +118,7 @@ router.post("/room-invites", async (req, res) => {
 
     if (!inviterPlayer) {
       return res.status(403).json({
-        error: "Doar un player din lobby poate trimite invitații."
+        error: "Only a player in the lobby can send invites."
       });
     }
 
@@ -126,7 +126,7 @@ router.post("/room-invites", async (req, res) => {
 
     if (!friendshipOk) {
       return res.status(403).json({
-        error: "Poți invita doar prieteni acceptați."
+        error: "You can only invite accepted friends."
       });
     }
 
@@ -139,7 +139,7 @@ router.post("/room-invites", async (req, res) => {
 
     if (existingPlayer) {
       return res.status(400).json({
-        error: "Prietenul este deja în lobby."
+        error: "That friend is already in the lobby."
       });
     }
 
@@ -162,7 +162,7 @@ router.post("/room-invites", async (req, res) => {
 
     if (error) {
       return res.status(500).json({
-        error: error.message || "Nu am putut trimite invitația."
+        error: error.message || "Could not send invite."
       });
     }
 
@@ -174,7 +174,7 @@ router.post("/room-invites", async (req, res) => {
     console.error("POST room invite error:", error);
 
     return res.status(500).json({
-      error: error.message || "Nu am putut trimite invitația."
+      error: error.message || "Could not send invite."
     });
   }
 });

@@ -10,7 +10,7 @@ function isTextGarbled(text) {
   const alphanumeric = (text.match(/[a-zA-ZÀ-ž0-9]/g) || []).length;
   const total        = text.replace(/\s/g, "").length;
   if (total === 0) return true;
-  return (alphanumeric / total) < 0.4; // mai puțin de 40% caractere reale = imagine necitibilă
+  return (alphanumeric / total) < 0.4; // less than 40% real characters = unreadable image
 }
 
 async function handleGeneratePack(req, res) {
@@ -24,7 +24,7 @@ async function handleGeneratePack(req, res) {
 
   try {
     if (!req.file) {
-      send("error", { error: "Nu ai încărcat niciun fișier." });
+      send("error", { error: "No file was uploaded." });
       return res.end();
     }
 
@@ -43,18 +43,18 @@ async function handleGeneratePack(req, res) {
 
     const safeText = cleanExtractedText(removeExternalLinks(extractedText));
 
-    // Detectăm imagine necitibilă
+    // Detect unreadable image
     if (!safeText || safeText.trim().length < 80) {
       if (req.file.mimetype.startsWith("image/")) {
-        send("error", { error: "Imaginea nu a putut fi citită clar. Asigură-te că textul este vizibil, bine iluminat și în focus, apoi încearcă din nou." });
+        send("error", { error: "The image could not be read clearly. Make sure the text is visible, well-lit, and in focus, then try again." });
       } else {
-        send("error", { error: "Nu am putut extrage suficient text. Încearcă un document mai clar." });
+        send("error", { error: "Could not extract enough text. Try a clearer document." });
       }
       return res.end();
     }
 
     if (isTextGarbled(safeText)) {
-      send("error", { error: "Conținutul imaginii pare neclar sau este un scris de mână greu lizibil. Te rugăm să folosești o imagine cu text tipărit clar." });
+      send("error", { error: "The image content appears unclear or contains hard-to-read handwriting. Please use an image with clear printed text." });
       return res.end();
     }
 
@@ -65,7 +65,7 @@ async function handleGeneratePack(req, res) {
     send("done", {
       pack,
       documentName,
-      documentText: safeText.slice(0, 8000), // păstrăm pentru conspect
+      documentText: safeText.slice(0, 8000), // kept for study guide generation
       quiz: {
         title: pack.title, summary: pack.summary,
         concepts: pack.concepts, questions: pack.challenges
@@ -76,7 +76,7 @@ async function handleGeneratePack(req, res) {
     res.end();
   } catch (error) {
     console.error("EROARE generate pack:", error);
-    send("error", { error: error.message || "AI-ul nu a putut genera challenge-urile." });
+    send("error", { error: error.message || "The AI could not generate the challenges." });
     res.end();
   }
 }

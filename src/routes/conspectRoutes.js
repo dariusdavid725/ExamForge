@@ -9,7 +9,7 @@ router.post("/conspect", async (req, res) => {
   try {
     const { text } = req.body;
     if (!text || text.trim().length < 100) {
-      return res.status(400).json({ error: "Text insuficient pentru conspect." });
+      return res.status(400).json({ error: "Insufficient text for study guide." });
     }
 
     const safeText = prepareDocumentSlice(cleanExtractedText(removeExternalLinks(text)));
@@ -50,7 +50,7 @@ ${safeText}
     return res.json({ conspect: data });
   } catch (error) {
     console.error("EROARE conspect:", error);
-    return res.status(503).json({ error: "Nu am putut genera conspectul." });
+    return res.status(503).json({ error: "Could not generate study guide." });
   }
 });
 

@@ -2,7 +2,7 @@ import express from "express";
 
 const router = express.Router();
 
-// Expune config public (anon key e sigur în frontend)
+// Expose public config (anon key is safe for the frontend)
 router.get("/config", (req, res) => {
   res.json({
     supabaseUrl:     process.env.SUPABASE_URL,
