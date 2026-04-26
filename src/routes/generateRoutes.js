@@ -23,38 +23,43 @@ async function handleGeneratePack(req, res) {
   }
 
   try {
-    if (!req.file) {
-      send("error", { error: "No file was uploaded." });
-      return res.end();
-    }
-
-    const gameMode    = req.body.gameMode    || "arena_mix";
-    const documentName = req.file.originalname || "document";
+    const gameMode     = req.body.gameMode || "arena_mix";
+    const documentName = req.file?.originalname || "lesson";
 
     send("progress", { message: "Reading document..." });
 
-    let extractedText;
-    try {
-      extractedText = await extractTextFromFile(req.file);
-    } catch (extractErr) {
-      send("error", { error: extractErr.message });
-      return res.end();
-    }
+    let safeText;
 
-    const safeText = cleanExtractedText(removeExternalLinks(extractedText));
-
-    // Detect unreadable image
-    if (!safeText || safeText.trim().length < 80) {
-      if (req.file.mimetype.startsWith("image/")) {
-        send("error", { error: "The image could not be read clearly. Make sure the text is visible, well-lit, and in focus, then try again." });
-      } else {
-        send("error", { error: "Could not extract enough text. Try a clearer document." });
+    if (req.body.documentText) {
+      // Path A: text already extracted (from a saved lesson)
+      safeText = cleanExtractedText(req.body.documentText);
+    } else if (req.file) {
+      // Path B: extract text from uploaded file
+      let extractedText;
+      try {
+        extractedText = await extractTextFromFile(req.file);
+      } catch (extractErr) {
+        send("error", { error: extractErr.message });
+        return res.end();
       }
-      return res.end();
-    }
 
-    if (isTextGarbled(safeText)) {
-      send("error", { error: "The image content appears unclear or contains hard-to-read handwriting. Please use an image with clear printed text." });
+      safeText = cleanExtractedText(removeExternalLinks(extractedText));
+
+      if (!safeText || safeText.trim().length < 80) {
+        if (req.file.mimetype.startsWith("image/")) {
+          send("error", { error: "The image could not be read clearly. Make sure the text is visible, well-lit, and in focus, then try again." });
+        } else {
+          send("error", { error: "Could not extract enough text. Try a clearer document." });
+        }
+        return res.end();
+      }
+
+      if (isTextGarbled(safeText)) {
+        send("error", { error: "The image content appears unclear or contains hard-to-read handwriting. Please use an image with clear printed text." });
+        return res.end();
+      }
+    } else {
+      send("error", { error: "No file was uploaded." });
       return res.end();
     }
 

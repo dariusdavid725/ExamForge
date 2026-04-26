@@ -27,7 +27,6 @@
 
   <main class="container" style="padding-top:32px;padding-bottom:60px;">
 
-    <!-- ── Back nav ──────────────────────────────────────────────────────────── -->
     <div style="margin-bottom:28px;">
       <a href="/dashboard" class="btn btn-secondary" style="padding:10px 16px;">← Dashboard</a>
     </div>
@@ -39,18 +38,16 @@
       <div class="eyebrow" style="margin-bottom:14px;">Study tool</div>
       <h1 style="margin-bottom:10px;">My Lessons</h1>
       <p class="lead" style="margin-bottom:36px;max-width:560px;">
-        Upload a PDF or image. AI reads it, builds a structured lesson, then quizzes you and shows where you have gaps.
+        Upload a PDF or image. AI builds a structured lesson, then quizzes you and pinpoints your gaps.
       </p>
 
       <div class="card" style="max-width:640px;">
         <div class="eyebrow">Upload your material</div>
-
         <div id="lessonDropZone" class="upload-box" style="margin-top:18px;">
           <input id="lessonFileInput" type="file" accept=".pdf,image/*" class="hidden" />
           <h3 id="lessonFileName">Choose PDF or image</h3>
           <p class="muted" style="margin-top:8px;">PDF, PNG, JPG · Max 10 MB</p>
         </div>
-
         <button id="generateLessonBtn" class="btn" style="width:100%;margin-top:20px;padding:16px;">
           Generate Lesson
         </button>
@@ -62,93 +59,118 @@
     <!-- STEP 2 — LESSON                                                       -->
     <!-- ══════════════════════════════════════════════════════════════════════ -->
     <div id="lessonSection" class="hidden">
-
       <div style="display:flex;align-items:center;gap:16px;margin-bottom:32px;flex-wrap:wrap;">
         <button id="backToUploadBtn" class="btn btn-secondary" style="padding:10px 16px;">← New Lesson</button>
         <h1 id="lessonTitle" style="margin:0;"></h1>
       </div>
 
-      <!-- Summary -->
       <div class="card" style="margin-bottom:16px;">
         <div class="eyebrow">Summary</div>
         <p id="lessonSummary" style="margin-top:14px;line-height:1.8;font-size:17px;"></p>
       </div>
 
-      <!-- Objectives -->
       <div class="card" style="margin-bottom:16px;">
         <div class="eyebrow">Learning Objectives</div>
         <ul id="lessonObjectives" style="margin-top:14px;display:grid;gap:10px;list-style:none;padding:0;"></ul>
       </div>
 
-      <!-- Key concepts -->
       <div class="card" style="margin-bottom:16px;">
         <div class="eyebrow">Key Concepts</div>
         <div id="lessonKeyConcepts" class="row" style="margin-top:14px;flex-wrap:wrap;"></div>
       </div>
 
-      <!-- Sections (generated dynamically) -->
       <div id="lessonSectionsContainer" style="display:grid;gap:16px;margin-bottom:16px;"></div>
 
-      <!-- Memory tips -->
       <div class="card" style="margin-bottom:36px;">
         <div class="eyebrow">Memory Tips</div>
         <ul id="lessonMemoryTips" style="margin-top:14px;display:grid;gap:10px;list-style:none;padding:0;"></ul>
       </div>
 
-      <!-- Make quiz CTA -->
       <div style="text-align:center;padding:10px 0 20px;">
-        <button id="makeQuizBtn" class="btn" style="font-size:18px;padding:18px 52px;">
-          Make Quiz
-        </button>
+        <button id="makeQuizBtn" class="btn" style="font-size:18px;padding:18px 52px;">Make Quiz</button>
         <p id="quizGenStatus" class="status" style="margin-top:10px;"></p>
       </div>
     </div>
 
     <!-- ══════════════════════════════════════════════════════════════════════ -->
-    <!-- STEP 3 — QUIZ                                                         -->
+    <!-- STEP 3 — QUIZ (same layout as arena challenge)                        -->
     <!-- ══════════════════════════════════════════════════════════════════════ -->
     <div id="quizSection" class="hidden">
-
       <div style="display:flex;align-items:center;gap:16px;margin-bottom:28px;flex-wrap:wrap;">
         <button id="backToLessonBtn" class="btn btn-secondary" style="padding:10px 16px;">← Back to Lesson</button>
         <h2 id="quizHeading" style="margin:0;"></h2>
       </div>
 
-      <div class="card">
-        <!-- Progress bar -->
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-          <span class="eyebrow" id="quizProgressLabel" style="font-size:11px;">Question 1 of 8</span>
-          <span id="quizScorePill" class="pill">0 / 8</span>
+      <div class="quiz-layout">
+
+        <!-- ── Left panel ─── -->
+        <aside class="card">
+          <div class="eyebrow">Quiz</div>
+          <h2 style="margin-top:14px;">My answers</h2>
+
+          <div style="margin-top:28px;">
+            <div style="display:flex;justify-content:space-between;font-weight:900;font-size:14px;margin-bottom:10px;">
+              <span>Progress</span><span id="progressText">0%</span>
+            </div>
+            <div class="progress-track">
+              <div id="progressBar" class="progress-fill"></div>
+            </div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:22px;">
+            <div class="flat-card">
+              <div id="scoreText" style="font-size:34px;font-weight:900;">0</div>
+              <div class="muted">correct</div>
+            </div>
+            <div class="flat-card">
+              <div id="challengeNumberText" style="font-size:34px;font-weight:900;">1</div>
+              <div class="muted">question</div>
+            </div>
+          </div>
+        </aside>
+
+        <!-- ── Right panel ─── -->
+        <div class="card">
+          <div class="row" style="gap:8px;justify-content:space-between;align-items:center;">
+            <div class="row" style="gap:8px;">
+              <span id="typeTag"       class="pill"></span>
+              <span id="conceptTag"    class="pill"></span>
+              <span id="difficultyTag" class="pill"></span>
+            </div>
+          </div>
+
+          <!-- spot_mistake box (hidden for quiz, included for renderer compat) -->
+          <div id="mistakeBox" class="flat-card hidden" style="margin-top:28px;background:#fff4c7;">
+            <div class="eyebrow">Find the mistake</div>
+            <p id="mistakeText" style="margin-top:14px;font-weight:900;line-height:1.6;"></p>
+          </div>
+
+          <h2 id="challengePromptText" style="margin-top:28px;font-size:clamp(18px,3vw,32px);line-height:1.5;"></h2>
+
+          <div id="answerBox" style="display:grid;gap:14px;margin-top:28px;"></div>
+
+          <button id="submitAnswerBtn" class="btn" style="margin-top:28px;">Lock answer</button>
+
+          <!-- feedbackBox used by renderer -->
+          <div id="feedbackBox" class="flat-card hidden" style="margin-top:28px;">
+            <h2 id="feedbackTitle"></h2>
+            <p id="correctAnswerText" style="margin-top:16px;font-weight:900;"></p>
+            <p id="explanationText"   class="muted" style="margin-top:12px;"></p>
+            <div style="border-left:6px solid var(--text);padding-left:16px;margin-top:20px;">
+              <div class="eyebrow">Source</div>
+              <blockquote id="sourceSnippet" class="muted" style="margin:12px 0 0;"></blockquote>
+            </div>
+            <!-- nextChallengeBtn kept for renderer compat but hidden -->
+            <button id="nextChallengeBtn" class="btn hidden" style="margin-top:22px;">Next question</button>
+          </div>
+
         </div>
-        <div class="progress-track" style="margin-bottom:28px;">
-          <div id="quizProgressBar" class="progress-fill" style="width:0%;transition:width .4s ease;"></div>
-        </div>
+      </div>
 
-        <!-- Tags -->
-        <div class="row" style="margin-bottom:18px;gap:8px;">
-          <span id="quizDifficultyTag" class="pill"></span>
-          <span id="quizConceptTag" class="pill"></span>
-        </div>
-
-        <!-- Question -->
-        <h2 id="quizQuestionText" style="font-size:clamp(18px,3vw,26px);line-height:1.5;margin-bottom:24px;"></h2>
-
-        <!-- Options -->
-        <div id="quizOptionsBox" style="display:grid;gap:12px;"></div>
-
-        <!-- Feedback (shown after answer) -->
-        <div id="quizFeedbackBox" class="flat-card hidden" style="margin-top:24px;">
-          <h3 id="quizFeedbackTitle" style="margin-bottom:10px;"></h3>
-          <p id="quizFeedbackExplanation" class="muted" style="line-height:1.7;"></p>
-        </div>
-
-        <!-- Navigation -->
-        <button id="quizNextBtn" class="btn hidden" style="width:100%;margin-top:22px;padding:14px;">
-          Next Question →
-        </button>
-        <button id="quizFinishBtn" class="btn hidden" style="width:100%;margin-top:22px;padding:14px;">
-          See My Report
-        </button>
+      <!-- Navigation buttons (below the layout) -->
+      <div style="display:flex;justify-content:center;gap:14px;margin-top:28px;">
+        <button id="quizNextBtn"   class="btn hidden" style="padding:14px 36px;">Next Question →</button>
+        <button id="quizFinishBtn" class="btn hidden" style="padding:14px 36px;">See My Report →</button>
       </div>
     </div>
 
@@ -156,14 +178,13 @@
     <!-- STEP 4 — REPORT                                                       -->
     <!-- ══════════════════════════════════════════════════════════════════════ -->
     <div id="reportSection" class="hidden">
-
       <div style="display:flex;align-items:center;gap:16px;margin-bottom:28px;flex-wrap:wrap;">
         <button id="retakeQuizBtn" class="btn btn-secondary" style="padding:10px 16px;">↺ Retake Quiz</button>
-        <button id="newLessonBtn" class="btn btn-secondary" style="padding:10px 16px;">+ New Lesson</button>
+        <button id="newLessonBtn"  class="btn btn-secondary" style="padding:10px 16px;">+ New Lesson</button>
         <h1 style="margin:0;">Performance Report</h1>
       </div>
 
-      <!-- Score card -->
+      <!-- Score -->
       <div class="card" style="text-align:center;margin-bottom:16px;">
         <div class="eyebrow">Your Score</div>
         <div id="reportScoreDisplay" style="font-size:80px;font-weight:900;line-height:1;margin:20px 0 8px;"></div>
@@ -185,7 +206,7 @@
 
       <!-- Gap analysis -->
       <div class="card" style="margin-bottom:16px;">
-        <div class="eyebrow" id="gapAnalysisLabel">Gap Analysis</div>
+        <div class="eyebrow">Gap Analysis</div>
         <div id="reportGaps" style="margin-top:14px;display:grid;gap:16px;"></div>
       </div>
 
@@ -194,7 +215,6 @@
         <div class="eyebrow">Study Plan</div>
         <ol id="reportStudyPlan" style="margin-top:14px;display:grid;gap:12px;padding-left:0;list-style:none;"></ol>
       </div>
-
     </div>
 
   </main>

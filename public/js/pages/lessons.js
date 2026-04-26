@@ -1,15 +1,20 @@
 import { installFeedback, showToast, showLoadingOverlay, updateLoadingOverlay, hideLoadingOverlay } from "../shared/uiFeedback.js";
 import { installThemeToggle } from "../shared/theme.js";
-import { initHeader, nav } from "../shared/nav.js";
+import { initHeader } from "../shared/nav.js";
+import { state } from "../shared/state.js";
+import { saveLessonToStorage } from "../shared/lessonStorage.js";
+import {
+  renderChallenge,
+  renderResultPhase
+} from "../components/renderer.js";
 
-// ─── State ─────────────────────────────────────────────────────────────────────
+// ─── Page state ────────────────────────────────────────────────────────────────
 
 let lesson       = null;
 let documentText = null;
 let quiz         = null;
-let questionIdx  = 0;
 let userAnswers  = [];
-let score        = 0;
+let lessonScore  = 0;
 
 // ─── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -22,9 +27,9 @@ function escapeHTML(v) {
 }
 
 function showSection(id) {
-  ["uploadSection", "lessonSection", "quizSection", "reportSection"].forEach(s => {
-    el(s)?.classList.toggle("hidden", s !== id);
-  });
+  ["uploadSection", "lessonSection", "quizSection", "reportSection"].forEach(s =>
+    el(s)?.classList.toggle("hidden", s !== id)
+  );
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
@@ -45,7 +50,7 @@ function setupUpload() {
   const fileInput = el("lessonFileInput");
   const nameLbl   = el("lessonFileName");
 
-  const pick = file => { nameLbl.textContent = file.name; };
+  const pick = f => { nameLbl.textContent = f.name; };
 
   dropZone?.addEventListener("click",    () => fileInput.click());
   dropZone?.addEventListener("dragover", e => e.preventDefault());
@@ -66,6 +71,7 @@ function setupButtons() {
   el("backToUploadBtn")?.addEventListener("click",   () => showSection("uploadSection"));
   el("makeQuizBtn")?.addEventListener("click",       generateQuiz);
   el("backToLessonBtn")?.addEventListener("click",   () => showSection("lessonSection"));
+  el("submitAnswerBtn")?.addEventListener("click",   submitLessonAnswer);
   el("quizNextBtn")?.addEventListener("click",       nextQuestion);
   el("quizFinishBtn")?.addEventListener("click",     generateReport);
   el("retakeQuizBtn")?.addEventListener("click",     startQuiz);
@@ -87,7 +93,7 @@ async function generateLesson() {
     return;
   }
 
-  btn.disabled    = true;
+  btn.disabled         = true;
   statusEl.textContent = "";
 
   showLoadingOverlay({
@@ -101,19 +107,19 @@ async function generateLesson() {
     form.append("document", file);
 
     updateLoadingOverlay("Extracting text...", 20);
-
-    const res = await fetch("/api/lessons/generate", { method: "POST", body: form });
-
-    updateLoadingOverlay("Structuring lesson...", 70);
-
+    const res  = await fetch("/api/lessons/generate", { method: "POST", body: form });
+    updateLoadingOverlay("Structuring lesson...", 75);
     const data = await res.json();
+
     if (!res.ok) throw new Error(data.error || "Could not generate lesson.");
 
     lesson       = data.lesson;
     documentText = data.documentText;
 
-    updateLoadingOverlay("Done!", 100);
+    // Persist lesson for "My Lessons" selection in Create Arena
+    saveLessonToStorage(lesson, documentText);
 
+    updateLoadingOverlay("Done!", 100);
     renderLesson(lesson);
     showSection("lessonSection");
     showToast("Lesson ready!", "success");
@@ -132,22 +138,19 @@ async function generateLesson() {
 // ══════════════════════════════════════════════════════════════════════════════
 
 function renderLesson(l) {
-  el("lessonTitle").textContent = l.title || "Lesson";
+  el("lessonTitle").textContent   = l.title   || "Lesson";
   el("lessonSummary").textContent = l.summary || "";
 
-  // Objectives
   el("lessonObjectives").innerHTML = (l.objectives || []).map(o => `
     <li style="display:flex;gap:10px;align-items:flex-start;">
       <span style="color:var(--green);font-weight:900;flex-shrink:0;margin-top:2px;">✓</span>
       <span>${escapeHTML(o)}</span>
     </li>`).join("");
 
-  // Key concepts
   el("lessonKeyConcepts").innerHTML = (l.keyConcepts || []).map(c =>
     `<span class="pill">${escapeHTML(c)}</span>`
   ).join("");
 
-  // Sections
   el("lessonSectionsContainer").innerHTML = (l.sections || []).map(s => `
     <div class="card">
       <div class="eyebrow">${escapeHTML(s.title)}</div>
@@ -165,7 +168,6 @@ function renderLesson(l) {
         </div>` : ""}
     </div>`).join("");
 
-  // Memory tips
   el("lessonMemoryTips").innerHTML = (l.memoryTips || []).map(t => `
     <li style="display:flex;gap:10px;align-items:flex-start;">
       <span style="flex-shrink:0;">💡</span>
@@ -174,25 +176,33 @@ function renderLesson(l) {
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
-// STEP 3 — Generate Quiz
+// STEP 3 — Generate Quiz  (with loading overlay)
 // ══════════════════════════════════════════════════════════════════════════════
 
 async function generateQuiz() {
   const statusEl = el("quizGenStatus");
   const btn      = el("makeQuizBtn");
 
-  btn.disabled    = true;
-  btn.textContent = "Generating quiz...";
+  btn.disabled         = true;
+  btn.textContent      = "Generating...";
   statusEl.textContent = "";
 
+  showLoadingOverlay({
+    title:   "Creating your quiz...",
+    message: "Analysing lesson content.",
+    steps:   ["Reading lesson", "Generating questions", "Balancing difficulty", "Preparing quiz"]
+  });
+
   try {
-    const res = await fetch("/api/lessons/quiz", {
+    updateLoadingOverlay("Generating questions...", 40);
+    const res  = await fetch("/api/lessons/quiz", {
       method:  "POST",
       headers: { "Content-Type": "application/json" },
       body:    JSON.stringify({ lesson, documentText })
     });
-
+    updateLoadingOverlay("Preparing quiz...", 85);
     const data = await res.json();
+
     if (!res.ok) throw new Error(data.error || "Could not generate quiz.");
 
     quiz = data;
@@ -203,110 +213,115 @@ async function generateQuiz() {
     statusEl.textContent = err.message;
     showToast(err.message || "Could not generate quiz.", "danger");
   } finally {
+    hideLoadingOverlay();
     btn.disabled    = false;
     btn.textContent = "Make Quiz";
   }
 }
 
+// ── Quiz engine ────────────────────────────────────────────────────────────────
+
+function convertToChallenge(q) {
+  return {
+    type:          "multiple_choice",
+    concept:       q.concept    || "Concept",
+    difficulty:    q.difficulty || "medium",
+    prompt:        q.question,
+    options:       q.options,
+    correctAnswer: q.correctAnswer,
+    correctAnswers: [],
+    pairs:         [],
+    acceptedAnswers: [],
+    steps:         [],
+    correctOrder:  [],
+    mistakeText:   "",
+    explanation:   q.explanation || "",
+    sourceSnippet: ""
+  };
+}
+
 function startQuiz() {
-  questionIdx = 0;
-  score       = 0;
+  // Load questions into shared state so renderer.js can read them
+  state.currentPack = { challenges: quiz.questions.map(convertToChallenge) };
+  state.currentChallengeIndex = 0;
+  state.localScore            = 0;
+  state.selectedAnswer        = null;
+  state.currentOrderSelection = [];
+
   userAnswers = new Array(quiz.questions.length).fill(null);
+  lessonScore = 0;
+
   el("quizHeading").textContent = lesson?.title || "Quiz";
-  renderQuestion();
+  el("scoreText").textContent   = 0;
+
+  hideNavButtons();
+  renderChallenge(submitLessonAnswer);
 }
 
-function renderQuestion() {
-  const questions = quiz.questions;
-  const q         = questions[questionIdx];
-  const total     = questions.length;
+function submitLessonAnswer() {
+  if (state.selectedAnswer === null) return;
 
-  // Progress
-  el("quizProgressLabel").textContent = `Question ${questionIdx + 1} of ${total}`;
-  el("quizScorePill").textContent     = `${score} / ${total}`;
-  el("quizProgressBar").style.width   = `${Math.round((questionIdx / total) * 100)}%`;
+  const challenge = state.currentPack.challenges[state.currentChallengeIndex];
+  const isCorrect = state.selectedAnswer === challenge.correctAnswer;
 
-  // Tags
-  el("quizDifficultyTag").textContent = q.difficulty || "medium";
-  el("quizConceptTag").textContent    = q.concept    || "";
+  userAnswers[state.currentChallengeIndex] = state.selectedAnswer;
 
-  // Question text
-  el("quizQuestionText").textContent = q.question;
+  if (isCorrect) {
+    lessonScore++;
+    state.localScore++;
+    // Renderer reads state.localScore for the score display inside the card;
+    // we also manually refresh the aside counter right after renderResultPhase.
+  }
 
-  // Options
-  const box = el("quizOptionsBox");
-  box.innerHTML = "";
-  (q.options || []).forEach(opt => {
-    const btn = document.createElement("button");
-    btn.type      = "button";
-    btn.className = "option";
-    btn.textContent = opt;
-    btn.addEventListener("click", () => answerQuestion(opt));
-    box.appendChild(btn);
-  });
+  // Show result using the same renderer as the arena (same visual)
+  renderResultPhase(challenge, { isCorrect, isPartial: false, points: isCorrect ? 100 : 0 });
 
-  // Reset feedback & nav
-  el("quizFeedbackBox").classList.add("hidden");
-  el("quizNextBtn").classList.add("hidden");
-  el("quizFinishBtn").classList.add("hidden");
-}
+  // Refresh the "correct" counter in the aside (renderResultPhase doesn't touch it)
+  el("scoreText").textContent = lessonScore;
 
-function answerQuestion(selected) {
-  const q         = quiz.questions[questionIdx];
-  const isCorrect = selected === q.correctAnswer;
-
-  userAnswers[questionIdx] = selected;
-  if (isCorrect) score++;
-
-  el("quizScorePill").textContent = `${score} / ${quiz.questions.length}`;
-
-  // Lock and colour options
-  el("quizOptionsBox").querySelectorAll(".option").forEach(btn => {
-    btn.disabled = true;
-    const text = btn.textContent;
-    if (text === q.correctAnswer) {
-      Object.assign(btn.style, { background: "var(--green)", color: "white", borderColor: "var(--green)", opacity: "1" });
-    } else if (text === selected && !isCorrect) {
-      Object.assign(btn.style, { background: "var(--red)", color: "white", borderColor: "var(--red)", opacity: "1" });
-    } else {
-      btn.style.opacity = "0.4";
-    }
-  });
-
-  // Feedback
-  const feedbackTitle = el("quizFeedbackTitle");
-  feedbackTitle.textContent = isCorrect ? "✅ Correct!" : `❌ Incorrect — correct: "${q.correctAnswer}"`;
-  feedbackTitle.style.color = isCorrect ? "var(--green)" : "var(--red)";
-  el("quizFeedbackExplanation").textContent = q.explanation || "";
-  el("quizFeedbackBox").classList.remove("hidden");
-
-  // Nav button
-  const isLast = questionIdx >= quiz.questions.length - 1;
+  // Show the appropriate navigation button
+  const isLast = state.currentChallengeIndex >= state.currentPack.challenges.length - 1;
   el(isLast ? "quizFinishBtn" : "quizNextBtn").classList.remove("hidden");
 }
 
 function nextQuestion() {
-  questionIdx++;
-  renderQuestion();
+  state.currentChallengeIndex++;
+  state.selectedAnswer        = null;
+  state.currentOrderSelection = [];
+  hideNavButtons();
+  renderChallenge(submitLessonAnswer);
+}
+
+function hideNavButtons() {
+  el("quizNextBtn").classList.add("hidden");
+  el("quizFinishBtn").classList.add("hidden");
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
-// STEP 4 — Generate Report
+// STEP 4 — Generate Report  (with loading overlay)
 // ══════════════════════════════════════════════════════════════════════════════
 
 async function generateReport() {
   const btn = el("quizFinishBtn");
   btn.disabled    = true;
-  btn.textContent = "Generating report...";
+  btn.textContent = "Generating...";
+
+  showLoadingOverlay({
+    title:   "Analysing your results...",
+    message: "Evaluating your answers.",
+    steps:   ["Evaluating answers", "Identifying gaps", "Writing recommendations", "Preparing report"]
+  });
 
   try {
+    updateLoadingOverlay("Identifying gaps...", 50);
     const res = await fetch("/api/lessons/report", {
       method:  "POST",
       headers: { "Content-Type": "application/json" },
       body:    JSON.stringify({ lesson, questions: quiz.questions, userAnswers })
     });
-
+    updateLoadingOverlay("Preparing report...", 85);
     const data = await res.json();
+
     if (!res.ok) throw new Error(data.error || "Could not generate report.");
 
     renderReport(data);
@@ -315,39 +330,34 @@ async function generateReport() {
     console.error(err);
     showToast(err.message || "Could not generate report.", "danger");
   } finally {
+    hideLoadingOverlay();
     btn.disabled    = false;
-    btn.textContent = "See My Report";
+    btn.textContent = "See My Report →";
   }
 }
 
-// ══════════════════════════════════════════════════════════════════════════════
-// Render Report
-// ══════════════════════════════════════════════════════════════════════════════
+// ── Report renderer ────────────────────────────────────────────────────────────
 
 function renderReport(report) {
   const pct = report.percentage;
+  const col = pct >= 75 ? "var(--green)" : pct >= 50 ? "var(--orange)" : "var(--red)";
 
-  // Score
-  const scoreColor = pct >= 75 ? "var(--green)" : pct >= 50 ? "var(--orange)" : "var(--red)";
   el("reportScoreDisplay").textContent = `${pct}%`;
-  el("reportScoreDisplay").style.color = scoreColor;
+  el("reportScoreDisplay").style.color = col;
   el("reportScoreLabel").textContent   = `${report.score} out of ${report.total} correct`;
   el("reportOverallFeedback").textContent = report.analysis?.overallFeedback || "";
 
-  // Strengths
   el("reportStrengths").innerHTML = (report.analysis?.strengths || []).map(s => `
     <div style="display:flex;gap:10px;align-items:flex-start;">
       <span style="color:var(--green);font-weight:900;flex-shrink:0;">✓</span>
       <span>${escapeHTML(s)}</span>
     </div>`).join("") || `<p class="muted">Keep studying!</p>`;
 
-  // Mastered concepts
   const mastered = report.analysis?.masteredConcepts || [];
   el("reportMastered").innerHTML = mastered.length
     ? mastered.map(c => `<span class="pill" style="background:var(--green);color:white;">${escapeHTML(c)}</span>`).join("")
     : `<span class="muted">No concepts fully mastered yet — keep going!</span>`;
 
-  // Gap analysis
   const gaps = report.analysis?.gapAnalysis || [];
   el("reportGaps").innerHTML = gaps.length === 0
     ? `<p class="muted">No significant gaps! Excellent work.</p>`
@@ -365,7 +375,6 @@ function renderReport(report) {
             </div>` : ""}
         </div>`).join("");
 
-  // Study plan
   el("reportStudyPlan").innerHTML = (report.analysis?.studyPlan || []).map((step, i) => `
     <li style="display:flex;gap:12px;align-items:flex-start;">
       <span style="background:var(--blue);color:white;border-radius:50%;width:26px;height:26px;

@@ -35,25 +35,37 @@
 
     <div class="card">
       <div class="eyebrow">Host</div>
-      <p class="muted" style="margin-top:8px;">Upload your study material and let AI build the challenge pack.</p>
+      <p class="muted" style="margin-top:8px;">Upload a document or choose a saved lesson — AI builds the challenge pack.</p>
 
-      <!-- Nickname -->
-      <div style="margin-top:28px;">
+      <!-- Nickname (shared between both modes) -->
+      <div style="margin-top:24px;">
         <label class="eyebrow">Your nickname</label>
         <input id="hostNameInput" class="input" style="margin-top:12px;" placeholder="e.g. Darius" />
       </div>
 
-      <!-- File upload -->
-      <div style="margin-top:22px;">
-        <label class="eyebrow">Document</label>
-        <div id="dropZone" class="upload-box" style="margin-top:12px;">
+      <!-- Source tabs -->
+      <div class="auth-tabs" style="margin-top:24px;">
+        <button class="auth-tab auth-tab-active" id="sourceTabUpload" type="button">📄 Upload Document</button>
+        <button class="auth-tab"                 id="sourceTabLesson" type="button">📚 My Lessons</button>
+      </div>
+
+      <!-- ── Upload panel ──────────────────────────────────────────────────── -->
+      <div id="uploadPanel" style="margin-top:20px;">
+        <div id="dropZone" class="upload-box">
           <input id="fileInput" type="file" accept=".pdf,image/*" class="hidden" />
           <h3 id="fileName">Choose PDF or image</h3>
           <p class="muted" style="margin-top:8px;">PDF, PNG or JPG · Clear typed text works best.</p>
         </div>
       </div>
 
-      <!-- Game mode -->
+      <!-- ── My Lessons panel ──────────────────────────────────────────────── -->
+      <div id="lessonsPanel" class="hidden" style="margin-top:20px;">
+        <div id="savedLessonsList" style="display:grid;gap:10px;max-height:320px;overflow-y:auto;">
+          <p class="muted">Loading your lessons...</p>
+        </div>
+      </div>
+
+      <!-- Game mode (shared) -->
       <div class="flat-card" style="margin-top:22px;">
         <div class="eyebrow">Game mode</div>
         <div class="game-mode-grid" style="margin-top:16px;">
