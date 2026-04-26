@@ -27,24 +27,35 @@
 
   <main class="container" style="padding-top:32px;padding-bottom:60px;">
 
-    <div style="margin-bottom:28px;">
-      <a href="/dashboard" class="btn btn-secondary" style="padding:10px 16px;">← Dashboard</a>
+    <!-- ══════════════════════════════════════════════════════════════════════ -->
+    <!-- MY LESSONS — overview grid                                             -->
+    <!-- ══════════════════════════════════════════════════════════════════════ -->
+    <div id="myLessonsSection" class="hidden">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;margin-bottom:32px;">
+        <div>
+          <a href="/dashboard" class="btn btn-secondary" style="padding:10px 16px;margin-right:12px;">← Dashboard</a>
+          <h1 style="display:inline;vertical-align:middle;">My Lessons</h1>
+        </div>
+        <button id="newLessonFromGridBtn" class="btn" style="padding:12px 24px;">+ New Lesson</button>
+      </div>
+
+      <div id="lessonCardsGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:20px;">
+        <!-- Lesson cards rendered by JS -->
+      </div>
     </div>
 
     <!-- ══════════════════════════════════════════════════════════════════════ -->
-    <!-- STEP 1 — UPLOAD                                                       -->
+    <!-- STEP 1 — UPLOAD / TOPIC                                               -->
     <!-- ══════════════════════════════════════════════════════════════════════ -->
-    <div id="uploadSection">
-      <div class="eyebrow" style="margin-bottom:14px;">Study tool</div>
-      <h1 style="margin-bottom:10px;">My Lessons</h1>
-      <p class="lead" style="margin-bottom:36px;max-width:560px;">
-        Upload a PDF or image. AI builds a structured lesson, then quizzes you and pinpoints your gaps.
-      </p>
+    <div id="uploadSection" class="hidden">
+      <div style="display:flex;align-items:center;gap:14px;margin-bottom:28px;flex-wrap:wrap;">
+        <button id="backToMyLessonsBtn" class="btn btn-secondary" style="padding:10px 16px;">← My Lessons</button>
+        <h2 style="margin:0;">New Lesson</h2>
+      </div>
 
       <div class="card" style="max-width:640px;">
         <div class="eyebrow">Choose your input method</div>
 
-        <!-- Source tabs -->
         <div class="auth-tabs" style="margin-top:18px;">
           <button class="auth-tab auth-tab-active" id="lessonTabUpload" type="button">📄 Upload Document</button>
           <button class="auth-tab"                 id="lessonTabTopic"  type="button">✍️ Write Topic</button>
@@ -65,14 +76,10 @@
           <textarea id="lessonTopicInput" class="input" rows="4"
             style="width:100%;resize:vertical;font-family:inherit;"
             placeholder="e.g. How blockchain and cryptocurrency work, or the basics of photosynthesis in plants..."></textarea>
-          <p class="muted" style="margin-top:8px;font-size:13px;">
-            Be specific for better results. Works in any language.
-          </p>
+          <p class="muted" style="margin-top:8px;font-size:13px;">Be specific for better results. Works in any language.</p>
         </div>
 
-        <button id="generateLessonBtn" class="btn" style="width:100%;margin-top:20px;padding:16px;">
-          Generate Lesson
-        </button>
+        <button id="generateLessonBtn" class="btn" style="width:100%;margin-top:20px;padding:16px;">Generate Lesson</button>
         <p id="lessonUploadStatus" class="status"></p>
       </div>
     </div>
@@ -82,7 +89,7 @@
     <!-- ══════════════════════════════════════════════════════════════════════ -->
     <div id="lessonSection" class="hidden">
       <div style="display:flex;align-items:center;gap:16px;margin-bottom:32px;flex-wrap:wrap;">
-        <button id="backToUploadBtn" class="btn btn-secondary" style="padding:10px 16px;">← New Lesson</button>
+        <button id="backToMyLessonsFromLesson" class="btn btn-secondary" style="padding:10px 16px;">← My Lessons</button>
         <h1 id="lessonTitle" style="margin:0;"></h1>
       </div>
 
@@ -115,7 +122,7 @@
     </div>
 
     <!-- ══════════════════════════════════════════════════════════════════════ -->
-    <!-- STEP 3 — QUIZ (same layout as arena challenge)                        -->
+    <!-- STEP 3 — QUIZ                                                         -->
     <!-- ══════════════════════════════════════════════════════════════════════ -->
     <div id="quizSection" class="hidden">
       <div style="display:flex;align-items:center;gap:16px;margin-bottom:28px;flex-wrap:wrap;">
@@ -124,56 +131,37 @@
       </div>
 
       <div class="quiz-layout">
-
-        <!-- ── Left panel ─── -->
         <aside class="card">
           <div class="eyebrow">Quiz</div>
           <h2 style="margin-top:14px;">My answers</h2>
-
           <div style="margin-top:28px;">
             <div style="display:flex;justify-content:space-between;font-weight:900;font-size:14px;margin-bottom:10px;">
               <span>Progress</span><span id="progressText">0%</span>
             </div>
-            <div class="progress-track">
-              <div id="progressBar" class="progress-fill"></div>
-            </div>
+            <div class="progress-track"><div id="progressBar" class="progress-fill"></div></div>
           </div>
-
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:22px;">
-            <div class="flat-card">
-              <div id="scoreText" style="font-size:34px;font-weight:900;">0</div>
-              <div class="muted">correct</div>
-            </div>
-            <div class="flat-card">
-              <div id="challengeNumberText" style="font-size:34px;font-weight:900;">1</div>
-              <div class="muted">question</div>
-            </div>
+            <div class="flat-card"><div id="scoreText" style="font-size:34px;font-weight:900;">0</div><div class="muted">correct</div></div>
+            <div class="flat-card"><div id="challengeNumberText" style="font-size:34px;font-weight:900;">1</div><div class="muted">question</div></div>
           </div>
         </aside>
 
-        <!-- ── Right panel ─── -->
         <div class="card">
-          <div class="row" style="gap:8px;justify-content:space-between;align-items:center;">
-            <div class="row" style="gap:8px;">
-              <span id="typeTag"       class="pill"></span>
-              <span id="conceptTag"    class="pill"></span>
-              <span id="difficultyTag" class="pill"></span>
-            </div>
+          <div class="row" style="gap:8px;margin-bottom:28px;">
+            <span id="typeTag"       class="pill"></span>
+            <span id="conceptTag"    class="pill"></span>
+            <span id="difficultyTag" class="pill"></span>
           </div>
 
-          <!-- spot_mistake box (hidden for quiz, included for renderer compat) -->
-          <div id="mistakeBox" class="flat-card hidden" style="margin-top:28px;background:#fff4c7;">
+          <div id="mistakeBox" class="flat-card hidden" style="background:#fff4c7;">
             <div class="eyebrow">Find the mistake</div>
-            <p id="mistakeText" style="margin-top:14px;font-weight:900;line-height:1.6;"></p>
+            <p id="mistakeText" style="margin-top:14px;font-weight:900;"></p>
           </div>
 
-          <h2 id="challengePromptText" style="margin-top:28px;font-size:clamp(18px,3vw,32px);line-height:1.5;"></h2>
-
+          <h2 id="challengePromptText" style="margin-top:20px;font-size:clamp(18px,3vw,32px);line-height:1.5;"></h2>
           <div id="answerBox" style="display:grid;gap:14px;margin-top:28px;"></div>
-
           <button id="submitAnswerBtn" class="btn" style="margin-top:28px;">Lock answer</button>
 
-          <!-- feedbackBox used by renderer -->
           <div id="feedbackBox" class="flat-card hidden" style="margin-top:28px;">
             <h2 id="feedbackTitle"></h2>
             <p id="correctAnswerText" style="margin-top:16px;font-weight:900;"></p>
@@ -182,14 +170,11 @@
               <div class="eyebrow">Source</div>
               <blockquote id="sourceSnippet" class="muted" style="margin:12px 0 0;"></blockquote>
             </div>
-            <!-- nextChallengeBtn kept for renderer compat but hidden -->
             <button id="nextChallengeBtn" class="btn hidden" style="margin-top:22px;">Next question</button>
           </div>
-
         </div>
       </div>
 
-      <!-- Navigation buttons (below the layout) -->
       <div style="display:flex;justify-content:center;gap:14px;margin-top:28px;">
         <button id="quizNextBtn"   class="btn hidden" style="padding:14px 36px;">Next Question →</button>
         <button id="quizFinishBtn" class="btn hidden" style="padding:14px 36px;">See My Report →</button>
@@ -201,12 +186,11 @@
     <!-- ══════════════════════════════════════════════════════════════════════ -->
     <div id="reportSection" class="hidden">
       <div style="display:flex;align-items:center;gap:16px;margin-bottom:28px;flex-wrap:wrap;">
+        <button id="backToMyLessonsFromReport" class="btn btn-secondary" style="padding:10px 16px;">← My Lessons</button>
         <button id="retakeQuizBtn" class="btn btn-secondary" style="padding:10px 16px;">↺ Retake Quiz</button>
-        <button id="newLessonBtn"  class="btn btn-secondary" style="padding:10px 16px;">+ New Lesson</button>
         <h1 style="margin:0;">Performance Report</h1>
       </div>
 
-      <!-- Score -->
       <div class="card" style="text-align:center;margin-bottom:16px;">
         <div class="eyebrow">Your Score</div>
         <div id="reportScoreDisplay" style="font-size:80px;font-weight:900;line-height:1;margin:20px 0 8px;"></div>
@@ -214,25 +198,21 @@
         <p id="reportOverallFeedback" style="margin-top:20px;line-height:1.8;max-width:600px;margin-left:auto;margin-right:auto;font-size:16px;"></p>
       </div>
 
-      <!-- Strengths -->
       <div class="card" style="margin-bottom:16px;">
         <div class="eyebrow">Strengths</div>
         <div id="reportStrengths" style="margin-top:14px;display:grid;gap:10px;"></div>
       </div>
 
-      <!-- Mastered concepts -->
       <div class="card" style="margin-bottom:16px;">
         <div class="eyebrow">Mastered Concepts</div>
         <div id="reportMastered" class="row" style="margin-top:14px;flex-wrap:wrap;gap:8px;"></div>
       </div>
 
-      <!-- Gap analysis -->
       <div class="card" style="margin-bottom:16px;">
         <div class="eyebrow">Gap Analysis</div>
         <div id="reportGaps" style="margin-top:14px;display:grid;gap:16px;"></div>
       </div>
 
-      <!-- Study plan -->
       <div class="card" style="margin-bottom:32px;">
         <div class="eyebrow">Study Plan</div>
         <ol id="reportStudyPlan" style="margin-top:14px;display:grid;gap:12px;padding-left:0;list-style:none;"></ol>
