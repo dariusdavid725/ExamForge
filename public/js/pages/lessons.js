@@ -302,7 +302,7 @@ function setupButtons() {
   el("newLessonFromGridBtn")?.addEventListener("click",       () => showSection("uploadSection"));
   el("backToMyLessonsBtn")?.addEventListener("click",         showMyLessons);
   el("backToMyLessonsFromLesson")?.addEventListener("click",  showMyLessons);
-  el("backToMyLessonsFromReport")?.addEventListener("click",  () => { showMyLessons(); });
+  el("backToMyLessonsFromReport")?.addEventListener("click",  showMyLessons);
   el("makeQuizBtn")?.addEventListener("click",                generateQuiz);
   el("backToLessonBtn")?.addEventListener("click",            () => showSection("lessonSection"));
   el("submitAnswerBtn")?.addEventListener("click",            submitLessonAnswer);
@@ -561,6 +561,17 @@ async function generateReport() {
     if (currentLessonId && currentUser?.id) {
       const reviewTopics = (data.analysis?.gapAnalysis || []).map(g => g.concept).filter(Boolean);
       await updateLessonProgress(currentLessonId, currentUser.id, { percentage: data.percentage, reviewTopics });
+
+      // Update cache so the card shows the new score immediately on back
+      const idx = cachedLessons.findIndex(l => l.id === currentLessonId);
+      if (idx !== -1) {
+        cachedLessons[idx] = {
+          ...cachedLessons[idx],
+          lastQuizScore: data.percentage,
+          lastQuizDate:  new Date().toISOString(),
+          reviewTopics:  reviewTopics.slice(0, 8)
+        };
+      }
     }
 
     renderReport(data);
