@@ -171,13 +171,27 @@ function isRequestTooLargeError(error) {
   );
 }
 
-async function callJsonSchema(model, prompt, schema, name, maxTokens = 3500, temperature = 0.2) {
+async function callJsonSchema(
+  model,
+  prompt,
+  schema,
+  name,
+  maxTokens = 3600,
+  temperature = 0.2
+) {
   const completion = await client.chat.completions.create({
     model,
     messages: [
       {
         role: "system",
-        content: "Return strict valid JSON only. No markdown. No explanations."
+        content: [
+          "Return strict valid JSON only.",
+          "No markdown.",
+          "No explanations.",
+          "Every challenge must be self-contained.",
+          "If a question refers to a hidden line/page/snippet, rewrite it by including the visible snippet in the prompt.",
+          "If the snippet cannot be included clearly, replace that challenge with another one from the document."
+        ].join("\n")
       },
       {
         role: "user",
@@ -212,61 +226,122 @@ async function auditPack(model, text, pack) {
   return JSON.parse(raw);
 }
 
+async function repairUntilValid({
+  model,
+  rawPackText,
+  reason,
+  text,
+  gameMode,
+  onProgress
+}) {
+  let currentRaw = rawPackText;
+  let currentReason = reason;
+
+  for (let repairAttempt = 1; repairAttempt <= 3; repairAttempt++) {
+    onProgress?.(`AI repară întrebările neclare... încercarea ${repairAttempt}`);
+
+    const repairPrompt = buildRepairPrompt(
+      currentRaw,
+      currentReason,
+      text,
+      gameMode,
+      repairAttempt
+    );
+
+    let repairedRaw = "";
+
+    try {
+      repairedRaw = await callJsonSchema(
+        model,
+        repairPrompt,
+        LEARNING_PACK_SCHEMA,
+        "learning_pack_repair",
+        3800,
+        0.12
+      );
+    } catch (error) {
+      currentReason = error.message;
+      continue;
+    }
+
+    let repairedPack;
+
+    try {
+      repairedPack = parseAndNormalizePack(repairedRaw);
+    } catch (error) {
+      currentRaw = repairedRaw;
+      currentReason = error.message;
+      continue;
+    }
+
+    const audit = await auditPack(model, text, repairedPack);
+
+    if (audit.valid) {
+      repairedPack.generatedBy = model;
+      repairedPack.aiOnly = true;
+      repairedPack.repairedByAI = true;
+      repairedPack.repairAttempt = repairAttempt;
+
+      return repairedPack;
+    }
+
+    currentRaw = JSON.stringify(repairedPack, null, 2);
+    currentReason = audit.problems.join(" | ");
+  }
+
+  throw new Error(currentReason || "AI repair failed.");
+}
+
 async function tryGenerateAndRepair(model, text, gameMode, onProgress) {
-  onProgress?.("AI is generating strict challenges...");
+  onProgress?.("AI generează challenge-uri...");
 
   const raw = await callJsonSchema(
     model,
     buildLearningPackPrompt(text, gameMode),
     LEARNING_PACK_SCHEMA,
     "learning_pack",
-    3600,
+    3800,
     0.25
   );
 
-  let pack = parseAndNormalizePack(raw);
+  let pack;
 
-  onProgress?.("Checking challenge quality...");
+  try {
+    pack = parseAndNormalizePack(raw);
+  } catch (error) {
+    console.log("Initial pack failed validation, repairing:", error.message);
+
+    return await repairUntilValid({
+      model,
+      rawPackText: raw,
+      reason: error.message,
+      text,
+      gameMode,
+      onProgress
+    });
+  }
+
+  onProgress?.("Verificăm calitatea întrebărilor...");
 
   const audit = await auditPack(model, text, pack);
 
   if (audit.valid) {
     pack.generatedBy = model;
     pack.aiOnly = true;
+
     return pack;
   }
 
-  onProgress?.("Repairing low-quality questions...");
+  console.log("Initial pack failed audit, repairing:", audit.problems);
 
-  const repairPrompt = buildRepairPrompt(
-    JSON.stringify(pack),
-    audit.problems.join(" | "),
-    text,
-    gameMode
-  );
-
-  const repairedRaw = await callJsonSchema(
+  return await repairUntilValid({
     model,
-    repairPrompt,
-    LEARNING_PACK_SCHEMA,
-    "learning_pack_repair",
-    3600,
-    0.15
-  );
-
-  const repairedPack = parseAndNormalizePack(repairedRaw);
-
-  const secondAudit = await auditPack(model, text, repairedPack);
-
-  if (!secondAudit.valid) {
-    throw new Error("AI quality audit failed: " + secondAudit.problems.join(" | "));
-  }
-
-  repairedPack.generatedBy = model;
-  repairedPack.aiOnly = true;
-  repairedPack.repairedByAI = true;
-
-  return repairedPack;
+    rawPackText: JSON.stringify(pack, null, 2),
+    reason: audit.problems.join(" | "),
+    text,
+    gameMode,
+    onProgress
+  });
 }
 
 export async function generateLearningPackWithAI(text, gameMode, onProgress) {
@@ -293,22 +368,22 @@ export async function generateLearningPackWithAI(text, gameMode, onProgress) {
     }
   }
 
-  if (errors.every(e => e.rateLimit)) {
+  if (errors.every(error => error.rateLimit)) {
     throw new Error("Rate limit reached. Așteaptă și încearcă din nou.");
   }
 
-  if (errors.every(e => e.tooLarge)) {
+  if (errors.every(error => error.tooLarge)) {
     throw new Error("Documentul este prea mare. Încearcă un PDF mai scurt.");
   }
 
   throw new Error(
     "AI generation failed: " +
-      errors.map(e => `${e.model}: ${e.message}`).join(" | ")
+      errors.map(error => `${error.model}: ${error.message}`).join(" | ")
   );
 }
 
 export async function generateRecoveryLessonWithAI(room, player) {
-  const missedAnswers = player.answers.filter(a => !a.isCorrect);
+  const missedAnswers = player.answers.filter(answer => !answer.isCorrect);
 
   if (missedAnswers.length === 0) {
     return {
@@ -335,7 +410,7 @@ export async function generateRecoveryLessonWithAI(room, player) {
       );
 
       return {
-        ...JSON.parse(raw),
+        ...JSON.parse(cleanJson(raw)),
         generatedBy: model,
         aiOnly: true
       };

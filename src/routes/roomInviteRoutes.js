@@ -20,11 +20,11 @@ async function getAcceptedFriendIds(userId) {
     return [];
   }
 
-  return (data || []).map(friendship => {
-    return friendship.requester_id === userId
+  return (data || []).map(friendship =>
+    friendship.requester_id === userId
       ? friendship.addressee_id
-      : friendship.requester_id;
-  });
+      : friendship.requester_id
+  );
 }
 
 async function areFriends(userA, userB) {

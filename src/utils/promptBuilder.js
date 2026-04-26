@@ -19,7 +19,7 @@ Language:
 - Use the same main language as the document.
 - If the document is Romanian, write Romanian.
 
-CRITICAL RULE:
+Core rule:
 Every challenge must be SELF-CONTAINED.
 
 The player will NOT see the document.
@@ -28,22 +28,44 @@ The player will ONLY see:
 - options / pairs / steps
 - mistakeText, if present
 
-Therefore:
-- Do NOT reference hidden source positions.
-- Forbidden: "line 10", "linia 10", "rândul 3", "pagina 4", "slide 2", "codul de mai sus", "fragmentul de mai sus", "în document".
-- If you need to ask about a code line, include the actual code operation in the prompt.
-- Bad: "Linia 10 actualizează părintele lui x dacă x nu este NIL."
-- Good: "Instrucțiunea x.parent = y.parent se execută doar dacă x != NIL."
-- Do NOT ask questions that require seeing a hidden snippet.
-- Do NOT invent numbers, examples, prices, quantities, dates, names, formulas, or assumptions.
-- Do NOT create math word problems unless ALL needed numbers are visible in the prompt.
-- Do NOT ask "which statements are true?" as multiple_choice. Use multiple_select.
-- Do NOT put multiple statements glued into one option.
-- Do NOT make one option contain a long comma-separated list.
-- sourceSnippet must support the answer, but the answer must still be inferable from the visible prompt/options.
+Hidden-reference rule:
+- Do NOT ask about a hidden line number, page number, slide number, or "text above".
+- If the source uses a line number or code fragment, include the relevant visible operation/code directly in the question.
+- Never write "linia 10" or "line 10" in the visible challenge.
+- Instead write the actual operation or statement.
+
+Examples:
+Bad:
+"Identifică greșeala: Dacă x este NIL, atunci linia 10 setează x.parent la y.parent."
+
+Good:
+"Identifică greșeala: Dacă x este NIL, instrucțiunea x.parent = y.parent nu trebuie executată."
+
+Good:
+"Pentru secvența x.parent = y.parent, când este sigură actualizarea părintelui lui x?"
+
+If you cannot include the referenced sequence clearly:
+- choose another concept from the document
+- generate a different self-contained challenge
 
 Use ONLY the document.
-Ignore watermarks, headers, footers, page numbers, URLs, bibliography, copyright notices.
+Do NOT invent facts, examples, numbers, quantities, names, formulas, or assumptions.
+Do NOT create math word problems unless ALL needed values are visible in the prompt.
+Do NOT ask "which statements are true?" as multiple_choice. Use multiple_select.
+Do NOT put multiple unrelated statements in one option.
+Do NOT make one option contain a long comma-separated list.
+sourceSnippet must support the answer, but the answer must still be inferable from the visible prompt/options.
+
+Ignore:
+- watermarks
+- headers
+- footers
+- page numbers
+- URLs
+- bibliography
+- copyright notices
+- decorative text
+- repeated boilerplate
 
 Game mode: ${gameMode}
 Seed: ${seed}
@@ -103,7 +125,7 @@ multiple_choice:
 true_false:
 - options ["Adevărat","Fals"] or ["True","False"]
 - correctAnswer must be one option
-- prompt must be a complete statement, not a reference to a hidden line
+- prompt must be a complete visible statement
 
 fill_blank:
 - prompt contains exactly one blank token: ____
@@ -119,10 +141,10 @@ order_steps:
 - options []
 
 spot_mistake:
-- mistakeText is one wrong claim
+- mistakeText is one wrong visible claim
 - options exactly 4 explanations
 - correctAnswer one of options
-- mistakeText must not reference hidden lines/pages/snippets
+- mistakeText must include the relevant operation/statement if it depends on code
 
 matching:
 - pairs exactly 4 objects { "left": "string", "right": "string" }
@@ -138,6 +160,91 @@ multiple_select:
 
 DOCUMENT:
 ${documentSlice}
+`;
+}
+
+export function buildRepairPrompt(
+  badJson,
+  validationError,
+  text,
+  gameMode = "arena_mix",
+  repairAttempt = 1
+) {
+  const documentContext = prepareTinyDocumentSlice(text);
+
+  return `
+Repair this learning pack JSON.
+
+Return ONLY valid JSON.
+No markdown.
+No prose outside JSON.
+
+Reason it failed:
+${validationError}
+
+Important:
+Do NOT reject the document.
+Do NOT remove the whole pack.
+Fix the invalid challenge.
+
+If the problem is a hidden source reference such as "linia 10", "line 10", "pagina 4", "fragmentul de mai sus":
+1. First try to make the challenge self-contained by including the actual relevant sequence/operation/statement in prompt or mistakeText.
+2. Remove the line/page/slide reference.
+3. If the relevant sequence cannot be identified clearly, replace only that challenge with another self-contained challenge from the document.
+
+Bad:
+"Identifică greșeala: Dacă x este NIL, atunci linia 10 setează x.parent la y.parent."
+
+Good:
+"Identifică greșeala: Dacă x este NIL, instrucțiunea x.parent = y.parent nu trebuie executată."
+
+Good:
+"Pentru secvența x.parent = y.parent, când este corectă actualizarea părintelui lui x?"
+
+Hard requirements:
+- exactly 8 challenges
+- 2 multiple_choice
+- 1 true_false
+- 1 fill_blank
+- 1 order_steps
+- 1 spot_mistake
+- 1 matching
+- 1 multiple_select
+- every challenge must be self-contained
+- use only the document
+- no invented facts
+- no hidden source references
+- no "linia X"
+- no "line X"
+- no "pagina X"
+- no "page X"
+- no "slide X"
+- no "codul de mai sus"
+- no "fragmentul de mai sus"
+- no "textul de mai sus"
+- if a question mentions code, include the actual operation in the visible prompt/mistakeText
+- if a question has multiple correct answers, make it multiple_select
+
+Game mode: ${gameMode}
+Repair attempt: ${repairAttempt}
+
+Root JSON:
+{
+  "title": "string",
+  "summary": "string",
+  "category": "string",
+  "concepts": ["string"],
+  "challenges": []
+}
+
+Every challenge must include:
+id, type, concept, difficulty, prompt, options, correctAnswer, correctAnswers, pairs, acceptedAnswers, steps, correctOrder, mistakeText, explanation, sourceSnippet
+
+Previous invalid JSON:
+${String(badJson || "").slice(0, 5000)}
+
+Document:
+${documentContext}
 `;
 }
 
@@ -169,7 +276,7 @@ Important:
 - The player sees ONLY prompt/options/steps/pairs/mistakeText.
 - The player does NOT see sourceSnippet while answering.
 - sourceSnippet is only evidence for audit/history.
-- A challenge can cite sourceSnippet, but the prompt must still make sense alone.
+- If a challenge originally came from a line/page/code reference, the visible prompt/mistakeText must include the actual relevant operation or statement.
 
 JSON schema:
 {
@@ -185,69 +292,19 @@ ${JSON.stringify(pack, null, 2)}
 `;
 }
 
-export function buildRepairPrompt(badJson, validationError, text, gameMode = "arena_mix") {
-  const documentContext = prepareTinyDocumentSlice(text);
-
-  return `
-Repair this learning pack JSON.
-
-Return ONLY valid JSON.
-No markdown.
-No prose outside JSON.
-
-Reason it failed:
-${validationError}
-
-Hard requirements:
-- exactly 8 challenges
-- 2 multiple_choice
-- 1 true_false
-- 1 fill_blank
-- 1 order_steps
-- 1 spot_mistake
-- 1 matching
-- 1 multiple_select
-- every challenge must be self-contained
-- use only the document
-- no invented facts
-- no hidden source references
-- no "linia X", "line X", "pagina X", "codul de mai sus", "fragmentul de mai sus"
-- if a question mentions a code operation, include the actual operation in the prompt
-- if a question has multiple correct answers, make it multiple_select
-
-Root JSON:
-{
-  "title": "string",
-  "summary": "string",
-  "category": "string",
-  "concepts": ["string"],
-  "challenges": []
-}
-
-Every challenge must include:
-id, type, concept, difficulty, prompt, options, correctAnswer, correctAnswers, pairs, acceptedAnswers, steps, correctOrder, mistakeText, explanation, sourceSnippet
-
-Previous invalid JSON:
-${String(badJson || "").slice(0, 4500)}
-
-Document:
-${documentContext}
-`;
-}
-
 export function buildRecoveryLessonPrompt(room, player) {
   const wrongAnswers = player.answers
-    .filter(a => !a.isCorrect)
-    .map(a => {
-      const challenge = room.pack.challenges[a.challengeIndex];
+    .filter(answer => !answer.isCorrect)
+    .map(answer => {
+      const challenge = room.pack.challenges[answer.challengeIndex];
 
       return {
         type: challenge.type,
         concept: challenge.concept,
         prompt: challenge.prompt,
         mistakeText: challenge.mistakeText,
-        selectedAnswer: a.selectedAnswer,
-        correctAnswer: a.correctAnswer,
+        selectedAnswer: answer.selectedAnswer,
+        correctAnswer: answer.correctAnswer,
         explanation: challenge.explanation,
         sourceSnippet: challenge.sourceSnippet
       };
