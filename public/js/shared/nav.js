@@ -117,7 +117,7 @@ async function _renderUserHeader(user, profile) {
 
   const streakEl = document.getElementById("headerStreak");
   if (streakEl) {
-    streakEl.textContent = `${streak}`;
+    streakEl.textContent = streak > 0 ? `${streak} 🔥` : "";
     streakEl.style.display = streak > 0 ? "" : "none";
   }
 
