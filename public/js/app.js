@@ -1,6 +1,7 @@
 import * as dom from "./dom.js";
 import { state } from "./state.js";
 import * as api from "./api.js";
+import { installThemeToggle } from "./theme.js";
 import { getSession, login, register } from "./auth.js";
 import { getProfile } from "./supabaseClient.js";
 import {
@@ -25,11 +26,15 @@ import {
   renderPodium,
   renderRecoveryLesson
 } from "./renderer.js";
+
 import {
   installFeedback,
   showToast,
   showConfirm,
-  showNotice
+  showNotice,
+  showLoadingOverlay,
+  updateLoadingOverlay,
+  hideLoadingOverlay
 } from "./uiFeedback.js";
 
 const QUESTION_TIME = 20;
@@ -40,6 +45,7 @@ const LB_DURATION = 5;
 
 async function initApp() {
   installFeedback();
+  installThemeToggle();
   polishStaticLabels();
   setupAuthListeners();
 
@@ -1251,6 +1257,18 @@ async function createArena() {
     return;
   }
 
+showLoadingOverlay({
+  title: "Forging your arena...",
+  message: "Reading your document.",
+  steps: [
+    "Reading document",
+    "Extracting concepts",
+    "Generating challenges",
+    "Checking quality",
+    "Opening lobby"
+  ]
+});
+
   dom.createArenaBtn.disabled = true;
   dom.hostStatusText.textContent = "Starting...";
 
@@ -1262,6 +1280,7 @@ async function createArena() {
 
     const packData = await api.generatePack(formData, message => {
       dom.hostStatusText.textContent = message;
+      updateLoadingOverlay(message);
     });
 
     state.documentName = file.name;
@@ -1286,6 +1305,8 @@ async function createArena() {
         .catch(() => {});
     }
 
+    updateLoadingOverlay("Opening lobby...", 92);
+
     dom.hostStatusText.textContent = "Creating arena...";
 
     const { response: roomResponse, data: roomData } = await api.createRoom(
@@ -1307,6 +1328,7 @@ async function createArena() {
     dom.hostStatusText.textContent = error.message || "Something went wrong.";
     showToast(error.message || "Something went wrong.", "danger");
   } finally {
+    hideLoadingOverlay();
     dom.createArenaBtn.disabled = false;
   }
 }

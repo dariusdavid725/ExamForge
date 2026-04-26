@@ -1,4 +1,6 @@
 let installed = false;
+let activeLoader = null;
+let loaderInterval = null;
 
 export function installFeedback() {
   if (installed) return;
@@ -45,7 +47,6 @@ export function showToast(message, type = "info", duration = 3200) {
   };
 
   toast.querySelector(".ef-toast-close")?.addEventListener("click", close);
-
   setTimeout(close, duration);
 }
 
@@ -149,6 +150,170 @@ export function showConfirm({
   });
 }
 
+export function showLoadingOverlay({
+  title = "Forging your arena...",
+  message = "Preparing your quiz.",
+  steps = [
+    "Reading document",
+    "Extracting concepts",
+    "Generating challenges",
+    "Checking quality",
+    "Building arena"
+  ]
+} = {}) {
+  injectFeedbackStyles();
+  hideLoadingOverlay();
+
+  const overlay = document.createElement("div");
+  overlay.id = "efLoadingOverlay";
+  overlay.className = "ef-loading-overlay";
+
+  overlay.innerHTML = `
+    <div class="ef-loading-card card">
+      <div class="ef-loading-orb">
+        <span>⚡</span>
+      </div>
+
+      <p class="eyebrow">ExamForge AI</p>
+
+      <h2 id="efLoadingTitle">${escapeHTML(title)}</h2>
+
+      <p id="efLoadingMessage" class="muted" style="margin-top:10px;">
+        ${escapeHTML(message)}
+      </p>
+
+      <div class="ef-loading-progress">
+        <div id="efLoadingBar" class="ef-loading-bar"></div>
+      </div>
+
+      <div id="efLoadingPercent" class="ef-loading-percent">8%</div>
+
+      <div class="ef-loading-steps">
+        ${steps
+          .map((step, index) => {
+            return `
+              <div class="ef-loading-step ${index === 0 ? "active" : ""}" data-loading-step="${index}">
+                <span>${index + 1}</span>
+                <strong>${escapeHTML(step)}</strong>
+              </div>
+            `;
+          })
+          .join("")}
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(overlay);
+
+  activeLoader = {
+    overlay,
+    progress: 8,
+    step: 0,
+    steps
+  };
+
+  loaderInterval = setInterval(() => {
+    if (!activeLoader) return;
+
+    const next = Math.min(activeLoader.progress + Math.random() * 4.2, 92);
+    setLoadingProgress(next);
+  }, 750);
+
+  return activeLoader;
+}
+
+export function updateLoadingOverlay(message, progress) {
+  if (!activeLoader) return;
+
+  const messageEl = document.getElementById("efLoadingMessage");
+
+  if (messageEl && message) {
+    messageEl.textContent = message;
+  }
+
+  if (typeof progress === "number") {
+    setLoadingProgress(progress);
+    setLoadingStepByProgress(progress);
+    return;
+  }
+
+  const text = String(message || "").toLowerCase();
+
+  if (text.includes("read") || text.includes("cit") || text.includes("document")) {
+    setLoadingStep(0);
+    setLoadingProgress(Math.max(activeLoader.progress, 18));
+  } else if (text.includes("concept")) {
+    setLoadingStep(1);
+    setLoadingProgress(Math.max(activeLoader.progress, 36));
+  } else if (text.includes("gener")) {
+    setLoadingStep(2);
+    setLoadingProgress(Math.max(activeLoader.progress, 54));
+  } else if (text.includes("quality") || text.includes("verific") || text.includes("repair")) {
+    setLoadingStep(3);
+    setLoadingProgress(Math.max(activeLoader.progress, 74));
+  } else if (text.includes("room") || text.includes("arena") || text.includes("creating")) {
+    setLoadingStep(4);
+    setLoadingProgress(Math.max(activeLoader.progress, 88));
+  }
+}
+
+export function hideLoadingOverlay() {
+  if (loaderInterval) {
+    clearInterval(loaderInterval);
+    loaderInterval = null;
+  }
+
+  const overlay = document.getElementById("efLoadingOverlay");
+
+  if (overlay) {
+    overlay.classList.add("ef-loading-out");
+    setTimeout(() => overlay.remove(), 180);
+  }
+
+  activeLoader = null;
+}
+
+function setLoadingProgress(value) {
+  if (!activeLoader) return;
+
+  activeLoader.progress = Math.max(0, Math.min(100, value));
+
+  const bar = document.getElementById("efLoadingBar");
+  const percent = document.getElementById("efLoadingPercent");
+
+  if (bar) {
+    bar.style.width = `${activeLoader.progress}%`;
+  }
+
+  if (percent) {
+    percent.textContent = `${Math.round(activeLoader.progress)}%`;
+  }
+}
+
+function setLoadingStep(index) {
+  if (!activeLoader) return;
+
+  activeLoader.step = Math.max(0, Math.min(activeLoader.steps.length - 1, index));
+
+  document.querySelectorAll("[data-loading-step]").forEach(item => {
+    const itemIndex = Number(item.dataset.loadingStep);
+    item.classList.toggle("done", itemIndex < activeLoader.step);
+    item.classList.toggle("active", itemIndex === activeLoader.step);
+  });
+}
+
+function setLoadingStepByProgress(progress) {
+  if (!activeLoader) return;
+
+  const stepSize = 100 / activeLoader.steps.length;
+  const index = Math.min(
+    activeLoader.steps.length - 1,
+    Math.floor(progress / stepSize)
+  );
+
+  setLoadingStep(index);
+}
+
 function injectFeedbackStyles() {
   if (document.getElementById("ef-feedback-styles")) return;
 
@@ -221,7 +386,8 @@ function injectFeedbackStyles() {
       color: var(--text, #111);
     }
 
-    .ef-feedback-overlay {
+    .ef-feedback-overlay,
+    .ef-loading-overlay {
       position: fixed;
       inset: 0;
       z-index: 10001;
@@ -234,6 +400,135 @@ function injectFeedbackStyles() {
     .ef-feedback-modal {
       width: min(520px, calc(100vw - 48px));
       animation: efModalIn 0.18s ease-out;
+    }
+
+    .ef-loading-card {
+      width: min(720px, calc(100vw - 48px));
+      position: relative;
+      overflow: hidden;
+      animation: efModalIn 0.18s ease-out;
+    }
+
+    .ef-loading-card::before {
+      content: "";
+      position: absolute;
+      inset: -80px;
+      background:
+        radial-gradient(circle at 20% 20%, rgba(167, 139, 250, 0.3), transparent 26%),
+        radial-gradient(circle at 80% 30%, rgba(56, 189, 248, 0.22), transparent 26%),
+        radial-gradient(circle at 50% 80%, rgba(134, 239, 172, 0.18), transparent 26%);
+      pointer-events: none;
+      animation: efFloatBg 5s ease-in-out infinite alternate;
+    }
+
+    .ef-loading-card > * {
+      position: relative;
+      z-index: 1;
+    }
+
+    .ef-loading-orb {
+      width: 76px;
+      height: 76px;
+      border: 4px solid var(--text, #111);
+      border-radius: 24px;
+      display: grid;
+      place-items: center;
+      background: var(--accent, #facc15);
+      box-shadow: 6px 6px 0 var(--text, #111);
+      margin-bottom: 18px;
+      animation: efOrbBounce 1.15s ease-in-out infinite;
+    }
+
+    .ef-loading-orb span {
+      font-size: 34px;
+    }
+
+    .ef-loading-progress {
+      margin-top: 22px;
+      height: 24px;
+      border: 3px solid var(--text, #111);
+      border-radius: 999px;
+      overflow: hidden;
+      background: white;
+      box-shadow: 4px 4px 0 var(--text, #111);
+    }
+
+    .ef-loading-bar {
+      height: 100%;
+      width: 8%;
+      background: linear-gradient(90deg, #a78bfa, #38bdf8, #86efac);
+      transition: width 0.28s ease;
+    }
+
+    .ef-loading-percent {
+      margin-top: 10px;
+      font-weight: 950;
+      text-align: right;
+    }
+
+    .ef-loading-steps {
+      display: grid;
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    .ef-loading-step {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      align-items: center;
+      gap: 10px;
+      opacity: 0.56;
+      transform: translateX(0);
+      transition: 0.18s ease;
+    }
+
+    .ef-loading-step span {
+      width: 30px;
+      height: 30px;
+      border: 3px solid var(--text, #111);
+      border-radius: 999px;
+      display: grid;
+      place-items: center;
+      font-weight: 950;
+      background: white;
+    }
+
+    .ef-loading-step.active {
+      opacity: 1;
+      transform: translateX(8px);
+    }
+
+    .ef-loading-step.active span {
+      background: #fde68a;
+    }
+
+    .ef-loading-step.done {
+      opacity: 0.8;
+    }
+
+    .ef-loading-step.done span {
+      background: #b8ffce;
+    }
+
+    .ef-loading-out {
+      animation: efLoadingOut 0.18s ease-in forwards;
+    }
+
+    html.ef-dark .ef-toast,
+    html.ef-dark .ef-feedback-modal,
+    html.ef-dark .ef-loading-card {
+      background: var(--paper, #1f2937) !important;
+      color: var(--text, #f8fafc) !important;
+    }
+
+    html.ef-dark .ef-loading-progress {
+      background: #0f172a;
+    }
+
+    html.ef-dark .ef-loading-step span,
+    html.ef-dark .ef-toast-icon,
+    html.ef-dark .ef-feedback-badge {
+      color: #111827;
     }
 
     @keyframes efToastIn {
@@ -251,11 +546,31 @@ function injectFeedbackStyles() {
       to { transform: translateY(0) scale(1); opacity: 1; }
     }
 
+    @keyframes efLoadingOut {
+      from { opacity: 1; }
+      to { opacity: 0; }
+    }
+
+    @keyframes efOrbBounce {
+      0%, 100% { transform: rotate(-3deg) translateY(0); }
+      50% { transform: rotate(3deg) translateY(-8px); }
+    }
+
+    @keyframes efFloatBg {
+      from { transform: translate(-10px, -6px); }
+      to { transform: translate(10px, 6px); }
+    }
+
     @media (max-width: 720px) {
       #efToastStack {
         top: 14px;
         right: 14px;
         width: calc(100vw - 28px);
+      }
+
+      .ef-loading-card,
+      .ef-feedback-modal {
+        width: calc(100vw - 32px);
       }
     }
   `;

@@ -1,6 +1,7 @@
 import { getSupabase } from "./supabaseClient.js";
 import { logout } from "./auth.js";
 import { showHistoryDetailModal } from "./historyDetail.js";
+import { showFriendManagerModal } from "./friendManager.js";
 
 // ─── Save completed game ──────────────────────────────────────────────────────
 
@@ -214,7 +215,7 @@ export async function renderDashboard(
           <h2>Friends leaderboard</h2>
 
           <button id="addFriendBtn" class="btn btn-secondary" type="button">
-            + Add friend
+            Manage friends
           </button>
         </div>
 
@@ -247,8 +248,8 @@ export async function renderDashboard(
   container.querySelector("#dashHistoryBtn")?.addEventListener("click", onHistory);
 
   container.querySelector("#addFriendBtn")?.addEventListener("click", () => {
-    showAddFriendModal(sb, user.id);
-  });
+  showFriendManagerModal(user.id);
+});
 
   container.querySelectorAll("[data-session-id]").forEach(button => {
     button.addEventListener("click", () => {
