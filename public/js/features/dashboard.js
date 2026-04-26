@@ -53,7 +53,7 @@ export async function renderDashboard(
 ) {
   const sb = await getSupabase();
 
-  const sessions = await getSessionsForUser(sb, user.id, 5);
+  const sessions = await getSessionsForUser(sb, user.id, 3);
   const friendProfiles = await getFriendProfiles(sb, user.id);
 
   const streak      = profile?.streak_count  || 0;
@@ -65,119 +65,100 @@ export async function renderDashboard(
   const isPremium    = (profile?.plan || "free") === "premium";
 
   container.innerHTML = `
-    <div class="dashboard-grid">
-      <div class="card dash-profile-card">
+    <div class="dash-layout">
 
-        <div class="row" style="align-items:center;gap:14px;">
-          <!-- Avatar with optional crown -->
-          <div style="position:relative;flex-shrink:0;">
-            ${isPremium ? `<span style="position:absolute;top:-15px;left:50%;transform:translateX(-50%);
-              font-size:18px;line-height:1;z-index:1;filter:drop-shadow(0 1px 3px rgba(0,0,0,.25));">👑</span>` : ""}
-            <div class="dash-avatar" style="background:${avatarColor};">
-              ${escapeHTML(avatarLetter)}
+      <!-- ── LEFT COLUMN: profile + plan ── -->
+      <div class="dash-col">
+
+        <div class="card dash-profile-card">
+          <div class="row" style="align-items:center;gap:12px;">
+            <div style="position:relative;flex-shrink:0;">
+              ${isPremium ? `<span style="position:absolute;top:-14px;left:50%;transform:translateX(-50%);
+                font-size:17px;line-height:1;z-index:1;filter:drop-shadow(0 1px 3px rgba(0,0,0,.25));">👑</span>` : ""}
+              <div class="dash-avatar" style="background:${avatarColor};">${escapeHTML(avatarLetter)}</div>
+            </div>
+            <div style="min-width:0;">
+              <h2 style="font-size:18px;letter-spacing:-.03em;line-height:1.2;">${escapeHTML(profile?.username || "Player")}</h2>
+              <p class="muted" style="font-size:11px;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHTML(user.email || "")}</p>
+              ${isPremium ? `<span style="display:inline-block;margin-top:4px;background:#c9a227;color:white;
+                font-size:10px;font-weight:900;padding:2px 8px;border-radius:999px;border:2px solid var(--text);">⭐ PREMIUM</span>` : ""}
             </div>
           </div>
 
-          <div style="min-width:0;">
-            <h2 style="font-size:20px;letter-spacing:-.03em;">${escapeHTML(profile?.username || "Player")}</h2>
-            <p class="muted" style="font-size:12px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
-              ${escapeHTML(user.email || "")}
-            </p>
-            ${isPremium ? `<span style="display:inline-block;margin-top:5px;background:#c9a227;color:white;
-              font-size:10px;font-weight:900;padding:2px 9px;border-radius:999px;border:2px solid var(--text);
-              letter-spacing:.05em;">⭐ PREMIUM</span>` : ""}
+          <div class="dash-stats-row" style="margin-top:12px;">
+            <div class="dash-stat">
+              <div class="dash-stat-val">${streak > 0 ? streak + " 🔥" : streak}</div>
+              <div class="dash-stat-label">Streak</div>
+            </div>
+            <div class="dash-stat">
+              <div class="dash-stat-val">${maxStreak}</div>
+              <div class="dash-stat-label">Best</div>
+            </div>
+            <div class="dash-stat">
+              <div class="dash-stat-val">${totalQuizzes}</div>
+              <div class="dash-stat-label">Quizuri</div>
+            </div>
+            <div class="dash-stat">
+              <div class="dash-stat-val">${totalPoints}</div>
+              <div class="dash-stat-label">Puncte</div>
+            </div>
           </div>
-        </div>
 
-        <div class="dash-stats-row" style="margin-top:14px;">
-          <div class="dash-stat">
-            <div class="dash-stat-val">${streak > 0 ? streak + " 🔥" : streak}</div>
-            <div class="dash-stat-label">Streak</div>
-          </div>
-          <div class="dash-stat">
-            <div class="dash-stat-val">${maxStreak}</div>
-            <div class="dash-stat-label">Best</div>
-          </div>
-          <div class="dash-stat">
-            <div class="dash-stat-val">${totalQuizzes}</div>
-            <div class="dash-stat-label">Quizzes</div>
-          </div>
-          <div class="dash-stat">
-            <div class="dash-stat-val">${totalPoints}</div>
-            <div class="dash-stat-label">Points</div>
-          </div>
-        </div>
-
-        <button
-          id="logoutBtn"
-          class="btn btn-secondary"
-          type="button"
-          style="margin-top:14px;padding:9px 18px;font-size:14px;"
-        >
-          Logout
-        </button>
-      </div>
-
-      <div class="card">
-        <h2 style="font-size:20px;">Quick start</h2>
-
-        <div class="row" style="margin-top:14px;flex-wrap:wrap;gap:8px;">
-          <button id="dashCreateBtn" class="btn" type="button" style="padding:10px 16px;font-size:14px;">
-            ⚡ Create Arena
-          </button>
-          <button id="dashJoinBtn" class="btn btn-secondary" type="button" style="padding:10px 16px;font-size:14px;">
-            Join Arena
-          </button>
-          <a href="/lessons" class="btn btn-secondary" type="button" style="padding:10px 16px;font-size:14px;">
-            📚 My Lessons
-          </a>
-          <button id="dashHistoryBtn" class="btn btn-secondary" type="button" style="padding:10px 16px;font-size:14px;">
-            My History
-          </button>
-        </div>
-      </div>
-
-      <div class="card">
-        <h2 style="font-size:20px;">Recent quizzes</h2>
-
-        <div style="display:grid;gap:8px;margin-top:12px;">
-          ${
-            sessions.length > 0
-              ? sessions
-                  .map(session => renderSessionRow(session, "Details"))
-                  .join("")
-              : `
-                <p class="muted">
-                  No quizzes yet. Create your first arena!
-                </p>
-              `
-          }
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="row" style="justify-content:space-between;align-items:center;">
-          <h2 style="font-size:20px;">Friends leaderboard</h2>
-          <button id="addFriendBtn" class="btn btn-secondary" type="button" style="padding:8px 14px;font-size:13px;">
-            Manage friends
+          <button id="logoutBtn" class="btn btn-secondary" type="button"
+            style="margin-top:12px;padding:8px 16px;font-size:13px;width:100%;">
+            Logout
           </button>
         </div>
 
-        <div style="display:grid;gap:8px;margin-top:12px;">
-          ${renderFriendsLb(friendProfiles, user.id)}
+        <!-- Plan card — filled async by renderPlanCard() -->
+        <div class="card" id="planCard" style="min-height:60px;">
+          <p class="muted" style="font-size:13px;">Loading plan...</p>
         </div>
+
       </div>
 
-      <div
-        id="pendingRequestsCard"
-        class="card"
-        style="display:none;"
-      >
-        <h2>Friend requests</h2>
-        <div
-          id="pendingRequestsList"
-          style="display:grid; gap:10px; margin-top:16px;"
-        ></div>
+      <!-- ── RIGHT COLUMN: actions + quizzes + friends ── -->
+      <div class="dash-col">
+
+        <div class="card">
+          <div class="eyebrow" style="font-size:10px;margin-bottom:12px;">Quick start</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+            <button id="dashCreateBtn" class="btn" type="button" style="padding:10px;font-size:13px;">⚡ Create Arena</button>
+            <button id="dashJoinBtn"   class="btn btn-secondary" type="button" style="padding:10px;font-size:13px;">Join Arena</button>
+            <a href="/lessons"         class="btn btn-secondary" style="padding:10px;font-size:13px;text-align:center;">📚 My Lessons</a>
+            <button id="dashHistoryBtn" class="btn btn-secondary" type="button" style="padding:10px;font-size:13px;">My History</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+            <div class="eyebrow" style="font-size:10px;">Recent quizzes</div>
+            <button id="dashHistoryBtn2" class="btn btn-secondary" type="button"
+              style="padding:4px 10px;font-size:11px;">See all</button>
+          </div>
+          <div style="display:grid;gap:6px;">
+            ${sessions.length > 0
+              ? sessions.map(s => renderSessionRow(s, "→")).join("")
+              : `<p class="muted" style="font-size:13px;margin:4px 0;">No quizzes yet. Create your first arena!</p>`}
+          </div>
+        </div>
+
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+            <div class="eyebrow" style="font-size:10px;">Friends leaderboard</div>
+            <button id="addFriendBtn" class="btn btn-secondary" type="button"
+              style="padding:4px 10px;font-size:11px;">Manage</button>
+          </div>
+          <div style="display:grid;gap:6px;">
+            ${renderFriendsLb(friendProfiles, user.id)}
+          </div>
+        </div>
+
+        <div id="pendingRequestsCard" class="card" style="display:none;">
+          <div class="eyebrow" style="font-size:10px;margin-bottom:10px;">Friend requests</div>
+          <div id="pendingRequestsList" style="display:grid;gap:8px;"></div>
+        </div>
+
       </div>
     </div>
   `;
@@ -190,10 +171,8 @@ export async function renderDashboard(
   container.querySelector("#dashCreateBtn")?.addEventListener("click", onCreateArena);
   container.querySelector("#dashJoinBtn")?.addEventListener("click", onJoinArena);
   container.querySelector("#dashHistoryBtn")?.addEventListener("click", onHistory);
-
-  container.querySelector("#addFriendBtn")?.addEventListener("click", () => {
-  showFriendManagerModal(user.id);
-});
+  container.querySelector("#dashHistoryBtn2")?.addEventListener("click", onHistory);
+  container.querySelector("#addFriendBtn")?.addEventListener("click", () => showFriendManagerModal(user.id));
 
   container.querySelectorAll("[data-session-id]").forEach(button => {
     button.addEventListener("click", () => {
@@ -202,36 +181,33 @@ export async function renderDashboard(
   });
 
   await loadPendingRequests(sb, user.id, container);
-  await renderPlanCard(container, user.id);
+  renderPlanCard(container, user.id);   // fire-and-forget, fills #planCard async
 }
 
 // ─── Plan / Subscription card ─────────────────────────────────────────────────
 
 async function renderPlanCard(container, userId) {
+  const card = container.querySelector("#planCard");
+  if (!card) return;
+
   try {
     const res  = await fetch(`/api/stripe/plan-status?userId=${userId}`);
-    if (!res.ok) return;
+    if (!res.ok) { card.style.display = "none"; return; }
     const data = await res.json();
 
-    const grid = container.querySelector(".dashboard-grid");
-    if (!grid) return;
-
-    const card = document.createElement("div");
-    card.className = "card";
-
     if (data.plan === "premium") {
+      card.style.borderColor   = "#c9a227";
+      card.style.boxShadow     = "5px 5px 0 #c9a227";
+      card.style.background    = "linear-gradient(135deg,#fffdf4,#fff8dc)";
       card.innerHTML = `
-        <div class="row" style="justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">
-          <div>
-            <div class="eyebrow">Abonament</div>
-            <h2 style="margin-top:8px;">
-              <span style="background:var(--blue);color:white;padding:4px 14px;border-radius:999px;
-                           font-size:15px;border:2px solid var(--text);">⭐ Premium</span>
-            </h2>
-            <p class="muted" style="margin-top:8px;">Lectii si arene nelimitate, quiz-uri si rapoarte.</p>
-          </div>
-          <button id="manageSubBtn" class="btn btn-secondary" type="button">Gestioneaza abonamentul</button>
-        </div>`;
+        <div class="eyebrow" style="font-size:10px;background:#c9a227;margin-bottom:10px;">⭐ Premium</div>
+        <p style="font-size:13px;color:var(--muted);margin:0 0 10px;">
+          Lectii si arene nelimitate, quiz-uri si rapoarte AI.
+        </p>
+        <button id="manageSubBtn" class="btn btn-secondary" type="button"
+          style="width:100%;padding:8px;font-size:13px;">
+          Gestioneaza abonamentul
+        </button>`;
 
       card.querySelector("#manageSubBtn")?.addEventListener("click", async () => {
         try {
@@ -243,48 +219,40 @@ async function renderPlanCard(container, userId) {
           if (d.url) window.location.href = d.url;
         } catch { alert("Nu am putut deschide portalul. Incearca din nou."); }
       });
+
     } else {
-      const lessonsLeft = Math.max(0, 3 - (data.weeklyLessonsUsed || 0));
-      const quizzesLeft = Math.max(0, 3 - (data.weeklyQuizzesUsed || 0));
+      const lu = data.weeklyLessonsUsed || 0;
+      const qu = data.weeklyQuizzesUsed || 0;
+      const lColor = lu >= 3 ? "var(--red)" : "var(--blue)";
+      const qColor = qu >= 3 ? "var(--red)" : "var(--blue)";
 
       card.innerHTML = `
-        <div class="row" style="justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;">
+        <div class="eyebrow" style="font-size:10px;background:var(--paper-2);color:var(--text);margin-bottom:10px;">Free plan</div>
+
+        <div style="display:grid;gap:8px;margin-bottom:12px;">
           <div>
-            <div class="eyebrow">Abonament</div>
-            <h2 style="margin-top:8px;">
-              <span style="background:var(--paper-2);padding:4px 14px;border-radius:999px;
-                           font-size:15px;border:2px solid var(--text);">Free</span>
-            </h2>
-            <div style="margin-top:14px;display:grid;gap:8px;">
-              <div style="font-size:14px;">
-                Lectii: <strong>${data.weeklyLessonsUsed || 0}/3</strong> folosite saptamana aceasta
-                <div class="progress-track" style="margin-top:4px;">
-                  <div class="progress-fill" style="width:${Math.min(100, ((data.weeklyLessonsUsed||0)/3)*100)}%;
-                       background:${lessonsLeft===0?"var(--red)":"var(--blue)"};"></div>
-                </div>
-              </div>
-              <div style="font-size:14px;">
-                Arene: <strong>${data.weeklyQuizzesUsed || 0}/3</strong> folosite saptamana aceasta
-                <div class="progress-track" style="margin-top:4px;">
-                  <div class="progress-fill" style="width:${Math.min(100, ((data.weeklyQuizzesUsed||0)/3)*100)}%;
-                       background:${quizzesLeft===0?"var(--red)":"var(--blue)"};"></div>
-                </div>
-              </div>
+            <div style="display:flex;justify-content:space-between;font-size:12px;font-weight:700;margin-bottom:3px;">
+              <span>Lectii</span><span style="color:${lColor};">${lu}/3</span>
+            </div>
+            <div class="progress-track">
+              <div class="progress-fill" style="width:${Math.min(100,(lu/3)*100)}%;background:${lColor};"></div>
             </div>
           </div>
-          <a href="/pricing" class="btn" style="white-space:nowrap;">Upgrade &mdash; €5/luna</a>
+          <div>
+            <div style="display:flex;justify-content:space-between;font-size:12px;font-weight:700;margin-bottom:3px;">
+              <span>Arene create</span><span style="color:${qColor};">${qu}/3</span>
+            </div>
+            <div class="progress-track">
+              <div class="progress-fill" style="width:${Math.min(100,(qu/3)*100)}%;background:${qColor};"></div>
+            </div>
+          </div>
         </div>
-        <div style="margin-top:16px;padding-top:16px;border-top:2px solid var(--text);">
-          <p class="muted" style="font-size:13px;">
-            Premium include: lectii nelimitate, arene nelimitate, quiz-uri la lectii, rapoarte de performanta.
-          </p>
-        </div>`;
-    }
 
-    const profileCard = grid.querySelector(".dash-profile-card");
-    if (profileCard) profileCard.after(card);
-    else grid.appendChild(card);
-  } catch { /* silent */ }
+        <a href="/pricing" class="btn" style="display:block;text-align:center;padding:9px;font-size:13px;">
+          Upgrade — €5/luna
+        </a>`;
+    }
+  } catch { card.style.display = "none"; }
 }
 
 // ─── My History page render ───────────────────────────────────────────────────
@@ -343,30 +311,16 @@ export async function renderHistoryPage(container, user) {
 
 function renderSessionRow(session, actionText = "Details", extraLine = "") {
   return `
-    <button
-      class="dash-session-row"
-      data-session-id="${session.id}"
-      type="button"
-    >
-      <div style="text-align:left; min-width:0;">
-        <strong>${escapeHTML(session.title || "Quiz")}</strong>
-
-        <p class="muted">
-          ${escapeHTML(session.category || "Quiz")}
-          · ${session.player_count || 0} players
-          · ${formatDate(session.played_at)}
+    <button class="dash-session-row" data-session-id="${session.id}" type="button"
+      style="padding:9px 12px;">
+      <div style="text-align:left;min-width:0;">
+        <strong style="font-size:13px;">${escapeHTML(session.title || "Quiz")}</strong>
+        <p class="muted" style="font-size:11px;margin-top:2px;">
+          ${escapeHTML(session.category || "Quiz")} · ${session.player_count || 0} players · ${formatDate(session.played_at)}
         </p>
-
-        ${
-          extraLine
-            ? `<p class="muted">${escapeHTML(extraLine)}</p>`
-            : ""
-        }
+        ${extraLine ? `<p class="muted" style="font-size:11px;margin-top:1px;">${escapeHTML(extraLine)}</p>` : ""}
       </div>
-
-      <span style="font-weight:900; flex-shrink:0;">
-        ${escapeHTML(actionText)}
-      </span>
+      <span style="font-weight:900;flex-shrink:0;font-size:15px;">${escapeHTML(actionText)}</span>
     </button>
   `;
 }
