@@ -25,6 +25,12 @@ import {
   renderPodium,
   renderRecoveryLesson
 } from "./renderer.js";
+import {
+  installFeedback,
+  showToast,
+  showConfirm,
+  showNotice
+} from "./uiFeedback.js";
 
 const QUESTION_TIME = 20;
 const RESULT_DURATION = 3;
@@ -33,26 +39,82 @@ const LB_DURATION = 5;
 // ─── Auth initialization ──────────────────────────────────────────────────────
 
 async function initApp() {
-  showScreen(dom.screens.auth, false);
+  installFeedback();
+  polishStaticLabels();
   setupAuthListeners();
+
+  showScreen(dom.screens.home, false);
+  setupGuestHeader();
 
   try {
     const session = await getSession();
 
-    if (!session) return;
+    if (!session) {
+      return;
+    }
 
     state.currentUser = session.user;
     state.userProfile = await getProfile(session.user.id);
 
     setupHeader();
-    await showDashboard();
   } catch (err) {
     console.error("initApp error:", err);
   }
 }
 
+function polishStaticLabels() {
+  const dashboardButton = document.getElementById("backToDashboard");
+
+  if (dashboardButton) {
+    dashboardButton.textContent = "Dashboard";
+  }
+
+  const historyDashboardButton = document.getElementById("backToDashboardFromHistory");
+
+  if (historyDashboardButton) {
+    historyDashboardButton.textContent = "Dashboard";
+  }
+}
+
+function setupGuestHeader() {
+  if (state.currentUser) return;
+
+  if (dom.headerUserArea) {
+    dom.headerUserArea.innerHTML = `
+      <div style="
+        width:34px;
+        height:34px;
+        border-radius:999px;
+        background:#111;
+        color:white;
+        display:grid;
+        place-items:center;
+        font-weight:900;
+        border:3px solid var(--text);
+      ">
+        G
+      </div>
+      <strong>Guest</strong>
+    `;
+
+    dom.headerUserArea.style.display = "flex";
+    dom.headerUserArea.onclick = () => showDashboard();
+  }
+
+  if (dom.headerStreak) {
+    dom.headerStreak.style.display = "none";
+  }
+
+  if (dom.bellBadge) {
+    dom.bellBadge.style.display = "none";
+  }
+}
+
 function setupHeader() {
-  if (!state.currentUser) return;
+  if (!state.currentUser) {
+    setupGuestHeader();
+    return;
+  }
 
   const profile = state.userProfile;
   const letter = (profile?.username || state.currentUser.email || "U")[0].toUpperCase();
@@ -78,7 +140,7 @@ function setupHeader() {
     `;
 
     dom.headerUserArea.style.display = "flex";
-    dom.headerUserArea.addEventListener("click", () => showDashboard());
+    dom.headerUserArea.onclick = () => showDashboard();
   }
 
   if (dom.headerStreak) {
@@ -95,13 +157,15 @@ function setupHeader() {
 }
 
 async function showDashboard() {
+  stopGameLoops();
+  removeArenaActionButtons();
+
   if (!state.currentUser) {
     showScreen(dom.screens.auth, false);
+    showToast("Intră în cont ca să vezi dashboard-ul, istoricul și prietenii.", "info");
     return;
   }
 
-  stopGameLoops();
-  removeArenaActionButtons();
   showScreen(dom.screens.dashboard, false);
 
   if (!dom.dashboardContent) return;
@@ -131,27 +195,26 @@ async function showDashboard() {
       }
     );
 
-await renderRoomInvitesCard(
-  dom.dashboardContent,
-  state.currentUser,
-  async invite => {
-    const name =
-      state.userProfile?.username ||
-      state.currentUser?.email?.split("@")[0] ||
-      "Player";
+    await renderRoomInvitesCard(
+      dom.dashboardContent,
+      state.currentUser,
+      async invite => {
+        const name =
+          state.userProfile?.username ||
+          state.currentUser?.email?.split("@")[0] ||
+          "Player";
 
-    state.isHost = false;
+        state.isHost = false;
 
-    await joinRoomWithName(invite.room_code, name);
-    await api.respondRoomInvite(invite.id, "accepted");
+        await joinRoomWithName(invite.room_code, name);
+        await api.respondRoomInvite(invite.id, "accepted");
 
-    state.currentRoomCode = invite.room_code;
+        state.currentRoomCode = invite.room_code;
 
-    await showLobby();
-    startLobbyPolling();
-  }
-);
-
+        await showLobby();
+        startLobbyPolling();
+      }
+    );
   } catch (err) {
     console.error("Dashboard error:", err);
 
@@ -179,6 +242,13 @@ await renderRoomInvitesCard(
 async function showHistoryScreen() {
   stopGameLoops();
   removeArenaActionButtons();
+
+  if (!state.currentUser) {
+    showScreen(dom.screens.auth, false);
+    showToast("Intră în cont ca să vezi istoricul quizurilor.", "info");
+    return;
+  }
+
   showScreen(dom.screens.history, false);
 
   const container = document.getElementById("historyContent");
@@ -258,11 +328,14 @@ async function handleLogin() {
     state.userProfile = await getProfile(user.id);
 
     setupHeader();
+    showToast("Ai intrat în cont.", "success");
     await showDashboard();
   } catch (error) {
     if (dom.loginError) {
       dom.loginError.textContent = error.message || "Login failed.";
     }
+
+    showToast(error.message || "Login failed.", "danger");
   } finally {
     if (dom.loginBtn) {
       dom.loginBtn.disabled = false;
@@ -305,11 +378,14 @@ async function handleRegister() {
     }
 
     setupHeader();
+    showToast("Cont creat cu succes.", "success");
     await showDashboard();
   } catch (error) {
     if (dom.registerError) {
       dom.registerError.textContent = error.message || "Registration failed.";
     }
+
+    showToast(error.message || "Registration failed.", "danger");
   } finally {
     if (dom.registerBtn) {
       dom.registerBtn.disabled = false;
@@ -813,6 +889,7 @@ async function submitAnswerForIndex(challengeIndex, selectedAnswer, timeLeft, is
     if (!isTimeout) {
       state.answeredCurrentChallenge = false;
       dom.submitAnswerBtn.disabled = false;
+      showToast(error.message || "Nu am putut trimite răspunsul.", "danger");
     }
   } finally {
     state.submittingAnswer = false;
@@ -895,7 +972,7 @@ async function loadPackAndStart() {
   state.packLoading = false;
 }
 
-// ─── Arena action buttons: Close / Leave / Abandon ────────────────────────────
+// ─── Arena action buttons: Close / Leave / Abandon / Invite ───────────────────
 
 function removeArenaActionButtons() {
   document.getElementById("efArenaActions")?.remove();
@@ -920,22 +997,22 @@ function mountArenaActionButtons(context) {
   wrapper.style.justifyContent = "flex-end";
   wrapper.style.maxWidth = "calc(100vw - 44px)";
 
-if (state.isHost && context === "lobby" && state.currentUser) {
-  const inviteButton = document.createElement("button");
+  if (state.isHost && context === "lobby" && state.currentUser) {
+    const inviteButton = document.createElement("button");
 
-  inviteButton.type = "button";
-  inviteButton.className = "btn btn-secondary";
-  inviteButton.textContent = "Invite friends";
+    inviteButton.type = "button";
+    inviteButton.className = "btn btn-secondary";
+    inviteButton.textContent = "Invite friends";
 
-  inviteButton.addEventListener("click", () => {
-    showInviteFriendsModal({
-      roomCode: state.currentRoomCode,
-      currentUser: state.currentUser
+    inviteButton.addEventListener("click", () => {
+      showInviteFriendsModal({
+        roomCode: state.currentRoomCode,
+        currentUser: state.currentUser
+      });
     });
-  });
 
-  wrapper.appendChild(inviteButton);
-}
+    wrapper.appendChild(inviteButton);
+  }
 
   const button = document.createElement("button");
 
@@ -954,12 +1031,26 @@ if (state.isHost && context === "lobby" && state.currentUser) {
   document.body.appendChild(wrapper);
 }
 
+async function goHomeAfterArena() {
+  if (state.currentUser) {
+    await showDashboard();
+  } else {
+    setupGuestHeader();
+    showScreen(dom.screens.home, false);
+  }
+}
+
 async function closeCurrentArena() {
   if (!state.currentRoomCode || !state.currentPlayerId) return;
 
-  const ok = confirm(
-    "Închizi arena pentru toți playerii? Quizul nu va fi salvat în history și nu va crește streak-ul nimănui."
-  );
+  const ok = await showConfirm({
+    title: "Close arena?",
+    message:
+      "Închizi arena pentru toți playerii. Quizul nu va fi salvat în history și nu va crește streak-ul nimănui.",
+    confirmText: "Close arena",
+    cancelText: "Cancel",
+    danger: true
+  });
 
   if (!ok) return;
 
@@ -978,11 +1069,11 @@ async function closeCurrentArena() {
     resetRoomState();
     removeArenaActionButtons();
 
-    alert("Arena a fost închisă.");
-    await showDashboard();
+    showToast("Arena a fost închisă.", "success");
+    await goHomeAfterArena();
   } catch (error) {
     console.error(error);
-    alert(error.message || "Nu am putut închide arena.");
+    showToast(error.message || "Nu am putut închide arena.", "danger");
   }
 }
 
@@ -990,11 +1081,16 @@ async function leaveCurrentArena() {
   if (!state.currentRoomCode || !state.currentPlayerId) return;
 
   const isLobby = !state.currentPack;
-  const message = isLobby
-    ? "Părăsești lobby-ul?"
-    : "Abandonezi quizul? Nu va fi adăugat la streak sau la quiz count.";
 
-  const ok = confirm(message);
+  const ok = await showConfirm({
+    title: isLobby ? "Leave lobby?" : "Abandon quiz?",
+    message: isLobby
+      ? "Părăsești lobby-ul?"
+      : "Abandonezi quizul? Nu va fi adăugat la streak sau la quiz count.",
+    confirmText: isLobby ? "Leave lobby" : "Abandon quiz",
+    cancelText: "Cancel",
+    danger: !isLobby
+  });
 
   if (!ok) return;
 
@@ -1013,11 +1109,11 @@ async function leaveCurrentArena() {
     resetRoomState();
     removeArenaActionButtons();
 
-    alert(isLobby ? "Ai părăsit lobby-ul." : "Ai abandonat quizul.");
-    await showDashboard();
+    showToast(isLobby ? "Ai părăsit lobby-ul." : "Ai abandonat quizul.", "success");
+    await goHomeAfterArena();
   } catch (error) {
     console.error(error);
-    alert(error.message || "Nu am putut părăsi arena.");
+    showToast(error.message || "Nu am putut părăsi arena.", "danger");
   }
 }
 
@@ -1027,13 +1123,14 @@ async function handleRoomClosed(message = "Arena a fost închisă.") {
   resetRoomState();
   removeArenaActionButtons();
 
-  alert(message);
+  await showNotice({
+    title: "Arena closed",
+    message,
+    variant: "info",
+    buttonText: "OK"
+  });
 
-  if (state.currentUser) {
-    await showDashboard();
-  } else {
-    showScreen(dom.screens.auth, false);
-  }
+  await goHomeAfterArena();
 }
 
 // ─── Screens ──────────────────────────────────────────────────────────────────
@@ -1115,7 +1212,7 @@ async function showLeaderboard() {
       return;
     }
 
-    alert(data.error || "Could not load leaderboard.");
+    showToast(data.error || "Could not load leaderboard.", "danger");
     return;
   }
 
@@ -1140,19 +1237,17 @@ async function showLeaderboard() {
 // ─── Main actions ─────────────────────────────────────────────────────────────
 
 async function createArena() {
-  if (!state.currentUser) {
-    showScreen(dom.screens.auth);
-    return;
-  }
-
   const file = dom.fileInput.files[0];
+
   const hostName =
     dom.hostNameInput.value.trim() ||
     state.userProfile?.username ||
-    "Host";
+    state.currentUser?.email?.split("@")[0] ||
+    "Guest";
 
   if (!file) {
     dom.hostStatusText.textContent = "Choose a document first.";
+    showToast("Choose a document first.", "info");
     return;
   }
 
@@ -1210,6 +1305,7 @@ async function createArena() {
   } catch (error) {
     console.error(error);
     dom.hostStatusText.textContent = error.message || "Something went wrong.";
+    showToast(error.message || "Something went wrong.", "danger");
   } finally {
     dom.createArenaBtn.disabled = false;
   }
@@ -1217,13 +1313,16 @@ async function createArena() {
 
 async function joinArena() {
   const code = dom.joinCodeInput.value.trim().toUpperCase();
+
   const name =
     dom.joinNameInput.value.trim() ||
     state.userProfile?.username ||
-    "";
+    state.currentUser?.email?.split("@")[0] ||
+    "Guest";
 
-  if (!code || !name) {
-    dom.joinStatusText.textContent = "Enter room code and nickname.";
+  if (!code) {
+    dom.joinStatusText.textContent = "Enter room code.";
+    showToast("Enter room code.", "info");
     return;
   }
 
@@ -1242,6 +1341,7 @@ async function joinArena() {
   } catch (error) {
     console.error(error);
     dom.joinStatusText.textContent = error.message || "Could not join room.";
+    showToast(error.message || "Could not join room.", "danger");
   } finally {
     dom.joinArenaBtn.disabled = false;
   }
@@ -1281,6 +1381,7 @@ async function startArena() {
   } catch (error) {
     console.error(error);
     dom.lobbyStatusText.textContent = error.message || "Could not start.";
+    showToast(error.message || "Could not start.", "danger");
   } finally {
     dom.startArenaBtn.disabled = false;
   }
@@ -1292,8 +1393,10 @@ async function copyJoinLink() {
   try {
     await navigator.clipboard.writeText(link);
     dom.lobbyStatusText.textContent = "Link copied.";
+    showToast("Link copied.", "success");
   } catch {
     dom.lobbyStatusText.textContent = link;
+    showToast("Nu am putut copia linkul automat.", "danger");
   }
 }
 
@@ -1320,6 +1423,7 @@ async function generateRecoveryLesson() {
     paragraph.textContent = error.message || "Could not generate.";
 
     dom.lessonBox.appendChild(paragraph);
+    showToast(error.message || "Could not generate lesson.", "danger");
   } finally {
     dom.generateLessonBtn.disabled = false;
     dom.generateLessonBtn.textContent = "Generate AI lesson";
