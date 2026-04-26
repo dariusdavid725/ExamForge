@@ -286,8 +286,16 @@ async function _openRoom(packData, hostName, docName, docText) {
   updateLoadingOverlay("Opening lobby...", 92);
   statusEl.textContent = "Creating arena...";
 
-  const { response: roomRes, data: roomData } = await api.createRoom(packData.pack);
-  if (!roomRes.ok) throw new Error(roomData.error || "Could not create room.");
+  const { response: roomRes, data: roomData } = await api.createRoom(packData.pack, currentUser?.id || null);
+  if (!roomRes.ok) {
+    if (roomData.limitReached) {
+      hideLoadingOverlay();
+      showToast("Ai atins limita de 3 arene pe saptamana. Upgradeaza la Premium!", "danger");
+      setTimeout(() => { window.location.href = "/pricing"; }, 1800);
+      return;
+    }
+    throw new Error(roomData.error || "Could not create room.");
+  }
 
   const roomCode = roomData.code;
 

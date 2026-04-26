@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ExamForge — Pricing</title>
+  <link rel="stylesheet" href="/css/styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+</head>
+
+<body>
+  <header>
+    <div class="container nav">
+      <div class="brand" id="brandLogo" style="cursor:pointer;">
+        <div class="brand-mark">E</div>
+        <div>
+          <div>ExamForge Arena</div>
+          <div style="font-size:12px;color:var(--muted);letter-spacing:0;font-weight:800;">multiplayer study challenges</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:14px;">
+        <span id="headerStreak" style="display:none;font-weight:900;font-size:16px;"></span>
+        <div id="headerUserArea" style="display:none;align-items:center;gap:8px;cursor:pointer;"></div>
+      </div>
+    </div>
+  </header>
+
+  <main class="container" style="padding-top:48px;padding-bottom:80px;">
+
+    <div style="text-align:center;margin-bottom:48px;">
+      <div class="eyebrow">Alege planul tau</div>
+      <h1 style="font-size:clamp(32px,5vw,52px);margin-top:12px;line-height:1.1;">
+        Simplu si transparent
+      </h1>
+      <p class="muted" style="font-size:18px;margin-top:16px;max-width:500px;margin-left:auto;margin-right:auto;">
+        Incepe gratuit. Upgradeaza cand esti gata pentru mai mult.
+      </p>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:24px;max-width:760px;margin:0 auto;">
+
+      <!-- FREE PLAN -->
+      <div class="card" style="display:flex;flex-direction:column;gap:0;">
+        <div class="eyebrow">Gratuit</div>
+        <div style="margin-top:14px;">
+          <span style="font-size:52px;font-weight:900;line-height:1;">€0</span>
+          <span class="muted" style="font-size:16px;">/luna</span>
+        </div>
+        <p class="muted" style="margin-top:10px;">Perfect pentru a incepe sa inveti.</p>
+
+        <div style="border-top:2px solid var(--text);margin:24px 0;"></div>
+
+        <ul style="list-style:none;padding:0;margin:0;display:grid;gap:12px;flex:1;">
+          <li style="display:flex;gap:10px;align-items:flex-start;">
+            <span style="color:var(--green);font-weight:900;flex-shrink:0;">✓</span>
+            <span>3 lectii generate pe saptamana</span>
+          </li>
+          <li style="display:flex;gap:10px;align-items:flex-start;">
+            <span style="color:var(--green);font-weight:900;flex-shrink:0;">✓</span>
+            <span>3 arene create pe saptamana</span>
+          </li>
+          <li style="display:flex;gap:10px;align-items:flex-start;">
+            <span style="color:var(--green);font-weight:900;flex-shrink:0;">✓</span>
+            <span>Intra la arene nelimitat</span>
+          </li>
+          <li style="display:flex;gap:10px;align-items:flex-start;">
+            <span style="color:var(--red);font-weight:900;flex-shrink:0;">✗</span>
+            <span class="muted">Quiz la lectie</span>
+          </li>
+          <li style="display:flex;gap:10px;align-items:flex-start;">
+            <span style="color:var(--red);font-weight:900;flex-shrink:0;">✗</span>
+            <span class="muted">Raport de performanta</span>
+          </li>
+        </ul>
+
+        <a href="/dashboard" class="btn btn-secondary" style="margin-top:28px;text-align:center;display:block;padding:14px;">
+          Planul curent
+        </a>
+      </div>
+
+      <!-- PREMIUM PLAN -->
+      <div class="card" style="display:flex;flex-direction:column;gap:0;border-color:var(--blue);box-shadow:6px 6px 0 var(--blue);position:relative;overflow:hidden;">
+        <div style="position:absolute;top:16px;right:16px;background:var(--yellow);color:var(--text);
+                    padding:4px 12px;border-radius:999px;font-size:12px;font-weight:900;border:2px solid var(--text);">
+          RECOMANDAT
+        </div>
+        <div class="eyebrow">Premium</div>
+        <div style="margin-top:14px;">
+          <span style="font-size:52px;font-weight:900;line-height:1;">€5</span>
+          <span class="muted" style="font-size:16px;">/luna</span>
+        </div>
+        <p class="muted" style="margin-top:10px;">Tot ce ai nevoie pentru a invata mai eficient.</p>
+
+        <div style="border-top:2px solid var(--text);margin:24px 0;"></div>
+
+        <ul style="list-style:none;padding:0;margin:0;display:grid;gap:12px;flex:1;">
+          <li style="display:flex;gap:10px;align-items:flex-start;">
+            <span style="color:var(--green);font-weight:900;flex-shrink:0;">✓</span>
+            <span><strong>Lectii nelimitate</strong></span>
+          </li>
+          <li style="display:flex;gap:10px;align-items:flex-start;">
+            <span style="color:var(--green);font-weight:900;flex-shrink:0;">✓</span>
+            <span><strong>Arene nelimitate</strong></span>
+          </li>
+          <li style="display:flex;gap:10px;align-items:flex-start;">
+            <span style="color:var(--green);font-weight:900;flex-shrink:0;">✓</span>
+            <span>Intra la arene nelimitat</span>
+          </li>
+          <li style="display:flex;gap:10px;align-items:flex-start;">
+            <span style="color:var(--green);font-weight:900;flex-shrink:0;">✓</span>
+            <span><strong>Quiz la lectie</strong></span>
+          </li>
+          <li style="display:flex;gap:10px;align-items:flex-start;">
+            <span style="color:var(--green);font-weight:900;flex-shrink:0;">✓</span>
+            <span><strong>Raport de performanta AI</strong></span>
+          </li>
+        </ul>
+
+        <button id="upgradeBtn" class="btn" style="margin-top:28px;padding:14px;font-size:16px;">
+          Upgrade acum
+        </button>
+        <p id="upgradeStatus" class="status" style="text-align:center;margin-top:10px;"></p>
+      </div>
+
+    </div>
+
+    <div class="card" style="max-width:760px;margin:32px auto 0;text-align:center;">
+      <div class="eyebrow">Intrebari frecvente</div>
+      <div style="margin-top:20px;display:grid;gap:20px;text-align:left;">
+        <div>
+          <strong>Pot anula oricand?</strong>
+          <p class="muted" style="margin-top:6px;">Da, poti anula abonamentul oricand din portalul de abonamente. Accesul Premium continua pana la sfarsitul perioadei platite.</p>
+        </div>
+        <div>
+          <strong>Ce metode de plata acceptati?</strong>
+          <p class="muted" style="margin-top:6px;">Acceptam toate cardurile majore (Visa, Mastercard, Amex) prin Stripe, procesator sigur de plati.</p>
+        </div>
+        <div>
+          <strong>Se reseteaza limita saptamanala?</strong>
+          <p class="muted" style="margin-top:6px;">Da, limita de 3 lectii / 3 arene se reseteaza in fiecare luni.</p>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-row">
+      <strong>Pentadee</strong>
+      <span>ExamForge Arena · AI Study Challenges</span>
+    </div>
+  </footer>
+
+  <script type="module" src="/js/pages/pricing.js"></script>
+</body>
+</html>

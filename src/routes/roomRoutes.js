@@ -1,4 +1,5 @@
 import express from "express";
+import { checkAndIncrementLimit } from "../middleware/planMiddleware.js";
 import {
   getRoom,
   createRoom,
@@ -62,9 +63,21 @@ router.post("/", async (req, res) => {
     const rawPack = req.body.pack || req.body.quiz;
 
     if (!rawPack) {
-      return res.status(400).json({
-        error: "Learning pack invalid."
-      });
+      return res.status(400).json({ error: "Learning pack invalid." });
+    }
+
+    // Plan limit check (3 arenas/week on free plan)
+    const userId = req.body.userId;
+    if (userId) {
+      const check = await checkAndIncrementLimit(userId, "quiz_creation");
+      if (!check.allowed && check.limitReached) {
+        return res.status(403).json({
+          error:        `Ai atins limita saptamanala de 3 arene. Fa upgrade la Premium pentru arene nelimitate.`,
+          limitReached: true,
+          used:         check.used,
+          limit:        check.limit
+        });
+      }
     }
 
     let normalizedPack;

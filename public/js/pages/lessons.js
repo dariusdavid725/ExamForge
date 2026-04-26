@@ -10,13 +10,16 @@ import {
 
 // ─── Page state ────────────────────────────────────────────────────────────────
 
-let lesson         = null;
-let documentText   = null;
-let quiz           = null;
-let userAnswers    = [];
-let lessonScore    = 0;
-let lessonSource   = "upload";
-let currentLessonId = null;   // id of the open lesson entry in localStorage
+let lesson          = null;
+let documentText    = null;
+let quiz            = null;
+let userAnswers     = [];
+let lessonScore     = 0;
+let lessonSource    = "upload";
+let currentLessonId = null;
+let currentUser     = null;
+let userPlan        = "free";
+let weeklyUsage     = { lessons: 0, quizzes: 0 };
 
 // ─── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -33,6 +36,32 @@ function showSection(id) {
     el(s)?.classList.toggle("hidden", s !== id)
   );
   window.scrollTo({ top: 0, behavior: "smooth" });
+  if (id === "uploadSection") updateUsageBanner();
+  if (id === "lessonSection") updateQuizBtnForPlan();
+}
+
+function showUpgradeModal(message) {
+  const existing = document.getElementById("upgradeModal");
+  if (existing) existing.remove();
+
+  const modal = document.createElement("div");
+  modal.id = "upgradeModal";
+  modal.style.cssText = `
+    position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;
+    display:flex;align-items:center;justify-content:center;padding:20px;`;
+  modal.innerHTML = `
+    <div class="card" style="max-width:440px;width:100%;text-align:center;position:relative;">
+      <div style="font-size:48px;margin-bottom:12px;">⭐</div>
+      <h2 style="margin:0 0 12px;">Functie Premium</h2>
+      <p class="muted" style="margin-bottom:24px;">${escapeHTML(message)}</p>
+      <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
+        <a href="/pricing" class="btn" style="padding:12px 28px;">Upgrade &mdash; €5/luna</a>
+        <button id="upgradeModalClose" class="btn btn-secondary" style="padding:12px 20px;">Mai tarziu</button>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+  modal.querySelector("#upgradeModalClose").addEventListener("click", () => modal.remove());
+  modal.addEventListener("click", e => { if (e.target === modal) modal.remove(); });
 }
 
 // ─── Status helpers ────────────────────────────────────────────────────────────
@@ -67,14 +96,64 @@ async function init() {
     return;
   }
 
+  currentUser = auth.user;
+  await loadPlanStatus();
+
   setupUpload();
   setupButtons();
+  updateQuizBtnForPlan();
 
   const saved = getLessonsFromStorage();
   if (saved.length > 0) {
     showMyLessons();
   } else {
     showSection("uploadSection");
+  }
+}
+
+async function loadPlanStatus() {
+  if (!currentUser) return;
+  try {
+    const res  = await fetch(`/api/stripe/plan-status?userId=${currentUser.id}`);
+    const data = await res.json();
+    if (res.ok) {
+      userPlan    = data.plan;
+      weeklyUsage = { lessons: data.weeklyLessonsUsed, quizzes: data.weeklyQuizzesUsed };
+    }
+  } catch { /* silent */ }
+}
+
+function updateUsageBanner() {
+  const banner = el("usageBanner");
+  if (!banner) return;
+  if (userPlan === "premium") {
+    banner.style.display = "none";
+    return;
+  }
+  const left = Math.max(0, 3 - weeklyUsage.lessons);
+  banner.style.display = "";
+  banner.innerHTML = `
+    <div class="flat-card" style="background:${left === 0 ? "var(--red)" : "var(--yellow)"};
+         border-color:var(--text);margin-bottom:20px;display:flex;align-items:center;
+         justify-content:space-between;flex-wrap:wrap;gap:12px;">
+      <span style="font-weight:900;">
+        ${left === 0
+          ? "Ai atins limita de 3 lectii pe saptamana."
+          : `${weeklyUsage.lessons}/3 lectii folosite saptamana aceasta.`}
+      </span>
+      <a href="/pricing" class="btn" style="padding:8px 18px;font-size:14px;">Upgrade Premium</a>
+    </div>`;
+}
+
+function updateQuizBtnForPlan() {
+  const btn = el("makeQuizBtn");
+  if (!btn) return;
+  if (userPlan === "premium") {
+    btn.textContent = "Make Quiz";
+    btn.classList.remove("btn-secondary");
+  } else {
+    btn.innerHTML = "Make Quiz <span style='font-size:14px;'>&#128274; Premium</span>";
+    btn.classList.add("btn-secondary");
   }
 }
 
@@ -240,6 +319,12 @@ async function generateLesson() {
   const btn      = el("generateLessonBtn");
   statusEl.textContent = "";
 
+  // Block if weekly limit reached
+  if (userPlan === "free" && weeklyUsage.lessons >= 3) {
+    showUpgradeModal("Ai atins limita de 3 lectii pe saptamana. Upgradeaza la Premium pentru lectii nelimitate.");
+    return;
+  }
+
   let form;
   if (lessonSource === "topic") {
     const topic = el("lessonTopicInput")?.value.trim();
@@ -252,6 +337,7 @@ async function generateLesson() {
     form = new FormData();
     form.append("document", file);
   }
+  if (currentUser?.id) form.append("userId", currentUser.id);
 
   btn.disabled = true;
 
@@ -266,7 +352,15 @@ async function generateLesson() {
     const res  = await fetch("/api/lessons/generate", { method: "POST", body: form });
     updateLoadingOverlay("Writing sections...", 75);
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error || "Could not generate lesson.");
+    if (!res.ok) {
+      if (data.limitReached) {
+        showUpgradeModal("Ai atins limita de 3 lectii pe saptamana. Upgradeaza la Premium pentru lectii nelimitate.");
+        return;
+      }
+      throw new Error(data.error || "Could not generate lesson.");
+    }
+    weeklyUsage.lessons = Math.min(3, weeklyUsage.lessons + 1);
+    updateUsageBanner();
 
     lesson       = data.lesson;
     documentText = data.documentText;
@@ -334,6 +428,11 @@ function renderLesson(l) {
 // ══════════════════════════════════════════════════════════════════════════════
 
 async function generateQuiz() {
+  if (userPlan !== "premium") {
+    showUpgradeModal("Quiz-urile la lectii sunt disponibile doar in planul Premium.");
+    return;
+  }
+
   const statusEl = el("quizGenStatus");
   const btn      = el("makeQuizBtn");
   btn.disabled = true; btn.textContent = "Generating..."; statusEl.textContent = "";
@@ -348,11 +447,17 @@ async function generateQuiz() {
     updateLoadingOverlay("Generating questions...", 40);
     const res  = await fetch("/api/lessons/quiz", {
       method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ lesson, documentText })
+      body: JSON.stringify({ lesson, documentText, userId: currentUser?.id })
     });
     updateLoadingOverlay("Preparing quiz...", 85);
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error || "Could not generate quiz.");
+    if (!res.ok) {
+      if (data.premiumRequired) {
+        showUpgradeModal(data.error || "Functie Premium.");
+        return;
+      }
+      throw new Error(data.error || "Could not generate quiz.");
+    }
 
     quiz = data;
     startQuiz();
@@ -440,11 +545,17 @@ async function generateReport() {
     updateLoadingOverlay("Identifying gaps...", 50);
     const res  = await fetch("/api/lessons/report", {
       method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ lesson, questions: quiz.questions, userAnswers })
+      body: JSON.stringify({ lesson, questions: quiz.questions, userAnswers, userId: currentUser?.id })
     });
     updateLoadingOverlay("Preparing report...", 85);
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error || "Could not generate report.");
+    if (!res.ok) {
+      if (data.premiumRequired) {
+        showUpgradeModal(data.error || "Functie Premium.");
+        return;
+      }
+      throw new Error(data.error || "Could not generate report.");
+    }
 
     // ── Save progress to localStorage ──────────────────────────────────────
     if (currentLessonId) {

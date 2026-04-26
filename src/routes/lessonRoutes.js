@@ -3,6 +3,7 @@ import OpenAI from "openai";
 import { upload } from "../middleware/uploadMiddleware.js";
 import { extractTextFromFile } from "../services/documentService.js";
 import { cleanExtractedText, removeExternalLinks, prepareDocumentSlice } from "../utils/textUtils.js";
+import { checkAndIncrementLimit, getUserPlan } from "../middleware/planMiddleware.js";
 
 const router  = express.Router();
 const client  = new OpenAI({ apiKey: process.env.OPENAI_API_KEY, timeout: 90000 });
@@ -13,6 +14,22 @@ const MODEL   = "gpt-4.1-mini";
 
 router.post("/generate", upload.single("document"), async (req, res) => {
   try {
+    // Plan limit check (3 lessons/week on free plan)
+    const userId = req.body.userId;
+    if (userId) {
+      const check = await checkAndIncrementLimit(userId, "lesson");
+      if (!check.allowed) {
+        return res.status(403).json({
+          error:        check.limitReached
+            ? `Ai atins limita saptamanala de 3 lectii. Fa upgrade la Premium pentru lectii nelimitate.`
+            : (check.error || "Access denied."),
+          limitReached: check.limitReached || false,
+          used:         check.used,
+          limit:        check.limit
+        });
+      }
+    }
+
     let isTopic    = false;
     let safeText   = "";
     let returnText = "";
@@ -116,11 +133,18 @@ ${contentSource}`
 
 router.post("/quiz", async (req, res) => {
   try {
-    const { lesson, documentText } = req.body;
+    const { lesson, documentText, userId } = req.body;
 
-    if (!lesson) {
-      return res.status(400).json({ error: "Lesson data required." });
+    // Premium-only feature
+    const plan = await getUserPlan(userId);
+    if (plan !== "premium") {
+      return res.status(403).json({
+        error:           "Quiz-urile la lectii sunt o functie Premium. Fa upgrade pentru a le debloca.",
+        premiumRequired: true
+      });
     }
+
+    if (!lesson) return res.status(400).json({ error: "Lesson data required." });
 
     const context = documentText
       ? documentText.slice(0, 4000)
@@ -188,7 +212,16 @@ ${context}`
 
 router.post("/report", async (req, res) => {
   try {
-    const { lesson, questions, userAnswers } = req.body;
+    const { lesson, questions, userAnswers, userId } = req.body;
+
+    // Premium-only feature
+    const plan = await getUserPlan(userId);
+    if (plan !== "premium") {
+      return res.status(403).json({
+        error:           "Rapoartele de performanta sunt o functie Premium. Fa upgrade pentru a le debloca.",
+        premiumRequired: true
+      });
+    }
 
     if (!lesson || !questions || !userAnswers) {
       return res.status(400).json({ error: "Missing data for report." });

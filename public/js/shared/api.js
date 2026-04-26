@@ -74,13 +74,13 @@ export function generatePack(formData, onProgress) {
   });
 }
 
-export async function createRoom(pack) {
+export async function createRoom(pack, userId = null) {
   const response = await fetch("/api/rooms", {
     method: "POST",
     headers: {
       "Content-Type": "application/json"
     },
-    body: JSON.stringify({ pack })
+    body: JSON.stringify({ pack, userId })
   });
 
   return {

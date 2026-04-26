@@ -196,6 +196,89 @@ export async function renderDashboard(
   });
 
   await loadPendingRequests(sb, user.id, container);
+  await renderPlanCard(container, user.id);
+}
+
+// ─── Plan / Subscription card ─────────────────────────────────────────────────
+
+async function renderPlanCard(container, userId) {
+  try {
+    const res  = await fetch(`/api/stripe/plan-status?userId=${userId}`);
+    if (!res.ok) return;
+    const data = await res.json();
+
+    const grid = container.querySelector(".dashboard-grid");
+    if (!grid) return;
+
+    const card = document.createElement("div");
+    card.className = "card";
+
+    if (data.plan === "premium") {
+      card.innerHTML = `
+        <div class="row" style="justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">
+          <div>
+            <div class="eyebrow">Abonament</div>
+            <h2 style="margin-top:8px;">
+              <span style="background:var(--blue);color:white;padding:4px 14px;border-radius:999px;
+                           font-size:15px;border:2px solid var(--text);">⭐ Premium</span>
+            </h2>
+            <p class="muted" style="margin-top:8px;">Lectii si arene nelimitate, quiz-uri si rapoarte.</p>
+          </div>
+          <button id="manageSubBtn" class="btn btn-secondary" type="button">Gestioneaza abonamentul</button>
+        </div>`;
+
+      card.querySelector("#manageSubBtn")?.addEventListener("click", async () => {
+        try {
+          const r = await fetch("/api/stripe/portal-session", {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ userId })
+          });
+          const d = await r.json();
+          if (d.url) window.location.href = d.url;
+        } catch { alert("Nu am putut deschide portalul. Incearca din nou."); }
+      });
+    } else {
+      const lessonsLeft = Math.max(0, 3 - (data.weeklyLessonsUsed || 0));
+      const quizzesLeft = Math.max(0, 3 - (data.weeklyQuizzesUsed || 0));
+
+      card.innerHTML = `
+        <div class="row" style="justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;">
+          <div>
+            <div class="eyebrow">Abonament</div>
+            <h2 style="margin-top:8px;">
+              <span style="background:var(--paper-2);padding:4px 14px;border-radius:999px;
+                           font-size:15px;border:2px solid var(--text);">Free</span>
+            </h2>
+            <div style="margin-top:14px;display:grid;gap:8px;">
+              <div style="font-size:14px;">
+                Lectii: <strong>${data.weeklyLessonsUsed || 0}/3</strong> folosite saptamana aceasta
+                <div class="progress-track" style="margin-top:4px;">
+                  <div class="progress-fill" style="width:${Math.min(100, ((data.weeklyLessonsUsed||0)/3)*100)}%;
+                       background:${lessonsLeft===0?"var(--red)":"var(--blue)"};"></div>
+                </div>
+              </div>
+              <div style="font-size:14px;">
+                Arene: <strong>${data.weeklyQuizzesUsed || 0}/3</strong> folosite saptamana aceasta
+                <div class="progress-track" style="margin-top:4px;">
+                  <div class="progress-fill" style="width:${Math.min(100, ((data.weeklyQuizzesUsed||0)/3)*100)}%;
+                       background:${quizzesLeft===0?"var(--red)":"var(--blue)"};"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <a href="/pricing" class="btn" style="white-space:nowrap;">Upgrade &mdash; €5/luna</a>
+        </div>
+        <div style="margin-top:16px;padding-top:16px;border-top:2px solid var(--text);">
+          <p class="muted" style="font-size:13px;">
+            Premium include: lectii nelimitate, arene nelimitate, quiz-uri la lectii, rapoarte de performanta.
+          </p>
+        </div>`;
+    }
+
+    const profileCard = grid.querySelector(".dash-profile-card");
+    if (profileCard) profileCard.after(card);
+    else grid.appendChild(card);
+  } catch { /* silent */ }
 }
 
 // ─── My History page render ───────────────────────────────────────────────────
