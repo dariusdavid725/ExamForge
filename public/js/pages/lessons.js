@@ -320,7 +320,8 @@ async function generateLesson() {
   const btn      = el("generateLessonBtn");
   statusEl.textContent = "";
 
-  // Block if weekly limit reached
+  // Re-fetch plan status to ensure freshness, then check BEFORE loading
+  await loadPlanStatus();
   if (userPlan === "free" && weeklyUsage.lessons >= 3) {
     showUpgradeModal("Ai atins limita de 3 lectii pe saptamana. Upgradeaza la Premium pentru lectii nelimitate.");
     return;

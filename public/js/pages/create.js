@@ -147,6 +147,19 @@ function setupGameModes() {
 // ─── Create arena ─────────────────────────────────────────────────────────────
 
 async function createArena() {
+  // Check limit BEFORE showing any loading overlay
+  if (currentUser?.id) {
+    try {
+      const r = await fetch(`/api/stripe/plan-status?userId=${currentUser.id}`);
+      const d = await r.json();
+      if (r.ok && d.plan === "free" && (d.weeklyQuizzesUsed || 0) >= 3) {
+        showToast("Ai atins limita de 3 arene pe saptamana. Upgradeaza la Premium!", "danger");
+        setTimeout(() => { window.location.href = "/pricing"; }, 1800);
+        return;
+      }
+    } catch { /* dacă fetch-ul pică, lăsăm serverul să prindă eroarea */ }
+  }
+
   if (activeSource === "lesson") await createArenaFromLesson();
   else if (activeSource === "topic") await createArenaFromTopic();
   else await createArenaFromFile();
