@@ -32,6 +32,7 @@ async function init() {
 
 function setupSourceTabs() {
   el("sourceTabUpload")?.addEventListener("click", () => switchSource("upload"));
+  el("sourceTabTopic")?.addEventListener("click",  () => switchSource("topic"));
   el("sourceTabLesson")?.addEventListener("click", () => switchSource("lesson"));
 }
 
@@ -39,9 +40,12 @@ function switchSource(source) {
   activeSource = source;
 
   el("sourceTabUpload")?.classList.toggle("auth-tab-active", source === "upload");
+  el("sourceTabTopic")?.classList.toggle("auth-tab-active",  source === "topic");
   el("sourceTabLesson")?.classList.toggle("auth-tab-active", source === "lesson");
-  el("uploadPanel")?.classList.toggle("hidden", source === "lesson");
-  el("lessonsPanel")?.classList.toggle("hidden", source === "upload");
+
+  el("uploadPanel")?.classList.toggle("hidden",  source !== "upload");
+  el("topicPanel")?.classList.toggle("hidden",   source !== "topic");
+  el("lessonsPanel")?.classList.toggle("hidden", source !== "lesson");
 
   if (source === "lesson") renderSavedLessons();
 }
@@ -135,11 +139,9 @@ function setupGameModes() {
 // ─── Create arena ─────────────────────────────────────────────────────────────
 
 async function createArena() {
-  if (activeSource === "lesson") {
-    await createArenaFromLesson();
-  } else {
-    await createArenaFromFile();
-  }
+  if (activeSource === "lesson") await createArenaFromLesson();
+  else if (activeSource === "topic") await createArenaFromTopic();
+  else await createArenaFromFile();
 }
 
 // Path A — from uploaded document
@@ -185,7 +187,49 @@ async function createArenaFromFile() {
   }
 }
 
-// Path B — from a saved lesson
+// Path B — from a typed topic
+async function createArenaFromTopic() {
+  const topic     = el("createTopicInput")?.value.trim();
+  const hostName  = _hostName();
+  const statusEl  = el("hostStatusText");
+  const createBtn = el("createArenaBtn");
+
+  if (!topic) {
+    showToast("Write a topic first.", "info");
+    return;
+  }
+
+  showLoadingOverlay({
+    title:   "Forging your arena...",
+    message: "Generating challenges from topic.",
+    steps:   ["Researching topic", "Generating challenges", "Checking quality", "Opening lobby"]
+  });
+
+  createBtn.disabled   = true;
+  statusEl.textContent = "Starting...";
+
+  try {
+    const formData = new FormData();
+    formData.append("topic",    topic);
+    formData.append("gameMode", selectedGameMode);
+
+    const packData = await api.generatePack(formData, msg => {
+      statusEl.textContent = msg;
+      updateLoadingOverlay(msg);
+    });
+
+    await _openRoom(packData, hostName, topic, "");
+  } catch (err) {
+    console.error(err);
+    statusEl.textContent = err.message || "Something went wrong.";
+    showToast(err.message || "Something went wrong.", "danger");
+  } finally {
+    hideLoadingOverlay();
+    createBtn.disabled = false;
+  }
+}
+
+// Path C — from a saved lesson
 async function createArenaFromLesson() {
   if (!selectedLesson) {
     showToast("Select a lesson first.", "info");

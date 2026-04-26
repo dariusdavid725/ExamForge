@@ -24,14 +24,20 @@ async function handleGeneratePack(req, res) {
 
   try {
     const gameMode     = req.body.gameMode || "arena_mix";
-    const documentName = req.file?.originalname || "lesson";
+    const documentName = req.file?.originalname || req.body.topic?.slice(0, 40) || "lesson";
 
     send("progress", { message: "Reading document..." });
 
     let safeText;
+    let isTopic = false;
 
-    if (req.body.documentText) {
-      // Path A: text already extracted (from a saved lesson)
+    if (req.body.topic) {
+      // Path A: user typed a topic — generate from AI knowledge
+      safeText = String(req.body.topic).trim();
+      isTopic  = true;
+      if (!safeText) { send("error", { error: "Topic cannot be empty." }); return res.end(); }
+    } else if (req.body.documentText) {
+      // Path B: text already extracted (from a saved lesson)
       safeText = cleanExtractedText(req.body.documentText);
     } else if (req.file) {
       // Path B: extract text from uploaded file
@@ -65,7 +71,7 @@ async function handleGeneratePack(req, res) {
 
     send("progress", { message: "AI is generating challenges..." });
 
-    const pack = await generateLearningPackWithAI(safeText, gameMode, (msg) => send("progress", { message: msg }));
+    const pack = await generateLearningPackWithAI(safeText, gameMode, (msg) => send("progress", { message: msg }), isTopic);
 
     send("done", {
       pack,

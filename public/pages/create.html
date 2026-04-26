@@ -46,6 +46,7 @@
       <!-- Source tabs -->
       <div class="auth-tabs" style="margin-top:24px;">
         <button class="auth-tab auth-tab-active" id="sourceTabUpload" type="button">📄 Upload Document</button>
+        <button class="auth-tab"                 id="sourceTabTopic"  type="button">✍️ Write Topic</button>
         <button class="auth-tab"                 id="sourceTabLesson" type="button">📚 My Lessons</button>
       </div>
 
@@ -56,6 +57,17 @@
           <h3 id="fileName">Choose PDF or image</h3>
           <p class="muted" style="margin-top:8px;">PDF, PNG or JPG · Clear typed text works best.</p>
         </div>
+      </div>
+
+      <!-- ── Topic panel ───────────────────────────────────────────────────── -->
+      <div id="topicPanel" class="hidden" style="margin-top:20px;">
+        <label class="eyebrow" style="display:block;margin-bottom:10px;">What quiz do you want to create?</label>
+        <textarea id="createTopicInput" class="input" rows="4"
+          style="width:100%;resize:vertical;font-family:inherit;"
+          placeholder="e.g. Quiz about the Roman Empire, or basic Python programming concepts, or cryptocurrency fundamentals..."></textarea>
+        <p class="muted" style="margin-top:8px;font-size:13px;">
+          Be specific for better results. Works in any language.
+        </p>
       </div>
 
       <!-- ── My Lessons panel ──────────────────────────────────────────────── -->

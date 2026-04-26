@@ -42,12 +42,34 @@
       </p>
 
       <div class="card" style="max-width:640px;">
-        <div class="eyebrow">Upload your material</div>
-        <div id="lessonDropZone" class="upload-box" style="margin-top:18px;">
-          <input id="lessonFileInput" type="file" accept=".pdf,image/*" class="hidden" />
-          <h3 id="lessonFileName">Choose PDF or image</h3>
-          <p class="muted" style="margin-top:8px;">PDF, PNG, JPG · Max 10 MB</p>
+        <div class="eyebrow">Choose your input method</div>
+
+        <!-- Source tabs -->
+        <div class="auth-tabs" style="margin-top:18px;">
+          <button class="auth-tab auth-tab-active" id="lessonTabUpload" type="button">📄 Upload Document</button>
+          <button class="auth-tab"                 id="lessonTabTopic"  type="button">✍️ Write Topic</button>
         </div>
+
+        <!-- Upload panel -->
+        <div id="lessonUploadPanel" style="margin-top:18px;">
+          <div id="lessonDropZone" class="upload-box">
+            <input id="lessonFileInput" type="file" accept=".pdf,image/*" class="hidden" />
+            <h3 id="lessonFileName">Choose PDF or image</h3>
+            <p class="muted" style="margin-top:8px;">PDF, PNG, JPG · Max 10 MB</p>
+          </div>
+        </div>
+
+        <!-- Topic panel -->
+        <div id="lessonTopicPanel" class="hidden" style="margin-top:18px;">
+          <label class="eyebrow" style="display:block;margin-bottom:10px;">What do you want to learn about?</label>
+          <textarea id="lessonTopicInput" class="input" rows="4"
+            style="width:100%;resize:vertical;font-family:inherit;"
+            placeholder="e.g. How blockchain and cryptocurrency work, or the basics of photosynthesis in plants..."></textarea>
+          <p class="muted" style="margin-top:8px;font-size:13px;">
+            Be specific for better results. Works in any language.
+          </p>
+        </div>
+
         <button id="generateLessonBtn" class="btn" style="width:100%;margin-top:20px;padding:16px;">
           Generate Lesson
         </button>

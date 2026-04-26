@@ -163,6 +163,120 @@ ${documentSlice}
 `;
 }
 
+// ─── Topic-based pack prompt ──────────────────────────────────────────────────
+// Used when the user types a topic (e.g. "crypto") instead of uploading a document.
+// The AI uses its own knowledge; no document extraction constraint applies.
+
+export function buildTopicPackPrompt(topic, gameMode = "arena_mix") {
+  const seed = randomSeed();
+
+  return `
+You are an expert educational game designer.
+
+Return ONLY valid JSON.
+No markdown.
+No prose outside JSON.
+
+Topic requested by the user: "${topic}"
+
+Language:
+- Detect the language of the topic text and write everything in that language.
+- If the topic is in Romanian, write Romanian. If in English, write English.
+
+Core rule:
+Every challenge must be SELF-CONTAINED.
+The player will ONLY see the prompt, options, pairs, steps, or mistakeText.
+Use your knowledge to generate accurate, educational challenges about the topic.
+
+Game mode: ${gameMode}
+Seed: ${seed}
+
+Generate exactly 8 challenges:
+- 2 multiple_choice
+- 1 true_false
+- 1 fill_blank
+- 1 order_steps
+- 1 spot_mistake
+- 1 matching
+- 1 multiple_select
+
+Field limits:
+- prompt max 180 chars
+- explanation max 220 chars
+- sourceSnippet: brief fact that supports the answer (max 180 chars)
+- options max 100 chars each
+- concept max 40 chars
+
+Root JSON:
+{
+  "title": "string",
+  "summary": "string",
+  "category": "string",
+  "concepts": ["string"],
+  "challenges": []
+}
+
+Challenge object:
+{
+  "id": "c1",
+  "type": "multiple_choice",
+  "concept": "string",
+  "difficulty": "easy",
+  "prompt": "string",
+  "options": ["string"],
+  "correctAnswer": "string",
+  "correctAnswers": [],
+  "pairs": [],
+  "acceptedAnswers": [],
+  "steps": [],
+  "correctOrder": [],
+  "mistakeText": "",
+  "explanation": "string",
+  "sourceSnippet": "string"
+}
+
+Type rules:
+
+multiple_choice:
+- exactly 4 options
+- exactly 1 correct answer
+- correctAnswer must be one of options
+
+true_false:
+- options ["Adevărat","Fals"] or ["True","False"] depending on language
+- correctAnswer must be one option
+- prompt must be a complete statement
+
+fill_blank:
+- prompt contains exactly one blank: ____
+- options []
+- correctAnswer is only the missing word/phrase
+- acceptedAnswers contains valid alternatives
+
+order_steps:
+- exactly 3 steps
+- steps shuffled
+- correctOrder has same 3 steps in correct order
+- options []
+
+spot_mistake:
+- mistakeText is one wrong visible claim about the topic
+- options exactly 4 explanations of what is wrong
+- correctAnswer one of options
+
+matching:
+- pairs exactly 4 objects { "left": "string", "right": "string" }
+- options []
+- correctAnswer ""
+
+multiple_select:
+- prompt starts with "Select ALL that apply:" or equivalent in the detected language
+- options 4 or 5 strings
+- correctAnswers 2 or 3 strings, subset of options
+- correctAnswer ""
+`;
+}
+
 export function buildRepairPrompt(
   badJson,
   validationError,

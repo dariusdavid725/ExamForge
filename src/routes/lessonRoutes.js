@@ -9,53 +9,74 @@ const client  = new OpenAI({ apiKey: process.env.OPENAI_API_KEY, timeout: 90000 
 const MODEL   = "gpt-4.1-mini";
 
 // ─── POST /api/lessons/generate ──────────────────────────────────────────────
-// Accepts a document, extracts text, returns a structured lesson via AI.
+// Accepts a document (file) OR a free-text topic and returns a structured lesson.
 
 router.post("/generate", upload.single("document"), async (req, res) => {
   try {
-    if (!req.file) {
-      return res.status(400).json({ error: "No file uploaded." });
+    let isTopic    = false;
+    let safeText   = "";
+    let returnText = "";
+
+    if (req.body.topic) {
+      // ── Path A: user typed a topic ─────────────────────────────────────────
+      const topic = String(req.body.topic).trim();
+      if (!topic) return res.status(400).json({ error: "Topic cannot be empty." });
+      isTopic    = true;
+      safeText   = topic;
+      returnText = "";
+    } else if (req.file) {
+      // ── Path B: uploaded file ──────────────────────────────────────────────
+      let extractedText;
+      try {
+        extractedText = await extractTextFromFile(req.file);
+      } catch (err) {
+        return res.status(400).json({ error: err.message });
+      }
+      safeText   = cleanExtractedText(removeExternalLinks(extractedText));
+      returnText = safeText.slice(0, 8000);
+
+      if (!safeText || safeText.trim().length < 80) {
+        return res.status(400).json({ error: "Could not extract enough text. Try a clearer document." });
+      }
+    } else {
+      return res.status(400).json({ error: "Provide a file or a topic." });
     }
 
-    let extractedText;
-    try {
-      extractedText = await extractTextFromFile(req.file);
-    } catch (err) {
-      return res.status(400).json({ error: err.message });
-    }
+    // ── Build prompt ──────────────────────────────────────────────────────────
 
-    const safeText = cleanExtractedText(removeExternalLinks(extractedText));
+    const systemMsg = isTopic
+      ? [
+          "Return ONLY valid JSON. No markdown. No prose outside JSON.",
+          "Detect the language of the topic and respond in that language.",
+          "If the topic is in Romanian, write everything in Romanian.",
+          "If in English, write in English."
+        ].join("\n")
+      : [
+          "Return ONLY valid JSON. No markdown. No prose outside JSON.",
+          "Use the EXACT same language as the document.",
+          "If the document is in Romanian, write everything in Romanian.",
+          "Detect the document language automatically and match it."
+        ].join("\n");
 
-    if (!safeText || safeText.trim().length < 80) {
-      return res.status(400).json({ error: "Could not extract enough text. Try a clearer document." });
-    }
-
-    const documentSlice = prepareDocumentSlice(safeText);
+    const contentSource = isTopic
+      ? `Topic: "${safeText}"\nGenerate a comprehensive lesson about this topic using your knowledge.`
+      : `DOCUMENT:\n${prepareDocumentSlice(safeText)}`;
 
     const completion = await client.chat.completions.create({
       model: MODEL,
       max_tokens: 2400,
       temperature: 0.3,
       messages: [
-        {
-          role: "system",
-          content: [
-            "Return ONLY valid JSON. No markdown. No prose outside JSON.",
-            "IMPORTANT: use the EXACT same language as the document.",
-            "If the document is in Romanian, write everything in Romanian.",
-            "If the document is in English, write in English.",
-            "Detect the document language automatically and match it."
-          ].join("\n")
-        },
+        { role: "system", content: systemMsg },
         {
           role: "user",
-          content: `Create a comprehensive structured lesson from this document.
+          content: `Create a comprehensive structured lesson.
 
 JSON schema:
 {
   "title": "string",
   "language": "string (e.g. Romanian, English, French)",
-  "summary": "string (2-3 sentence overview in document language)",
+  "summary": "string (2-3 sentence overview)",
   "objectives": ["string"],
   "keyConcepts": ["string"],
   "sections": [
@@ -69,14 +90,13 @@ JSON schema:
 }
 
 Rules:
-- Use document language for ALL text fields
+- Match language for ALL text fields
 - 3-6 sections covering the main topics
 - 5-8 key concepts
 - 3-5 learning objectives
 - 2-4 memory tips
 
-DOCUMENT:
-${documentSlice}`
+${contentSource}`
         }
       ]
     });
@@ -84,10 +104,7 @@ ${documentSlice}`
     const raw    = completion.choices[0].message.content;
     const lesson = JSON.parse(raw.replace(/```json|```/g, "").trim());
 
-    return res.json({
-      lesson,
-      documentText: safeText.slice(0, 8000)
-    });
+    return res.json({ lesson, documentText: returnText });
   } catch (error) {
     console.error("ERROR lesson generate:", error);
     return res.status(503).json({ error: error.message || "Could not generate lesson." });

@@ -2,6 +2,7 @@ import OpenAI from "openai";
 import { AI_MODELS } from "../config/constants.js";
 import {
   buildLearningPackPrompt,
+  buildTopicPackPrompt,
   buildRepairPrompt,
   buildRecoveryLessonPrompt,
   buildAuditPrompt
@@ -292,12 +293,16 @@ async function repairUntilValid({
   throw new Error(currentReason || "AI repair failed.");
 }
 
-async function tryGenerateAndRepair(model, text, gameMode, onProgress) {
+async function tryGenerateAndRepair(model, text, gameMode, onProgress, isTopic = false) {
   onProgress?.("AI is generating challenges...");
+
+  const prompt = isTopic
+    ? buildTopicPackPrompt(text, gameMode)
+    : buildLearningPackPrompt(text, gameMode);
 
   const raw = await callJsonSchema(
     model,
-    buildLearningPackPrompt(text, gameMode),
+    prompt,
     LEARNING_PACK_SCHEMA,
     "learning_pack",
     3800,
@@ -319,6 +324,13 @@ async function tryGenerateAndRepair(model, text, gameMode, onProgress) {
       gameMode,
       onProgress
     });
+  }
+
+  // Skip document-grounded audit for topic-based generation
+  if (isTopic) {
+    pack.generatedBy = model;
+    pack.aiOnly      = true;
+    return pack;
   }
 
   onProgress?.("Checking question quality...");
@@ -344,7 +356,7 @@ async function tryGenerateAndRepair(model, text, gameMode, onProgress) {
   });
 }
 
-export async function generateLearningPackWithAI(text, gameMode, onProgress) {
+export async function generateLearningPackWithAI(text, gameMode, onProgress, isTopic = false) {
   if (!process.env.OPENAI_API_KEY) {
     throw new Error("OPENAI_API_KEY is missing from .env.");
   }
@@ -355,7 +367,7 @@ export async function generateLearningPackWithAI(text, gameMode, onProgress) {
     try {
       console.log(`Trying learning pack model: ${model}`);
 
-      return await tryGenerateAndRepair(model, text, gameMode, onProgress);
+      return await tryGenerateAndRepair(model, text, gameMode, onProgress, isTopic);
     } catch (error) {
       console.log(`Model ${model} failed:`, error.message);
 

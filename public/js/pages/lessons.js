@@ -10,11 +10,12 @@ import {
 
 // ─── Page state ────────────────────────────────────────────────────────────────
 
-let lesson       = null;
-let documentText = null;
-let quiz         = null;
-let userAnswers  = [];
-let lessonScore  = 0;
+let lesson         = null;
+let documentText   = null;
+let quiz           = null;
+let userAnswers    = [];
+let lessonScore    = 0;
+let lessonSource   = "upload";   // "upload" | "topic"
 
 // ─── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -46,6 +47,11 @@ async function init() {
 // ─── File upload ───────────────────────────────────────────────────────────────
 
 function setupUpload() {
+  // Source tabs
+  el("lessonTabUpload")?.addEventListener("click", () => switchLessonSource("upload"));
+  el("lessonTabTopic")?.addEventListener("click",  () => switchLessonSource("topic"));
+
+  // Drop zone
   const dropZone  = el("lessonDropZone");
   const fileInput = el("lessonFileInput");
   const nameLbl   = el("lessonFileName");
@@ -62,6 +68,14 @@ function setupUpload() {
   fileInput?.addEventListener("change", () => {
     if (fileInput.files[0]) pick(fileInput.files[0]);
   });
+}
+
+function switchLessonSource(source) {
+  lessonSource = source;
+  el("lessonTabUpload")?.classList.toggle("auth-tab-active", source === "upload");
+  el("lessonTabTopic")?.classList.toggle("auth-tab-active",  source === "topic");
+  el("lessonUploadPanel")?.classList.toggle("hidden", source === "topic");
+  el("lessonTopicPanel")?.classList.toggle("hidden",  source === "upload");
 }
 
 // ─── Button wiring ─────────────────────────────────────────────────────────────
@@ -83,32 +97,44 @@ function setupButtons() {
 // ══════════════════════════════════════════════════════════════════════════════
 
 async function generateLesson() {
-  const file      = el("lessonFileInput").files[0];
-  const statusEl  = el("lessonUploadStatus");
-  const btn       = el("generateLessonBtn");
+  const statusEl = el("lessonUploadStatus");
+  const btn      = el("generateLessonBtn");
+  statusEl.textContent = "";
 
-  if (!file) {
-    statusEl.textContent = "Choose a file first.";
-    showToast("Choose a file first.", "info");
-    return;
+  // Validate input based on active source
+  let form;
+  if (lessonSource === "topic") {
+    const topic = el("lessonTopicInput")?.value.trim();
+    if (!topic) {
+      statusEl.textContent = "Write a topic first.";
+      showToast("Write a topic first.", "info");
+      return;
+    }
+    form = new FormData();
+    form.append("topic", topic);
+  } else {
+    const file = el("lessonFileInput").files[0];
+    if (!file) {
+      statusEl.textContent = "Choose a file first.";
+      showToast("Choose a file first.", "info");
+      return;
+    }
+    form = new FormData();
+    form.append("document", file);
   }
 
-  btn.disabled         = true;
-  statusEl.textContent = "";
+  btn.disabled = true;
 
   showLoadingOverlay({
     title:   "Building your lesson...",
-    message: "Reading document.",
-    steps:   ["Reading document", "Analyzing content", "Structuring lesson", "Writing summary", "Done"]
+    message: lessonSource === "topic" ? "Researching topic." : "Reading document.",
+    steps:   ["Analyzing content", "Structuring lesson", "Writing sections", "Adding key points", "Done"]
   });
 
   try {
-    const form = new FormData();
-    form.append("document", file);
-
-    updateLoadingOverlay("Extracting text...", 20);
+    updateLoadingOverlay("Structuring lesson...", 40);
     const res  = await fetch("/api/lessons/generate", { method: "POST", body: form });
-    updateLoadingOverlay("Structuring lesson...", 75);
+    updateLoadingOverlay("Writing sections...", 75);
     const data = await res.json();
 
     if (!res.ok) throw new Error(data.error || "Could not generate lesson.");
@@ -116,7 +142,6 @@ async function generateLesson() {
     lesson       = data.lesson;
     documentText = data.documentText;
 
-    // Persist lesson for "My Lessons" selection in Create Arena
     saveLessonToStorage(lesson, documentText);
 
     updateLoadingOverlay("Done!", 100);
