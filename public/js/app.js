@@ -1,5 +1,4 @@
 import * as dom from "./dom.js";
-import roomInviteRoutes from "./src/routes/roomInviteRoutes.js";
 import { state } from "./state.js";
 import * as api from "./api.js";
 import { getSession, login, register } from "./auth.js";
