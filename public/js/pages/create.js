@@ -19,7 +19,15 @@ async function init() {
   installThemeToggle();
 
   const auth = await initHeader();
-  if (auth) { currentUser = auth.user; userProfile = auth.profile; }
+
+  if (!auth) {
+    showToast("Sign in to create an arena.", "info");
+    setTimeout(nav.login, 1200);
+    return;
+  }
+
+  currentUser = auth.user;
+  userProfile = auth.profile;
 
   setupFileUpload();
   setupGameModes();

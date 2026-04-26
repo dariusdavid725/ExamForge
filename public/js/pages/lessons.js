@@ -39,7 +39,15 @@ function showSection(id) {
 async function init() {
   installFeedback();
   installThemeToggle();
-  await initHeader();
+
+  const auth = await initHeader();
+
+  if (!auth) {
+    showToast("Sign in to access lessons.", "info");
+    setTimeout(nav.login, 1200);
+    return;
+  }
+
   setupUpload();
   setupButtons();
 }
