@@ -343,7 +343,7 @@ async function closeCurrentArena() {
   try {
     const { response, data } = await api.closeRoom(state.currentRoomCode, state.currentPlayerId);
     if (!response.ok) throw new Error(data.error || "Could not close arena.");
-    stopGameLoops(); clearSession(); resetRoomState(); removeArenaActionButtons();
+    stopGameLoops(); stopReactionPolling(); clearSession(); resetRoomState(); removeArenaActionButtons();
     showToast("The arena has been closed.", "success");
     nav.home();
   } catch (err) {
@@ -366,7 +366,7 @@ async function leaveCurrentArena() {
   try {
     const { response, data } = await api.leaveRoom(state.currentRoomCode, state.currentPlayerId);
     if (!response.ok) throw new Error(data.error || "Could not leave arena.");
-    stopGameLoops(); clearSession(); resetRoomState(); removeArenaActionButtons();
+    stopGameLoops(); stopReactionPolling(); clearSession(); resetRoomState(); removeArenaActionButtons();
     showToast(isLobby ? "You left the lobby." : "You abandoned the quiz.", "success");
     nav.home();
   } catch (err) {
@@ -376,7 +376,7 @@ async function leaveCurrentArena() {
 }
 
 async function handleRoomClosed(message = "The arena has been closed.") {
-  stopGameLoops(); clearSession(); resetRoomState(); removeArenaActionButtons();
+  stopGameLoops(); stopReactionPolling(); clearSession(); resetRoomState(); removeArenaActionButtons();
   await showNotice({ title: "Arena closed", message, variant: "info", buttonText: "OK" });
   nav.home();
 }
@@ -385,6 +385,9 @@ async function handleRoomClosed(message = "The arena has been closed.") {
 
 async function showLobby() {
   showSection("lobbyScreen");
+  buildReactionBar();
+  showReactionBar(true);
+  startReactionPolling();
 
   document.getElementById("roomCodeText").textContent = state.currentRoomCode;
 
@@ -455,6 +458,9 @@ async function loadPackAndStart() {
 
   document.getElementById("playerNameText").textContent = state.currentPlayerName || "Player";
   showSection("challengeScreen");
+  buildReactionBar();
+  showReactionBar(true);
+  startReactionPolling();
   mountArenaActionButtons("challenge");
   startSyncedLoop();
   state.packLoading = false;
@@ -505,6 +511,7 @@ async function showLeaderboard() {
   }
 
   syncClock(data.serverNow);
+  stopReactionPolling();
   showSection("leaderboardScreen");
   renderPodium(data, state.currentPack);
 
@@ -599,6 +606,153 @@ async function restoreSession() {
   } catch { clearSession(); resetRoomState(); }
 
   return false;
+}
+
+// ─── Reaction system ──────────────────────────────────────────────────────────
+
+const REACTIONS = [
+  { r: "🔥", tip: "Fire" },
+  { r: "💪", tip: "Strong" },
+  { r: "👏", tip: "Clap" },
+  { r: "😎", tip: "Cool" },
+  { r: "🤔", tip: "Hmm" },
+  { r: "😅", tip: "Phew" },
+  { r: "⚡", tip: "Fast" },
+  { r: "🏆", tip: "Win" },
+  { r: "😱", tip: "OMG" },
+  { r: "GG!",    tip: "GG" },
+  { r: "LFG!",   tip: "Let's go" },
+  { r: "Easy!",  tip: "Easy" },
+  { r: "Tough!", tip: "Tough" },
+];
+
+let reactionLastTs  = 0;
+let reactionPoll    = null;
+let reactionCooldown = false;
+
+function buildReactionBar() {
+  const bar = document.getElementById("reactionBar");
+  if (!bar) return;
+
+  bar.innerHTML = "";
+
+  // Inject keyframe animation once
+  if (!document.getElementById("ef-reaction-styles")) {
+    const style = document.createElement("style");
+    style.id = "ef-reaction-styles";
+    style.textContent = `
+      @keyframes reactionFloat {
+        0%   { opacity:1; transform:translateY(0)  scale(1); }
+        80%  { opacity:1; transform:translateY(-50px) scale(1.05); }
+        100% { opacity:0; transform:translateY(-70px) scale(0.9); }
+      }
+      .reaction-btn {
+        background: none;
+        border: 2px solid transparent;
+        border-radius: 999px;
+        padding: 6px 10px;
+        font-size: 20px;
+        cursor: pointer;
+        transition: background .12s, transform .1s;
+        line-height: 1;
+      }
+      .reaction-btn:hover  { background: var(--paper-2, #f5f0e8); transform: scale(1.15); }
+      .reaction-btn:active { transform: scale(0.9); }
+      .reaction-bubble {
+        background: var(--paper, #fffaf0);
+        border: 2px solid var(--text, #111);
+        border-radius: 999px;
+        padding: 5px 14px;
+        font-size: 15px;
+        font-weight: 900;
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        white-space: nowrap;
+        box-shadow: 3px 3px 0 var(--text, #111);
+        animation: reactionFloat 2.8s ease-out forwards;
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  REACTIONS.forEach(({ r, tip }) => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "reaction-btn";
+    btn.textContent = r;
+    btn.title = tip;
+    btn.addEventListener("click", () => sendReaction(r));
+    bar.appendChild(btn);
+  });
+}
+
+function showReactionBar(visible) {
+  const bar = document.getElementById("reactionBar");
+  if (!bar) return;
+  bar.style.display = visible ? "flex" : "none";
+}
+
+async function sendReaction(reaction) {
+  if (!state.currentRoomCode || !state.currentPlayerId) return;
+  if (reactionCooldown) return;
+
+  reactionCooldown = true;
+  setTimeout(() => { reactionCooldown = false; }, 1500);
+
+  try {
+    await fetch(`/api/rooms/${state.currentRoomCode}/react`, {
+      method:  "POST",
+      headers: { "Content-Type": "application/json" },
+      body:    JSON.stringify({ playerId: state.currentPlayerId, reaction })
+    });
+  } catch {}
+}
+
+function spawnBubble(reaction) {
+  const container = document.getElementById("reactionBubbles");
+  if (!container) return;
+
+  const div = document.createElement("div");
+  div.className = "reaction-bubble";
+
+  const nameSpan = document.createElement("span");
+  nameSpan.style.cssText = "font-size:12px;opacity:.7;font-weight:700;";
+  nameSpan.textContent = reaction.playerName;
+
+  const emojiSpan = document.createElement("span");
+  emojiSpan.textContent = reaction.reaction;
+
+  div.appendChild(emojiSpan);
+  div.appendChild(nameSpan);
+  container.appendChild(div);
+
+  setTimeout(() => div.remove(), 2800);
+}
+
+function startReactionPolling() {
+  if (reactionPoll) clearInterval(reactionPoll);
+  reactionLastTs = Date.now() - 500;
+
+  reactionPoll = setInterval(async () => {
+    if (!state.currentRoomCode) return;
+    try {
+      const res  = await fetch(`/api/rooms/${state.currentRoomCode}/reactions?since=${reactionLastTs}`);
+      if (!res.ok) return;
+      const data = await res.json();
+      const list = data.reactions || [];
+
+      list.forEach(r => {
+        spawnBubble(r);
+        if (r.ts > reactionLastTs) reactionLastTs = r.ts;
+      });
+    } catch {}
+  }, 1200);
+}
+
+function stopReactionPolling() {
+  if (reactionPoll) { clearInterval(reactionPoll); reactionPoll = null; }
+  showReactionBar(false);
 }
 
 // ─── Init ─────────────────────────────────────────────────────────────────────

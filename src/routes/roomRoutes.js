@@ -23,6 +23,30 @@ import {
 
 const router = express.Router();
 
+// ─── In-memory reaction store (ephemeral, per room) ───────────────────────────
+
+const reactionStore = new Map();
+
+const ALLOWED_REACTIONS = new Set([
+  "🔥","💪","👏","😎","🤔","😅","⚡","🏆","😱","🎯",
+  "GG!","LFG!","Easy!","Tough!","Nice!","OMG!"
+]);
+
+function storeReaction(roomCode, reaction) {
+  const key  = roomCode.toUpperCase();
+  const list = reactionStore.get(key) || [];
+  list.push({ ...reaction, id: `${Date.now()}-${Math.random()}`, ts: Date.now() });
+  reactionStore.set(key, list.slice(-100));
+}
+
+function getReactions(roomCode, since = 0) {
+  const key    = roomCode.toUpperCase();
+  const cutoff = Math.max(since, Date.now() - 8000);
+  return (reactionStore.get(key) || []).filter(r => r.ts > cutoff);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 function playerAnsweredChallenge(player, challengeIndex) {
   return (player.answers || []).some(answer => {
     return Number(answer.challengeIndex) === Number(challengeIndex);
@@ -584,6 +608,38 @@ router.post("/:code/lesson", async (req, res) => {
       error: error.message || "The AI could not generate the lesson right now."
     });
   }
+});
+
+// ─── POST /:code/react ────────────────────────────────────────────────────────
+
+router.post("/:code/react", async (req, res) => {
+  try {
+    const { playerId, reaction } = req.body;
+
+    if (!reaction || !ALLOWED_REACTIONS.has(reaction)) {
+      return res.status(400).json({ error: "Invalid reaction." });
+    }
+
+    const player = await getPlayer(playerId);
+    if (!player) return res.status(404).json({ error: "Player not found." });
+
+    storeReaction(req.params.code, {
+      playerId,
+      playerName: player.name,
+      reaction
+    });
+
+    return res.json({ ok: true });
+  } catch (error) {
+    return res.status(500).json({ error: "Could not send reaction." });
+  }
+});
+
+// ─── GET /:code/reactions ─────────────────────────────────────────────────────
+
+router.get("/:code/reactions", (req, res) => {
+  const since = Number(req.query.since) || 0;
+  return res.json({ reactions: getReactions(req.params.code, since) });
 });
 
 export default router;
