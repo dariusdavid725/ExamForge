@@ -1,5 +1,5 @@
-import { getSupabase } from "./supabaseClient.js";
-import { showToast, showConfirm } from "./uiFeedback.js";
+import { getSupabase } from "../shared/supabaseClient.js";
+import { showToast, showConfirm } from "../shared/uiFeedback.js";
 
 export async function showFriendManagerModal(currentUserId) {
   if (!currentUserId) return;

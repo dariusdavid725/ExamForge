@@ -1,7 +1,7 @@
-import { installFeedback, showToast, showLoadingOverlay, updateLoadingOverlay, hideLoadingOverlay } from "../uiFeedback.js";
-import { installThemeToggle } from "../theme.js";
+import { installFeedback, showToast, showLoadingOverlay, updateLoadingOverlay, hideLoadingOverlay } from "../shared/uiFeedback.js";
+import { installThemeToggle } from "../shared/theme.js";
 import { initHeader, nav } from "../shared/nav.js";
-import * as api from "../api.js";
+import * as api from "../shared/api.js";
 
 let selectedGameMode = "arena_mix";
 let currentUser      = null;

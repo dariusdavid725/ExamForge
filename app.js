@@ -12,7 +12,7 @@ import sessionRoutes     from "./src/routes/sessionRoutes.js";
 import roomInviteRoutes  from "./src/routes/roomInviteRoutes.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const pub       = p => path.join(__dirname, "public", p);
+const pub       = p => path.join(__dirname, "public", "pages", p);
 
 const app = express();
 

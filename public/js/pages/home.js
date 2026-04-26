@@ -1,4 +1,4 @@
-import { installThemeToggle } from "../theme.js";
+import { installThemeToggle } from "../shared/theme.js";
 import { initHeader, nav } from "../shared/nav.js";
 
 async function init() {

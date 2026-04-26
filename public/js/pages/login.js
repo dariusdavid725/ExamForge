@@ -1,6 +1,6 @@
-import { getSession, login, register } from "../auth.js";
-import { installFeedback, showToast } from "../uiFeedback.js";
-import { installThemeToggle } from "../theme.js";
+import { getSession, login, register } from "../shared/auth.js";
+import { installFeedback, showToast } from "../shared/uiFeedback.js";
+import { installThemeToggle } from "../shared/theme.js";
 import { nav } from "../shared/nav.js";
 
 async function init() {

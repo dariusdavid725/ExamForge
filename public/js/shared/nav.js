@@ -1,5 +1,5 @@
-import { getSession } from "../auth.js";
-import { getProfile, getSupabase } from "../supabaseClient.js";
+import { getSession } from "./auth.js";
+import { getProfile, getSupabase } from "./supabaseClient.js";
 
 // ─── Navigation helpers ───────────────────────────────────────────────────────
 

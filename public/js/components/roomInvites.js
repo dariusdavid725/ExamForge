@@ -1,4 +1,4 @@
-import * as api from "./api.js";
+import * as api from "../shared/api.js";
 
 export async function showInviteFriendsModal({ roomCode, currentUser }) {
   if (!roomCode || !currentUser?.id) return;

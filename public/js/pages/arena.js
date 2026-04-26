@@ -1,9 +1,9 @@
-import { state } from "../state.js";
-import { installFeedback, showToast, showConfirm, showNotice } from "../uiFeedback.js";
-import { installThemeToggle } from "../theme.js";
+import { state } from "../shared/state.js";
+import { installFeedback, showToast, showConfirm, showNotice } from "../shared/uiFeedback.js";
+import { installThemeToggle } from "../shared/theme.js";
 import { initHeader, nav } from "../shared/nav.js";
-import { saveGameSession } from "../dashboard.js";
-import { showInviteFriendsModal } from "../roomInvites.js";
+import { saveGameSession } from "../features/dashboard.js";
+import { showInviteFriendsModal } from "../components/roomInvites.js";
 import {
   updateTimerUI,
   renderChallenge,
@@ -14,8 +14,8 @@ import {
   renderMiniLeaderboard,
   renderPodium,
   renderRecoveryLesson
-} from "../renderer.js";
-import * as api from "../api.js";
+} from "../components/renderer.js";
+import * as api from "../shared/api.js";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 

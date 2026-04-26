@@ -1,7 +1,7 @@
-import { getSupabase } from "./supabaseClient.js";
-import { logout } from "./auth.js";
+import { getSupabase } from "../shared/supabaseClient.js";
+import { logout } from "../shared/auth.js";
 import { showHistoryDetailModal } from "./historyDetail.js";
-import { showFriendManagerModal } from "./friendManager.js";
+import { showFriendManagerModal } from "../components/friendManager.js";
 
 // ─── Save completed game ──────────────────────────────────────────────────────
 

@@ -1,5 +1,5 @@
 import * as dom from "./dom.js";
-import { state } from "./state.js";
+import { state } from "../shared/state.js";
 
 export function escapeHTML(value) {
   return String(value ?? "")

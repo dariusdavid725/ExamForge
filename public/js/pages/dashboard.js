@@ -1,9 +1,9 @@
-import { installFeedback } from "../uiFeedback.js";
-import { installThemeToggle } from "../theme.js";
+import { installFeedback } from "../shared/uiFeedback.js";
+import { installThemeToggle } from "../shared/theme.js";
 import { initHeader, nav } from "../shared/nav.js";
-import { renderDashboard, renderHistoryPage } from "../dashboard.js";
-import { renderRoomInvitesCard } from "../roomInvites.js";
-import * as api from "../api.js";
+import { renderDashboard, renderHistoryPage } from "../features/dashboard.js";
+import { renderRoomInvitesCard } from "../components/roomInvites.js";
+import * as api from "../shared/api.js";
 
 let currentUser = null;
 let userProfile = null;

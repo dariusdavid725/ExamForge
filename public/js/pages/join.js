@@ -1,7 +1,7 @@
-import { installFeedback, showToast } from "../uiFeedback.js";
-import { installThemeToggle } from "../theme.js";
+import { installFeedback, showToast } from "../shared/uiFeedback.js";
+import { installThemeToggle } from "../shared/theme.js";
 import { initHeader, nav } from "../shared/nav.js";
-import * as api from "../api.js";
+import * as api from "../shared/api.js";
 
 let currentUser = null;
 let userProfile = null;
