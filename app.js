@@ -18,6 +18,8 @@ const app = express();
 
 // ─── Page routes (clean URLs) ─────────────────────────────────────────────────
 app.get("/",          (_req, res) => res.sendFile(pub("home.html")));
+app.get("/create",    (_req, res) => res.sendFile(pub("create.html")));
+app.get("/join",      (_req, res) => res.sendFile(pub("join.html")));
 app.get("/login",     (_req, res) => res.sendFile(pub("login.html")));
 app.get("/dashboard", (_req, res) => res.sendFile(pub("dashboard.html")));
 app.get("/arena",     (_req, res) => res.sendFile(pub("arena.html")));

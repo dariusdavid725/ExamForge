@@ -38,8 +38,8 @@ async function showDashboard() {
 
   try {
     await renderDashboard(container, currentUser, userProfile, {
-      onCreateArena: nav.home,
-      onJoinArena:   nav.home,
+      onCreateArena: nav.create,
+      onJoinArena:   nav.join,
       onHistory:     showHistory
     });
 

@@ -388,7 +388,7 @@ async function showLobby() {
 
   document.getElementById("roomCodeText").textContent = state.currentRoomCode;
 
-  const link = `${window.location.origin}/arena?room=${state.currentRoomCode}`;
+  const link = `${window.location.origin}/join?room=${state.currentRoomCode}`;
   document.getElementById("joinLinkText").textContent = link;
 
   if (typeof QRCode !== "undefined") {
@@ -479,7 +479,7 @@ async function startArena() {
 }
 
 async function copyJoinLink() {
-  const link = `${window.location.origin}/arena?room=${state.currentRoomCode}`;
+  const link = `${window.location.origin}/join?room=${state.currentRoomCode}`;
   try {
     await navigator.clipboard.writeText(link);
     document.getElementById("lobbyStatusText").textContent = "Link copied.";

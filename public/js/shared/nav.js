@@ -5,6 +5,8 @@ import { getProfile, getSupabase } from "../supabaseClient.js";
 
 export const nav = {
   home:      ()     => { window.location.href = "/"; },
+  create:    ()     => { window.location.href = "/create"; },
+  join:      (code) => { window.location.href = code ? `/join?room=${code}` : "/join"; },
   login:     ()     => { window.location.href = "/login"; },
   dashboard: ()     => { window.location.href = "/dashboard"; },
   arena:     code   => { window.location.href = `/arena?room=${code}`; }

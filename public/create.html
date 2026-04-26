@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ExamForge — Create Arena</title>
+  <link rel="stylesheet" href="/css/styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+</head>
+
+<body>
+  <header>
+    <div class="container nav">
+      <div class="brand" id="brandLogo" style="cursor:pointer;">
+        <div class="brand-mark">E</div>
+        <div>
+          <div>ExamForge Arena</div>
+          <div style="font-size:12px;color:var(--muted);letter-spacing:0;font-weight:800;">multiplayer study challenges</div>
+        </div>
+      </div>
+
+      <div style="display:flex;align-items:center;gap:14px;">
+        <span id="headerStreak" style="display:none;font-weight:900;font-size:16px;"></span>
+        <div id="headerUserArea" style="display:none;align-items:center;gap:8px;cursor:pointer;"></div>
+      </div>
+    </div>
+  </header>
+
+  <main class="container" style="max-width:680px;padding-top:40px;">
+
+    <div style="display:flex;align-items:center;gap:16px;margin-bottom:32px;">
+      <a href="/" class="btn btn-secondary" style="padding:10px 16px;">← Back</a>
+      <h2 style="margin:0;">Create Arena</h2>
+    </div>
+
+    <div class="card">
+      <div class="eyebrow">Host</div>
+      <p class="muted" style="margin-top:8px;">Upload your study material and let AI build the challenge pack.</p>
+
+      <!-- Nickname -->
+      <div style="margin-top:28px;">
+        <label class="eyebrow">Your nickname</label>
+        <input id="hostNameInput" class="input" style="margin-top:12px;" placeholder="e.g. Darius" />
+      </div>
+
+      <!-- File upload -->
+      <div style="margin-top:22px;">
+        <label class="eyebrow">Document</label>
+        <div id="dropZone" class="upload-box" style="margin-top:12px;">
+          <input id="fileInput" type="file" accept=".pdf,image/*" class="hidden" />
+          <h3 id="fileName">Choose PDF or image</h3>
+          <p class="muted" style="margin-top:8px;">PDF, PNG or JPG · Clear typed text works best.</p>
+        </div>
+      </div>
+
+      <!-- Game mode -->
+      <div class="flat-card" style="margin-top:22px;">
+        <div class="eyebrow">Game mode</div>
+        <div class="game-mode-grid" style="margin-top:16px;">
+          <button class="mode-option selected" data-mode="arena_mix"   type="button"><strong>Arena Mix</strong>   <span>Balanced mix of challenge types.</span></button>
+          <button class="mode-option"           data-mode="speed_drill" type="button"><strong>Speed Drill</strong> <span>Shorter, faster challenges.</span></button>
+          <button class="mode-option"           data-mode="trap_hunt"   type="button"><strong>Trap Hunt</strong>   <span>Common mistakes and tricky details.</span></button>
+          <button class="mode-option"           data-mode="deep_review" type="button"><strong>Deep Review</strong> <span>More reasoning and diagnosis.</span></button>
+        </div>
+      </div>
+
+      <button id="createArenaBtn" class="btn" style="width:100%;margin-top:24px;padding:16px;">Create AI arena</button>
+      <p id="hostStatusText" class="status"></p>
+    </div>
+
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-row">
+      <strong>Pentadee</strong>
+      <span>ExamForge Arena · AI Study Challenges</span>
+    </div>
+  </footer>
+
+  <script type="module" src="/js/pages/create.js"></script>
+</body>
+</html>
