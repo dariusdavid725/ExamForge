@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ExamForge — Home</title>
+  <link rel="stylesheet" href="/css/styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+</head>
+
+<body>
+  <header>
+    <div class="container nav">
+      <div class="brand" style="cursor:pointer;" id="brandLogo">
+        <div class="brand-mark">E</div>
+        <div>
+          <div>ExamForge Arena</div>
+          <div style="font-size:12px;color:var(--muted);letter-spacing:0;font-weight:800;">multiplayer study challenges</div>
+        </div>
+      </div>
+
+      <div style="display:flex;align-items:center;gap:14px;">
+        <span id="headerStreak" style="display:none;font-weight:900;font-size:16px;"></span>
+
+        <div id="headerBell" style="position:relative;cursor:pointer;display:none;">
+          <span style="font-size:22px;">🔔</span>
+          <span id="bellBadge" style="display:none;position:absolute;top:-6px;right:-6px;background:var(--red);color:white;border-radius:999px;padding:2px 6px;font-size:10px;font-weight:900;border:2px solid var(--text);"></span>
+        </div>
+
+        <div id="headerUserArea" style="display:none;align-items:center;gap:8px;cursor:pointer;"></div>
+        <div class="nav-note" id="navNote">Upload material. Share code. Compete.</div>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <div class="grid-2" style="margin-top:40px;">
+
+      <!-- ── Hero copy ─────────────────────────────────────────────────────── -->
+      <div>
+        <div class="eyebrow">AI study arena</div>
+        <h1>Turn any document into a live study game.</h1>
+        <p class="lead">Upload a PDF or scanned page. AI creates personalised challenges: quiz, true/false, fill‑the‑gap, order steps and spot‑the‑mistake.</p>
+        <div class="row" style="margin-top:28px;">
+          <span class="pill">room code</span>
+          <span class="pill">QR join</span>
+          <span class="pill">AI challenges</span>
+          <span class="pill">recovery lesson</span>
+        </div>
+        <div class="challenge-board">
+          <div class="challenge-chip"><span>01</span><strong>Quiz</strong></div>
+          <div class="challenge-chip"><span>02</span><strong>True/False</strong></div>
+          <div class="challenge-chip"><span>03</span><strong>Fill Blank</strong></div>
+          <div class="challenge-chip"><span>04</span><strong>Matching</strong></div>
+          <div class="challenge-chip"><span>05</span><strong>Spot Mistake</strong></div>
+        </div>
+      </div>
+
+      <!-- ── Create & Join cards ────────────────────────────────────────────── -->
+      <div style="display:grid;gap:16px;">
+
+        <!-- Create arena card -->
+        <div class="card">
+          <div class="eyebrow">Host</div>
+          <h2 style="margin-top:14px;">Create arena</h2>
+
+          <div style="margin-top:22px;">
+            <label class="eyebrow">Nickname</label>
+            <input id="hostNameInput" class="input" style="margin-top:12px;" placeholder="e.g. Darius" />
+          </div>
+
+          <div id="dropZone" class="upload-box" style="margin-top:18px;">
+            <input id="fileInput" type="file" accept=".pdf,image/*" class="hidden" />
+            <h3 id="fileName">Choose PDF or image</h3>
+            <p class="muted" style="margin-top:8px;">PDF, PNG or JPG. Clear typed material works best.</p>
+          </div>
+
+          <div class="flat-card" style="margin-top:18px;">
+            <div class="eyebrow">Game mode</div>
+            <div class="game-mode-grid" style="margin-top:16px;">
+              <button class="mode-option selected" data-mode="arena_mix"   type="button"><strong>Arena Mix</strong>   <span>Balanced mix of challenge types.</span></button>
+              <button class="mode-option"           data-mode="speed_drill" type="button"><strong>Speed Drill</strong> <span>Shorter, faster challenges.</span></button>
+              <button class="mode-option"           data-mode="trap_hunt"   type="button"><strong>Trap Hunt</strong>   <span>Common mistakes and tricky details.</span></button>
+              <button class="mode-option"           data-mode="deep_review" type="button"><strong>Deep Review</strong> <span>More reasoning and diagnosis.</span></button>
+            </div>
+          </div>
+
+          <button id="createArenaBtn" class="btn" style="width:100%;margin-top:18px;">Create AI arena</button>
+          <p id="hostStatusText" class="status"></p>
+        </div>
+
+        <!-- Join arena card -->
+        <div class="card">
+          <div class="eyebrow">Player</div>
+          <h2 style="margin-top:14px;">Join arena</h2>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:22px;">
+            <input id="joinCodeInput" class="input" placeholder="Room code" />
+            <input id="joinNameInput" class="input" placeholder="Nickname" />
+          </div>
+          <button id="joinArenaBtn" class="btn btn-secondary" style="width:100%;margin-top:16px;">Join room</button>
+          <p id="joinStatusText" class="status"></p>
+        </div>
+
+      </div>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-row">
+      <strong>Pentadee</strong>
+      <span>ExamForge Arena · AI Study Challenges</span>
+    </div>
+  </footer>
+
+  <script type="module" src="/js/pages/home.js"></script>
+</body>
+</html>

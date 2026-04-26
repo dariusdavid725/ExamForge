@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ExamForge — Arena</title>
+  <link rel="stylesheet" href="/css/styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+</head>
+
+<body>
+  <header>
+    <div class="container nav">
+      <div class="brand" style="cursor:pointer;" id="brandLogo">
+        <div class="brand-mark">E</div>
+        <div>
+          <div>ExamForge Arena</div>
+          <div style="font-size:12px;color:var(--muted);letter-spacing:0;font-weight:800;">multiplayer study challenges</div>
+        </div>
+      </div>
+
+      <div style="display:flex;align-items:center;gap:14px;">
+        <span id="headerStreak" style="display:none;font-weight:900;font-size:16px;"></span>
+        <div id="headerUserArea" style="display:none;align-items:center;gap:8px;cursor:pointer;"></div>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+
+    <!-- ── LOBBY ──────────────────────────────────────────────────────────────── -->
+    <section id="lobbyScreen" class="screen hidden fade">
+      <div class="grid-2">
+        <div class="card">
+          <div class="eyebrow">Lobby</div>
+          <div class="room-code" id="roomCodeText"></div>
+          <h2 id="roomTitleText" style="margin-top:34px;"></h2>
+          <p id="roomSummaryText" class="muted" style="margin-top:14px;"></p>
+          <div id="conceptsList" class="row" style="margin-top:20px;"></div>
+          <div class="row" style="margin-top:30px;">
+            <button id="startArenaBtn" class="btn">Start challenges</button>
+            <button id="copyLinkBtn"   class="btn btn-secondary">Copy join link</button>
+          </div>
+          <p id="lobbyStatusText" class="status"></p>
+        </div>
+
+        <div style="display:grid;gap:16px;">
+          <div class="card">
+            <div class="eyebrow">QR join</div>
+            <div style="margin-top:18px;background:white;border-radius:18px;padding:12px;width:fit-content;">
+              <canvas id="qrCanvas"></canvas>
+            </div>
+            <p id="joinLinkText" class="muted" style="margin-top:14px;word-break:break-all;font-size:13px;"></p>
+          </div>
+
+          <div class="card">
+            <div style="display:flex;justify-content:space-between;gap:12px;align-items:center;">
+              <div class="eyebrow">Players</div>
+              <span id="playerCountText" class="pill">0 joined</span>
+            </div>
+            <div id="playersList" style="display:grid;gap:12px;margin-top:18px;"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── CHALLENGE ───────────────────────────────────────────────────────────── -->
+    <section id="challengeScreen" class="screen hidden fade">
+      <div class="quiz-layout">
+        <aside class="card">
+          <div class="eyebrow">Run</div>
+          <h2 id="playerNameText" style="margin-top:14px;"></h2>
+          <div style="margin-top:28px;">
+            <div style="display:flex;justify-content:space-between;font-weight:900;font-size:14px;margin-bottom:10px;">
+              <span>Progress</span><span id="progressText">0%</span>
+            </div>
+            <div class="progress-track"><div id="progressBar" class="progress-fill"></div></div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:22px;">
+            <div class="flat-card"><div id="scoreText" style="font-size:34px;font-weight:900;">0</div><div class="muted">score</div></div>
+            <div class="flat-card"><div id="challengeNumberText" style="font-size:34px;font-weight:900;">1</div><div class="muted">challenge</div></div>
+          </div>
+          <button id="viewLeaderboardBtn" class="btn btn-secondary hidden" style="width:100%;margin-top:20px;">View leaderboard</button>
+        </aside>
+
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;gap:14px;align-items:center;">
+            <div class="row">
+              <span id="typeTag"       class="pill"></span>
+              <span id="conceptTag"    class="pill"></span>
+              <span id="difficultyTag" class="pill"></span>
+            </div>
+            <div class="timer" id="timerRing" style="--timer:100%;"><span id="timerText">20</span></div>
+          </div>
+
+          <div id="mistakeBox" class="flat-card hidden" style="margin-top:28px;background:#fff4c7;">
+            <div class="eyebrow">Find the mistake</div>
+            <p id="mistakeText" style="margin-top:14px;font-weight:900;line-height:1.6;"></p>
+          </div>
+
+          <h2 id="challengePromptText" style="margin-top:34px;font-size:40px;"></h2>
+          <div id="answerBox" style="display:grid;gap:14px;margin-top:28px;"></div>
+          <button id="submitAnswerBtn" class="btn" style="margin-top:28px;">Lock answer</button>
+
+          <div id="feedbackBox" class="flat-card hidden" style="margin-top:28px;">
+            <h2 id="feedbackTitle"></h2>
+            <p id="correctAnswerText" style="margin-top:16px;font-weight:900;"></p>
+            <p id="explanationText"   class="muted" style="margin-top:12px;"></p>
+            <div style="border-left:6px solid var(--text);padding-left:16px;margin-top:20px;">
+              <div class="eyebrow">Source</div>
+              <blockquote id="sourceSnippet" class="muted" style="margin:12px 0 0;"></blockquote>
+            </div>
+            <button id="nextChallengeBtn" class="btn hidden" style="margin-top:22px;">Next challenge</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── WAITING ─────────────────────────────────────────────────────────────── -->
+    <section id="waitingResultsScreen" class="screen hidden fade">
+      <div class="card">
+        <div class="eyebrow">Arena locked</div>
+        <h1 style="font-size:clamp(48px,8vw,100px);">Waiting for results.</h1>
+        <p class="lead">Your answers are submitted. The leaderboard opens when everyone finishes or time runs out.</p>
+        <div class="flat-card" style="margin-top:30px;width:fit-content;">
+          <div class="eyebrow">Time left</div>
+          <div id="waitingSecondsText" style="font-size:56px;font-weight:900;margin-top:12px;">--</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── LEADERBOARD ─────────────────────────────────────────────────────────── -->
+    <section id="leaderboardScreen" class="screen hidden fade">
+      <div class="card">
+        <div class="eyebrow">Final results</div>
+        <h1 style="font-size:clamp(48px,8vw,110px);">Leaderboard</h1>
+        <div id="leaderboardList" style="display:grid;gap:14px;margin-top:38px;"></div>
+        <div class="flat-card" style="margin-top:32px;">
+          <div class="eyebrow">Group weak concepts</div>
+          <div id="groupWeakConcepts" class="row" style="margin-top:18px;"></div>
+        </div>
+        <div class="flat-card" style="margin-top:28px;">
+          <div class="eyebrow">AI Recovery lesson</div>
+          <p class="muted" style="margin-top:14px;">Generate a short AI lesson based only on the challenges you missed.</p>
+          <button id="generateLessonBtn" class="btn" style="margin-top:18px;">Generate AI lesson</button>
+          <div id="lessonBox" style="display:grid;gap:14px;margin-top:22px;"></div>
+        </div>
+        <button id="backHomeBtn" class="btn" style="margin-top:30px;">Back home</button>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-row">
+      <strong>Pentadee</strong>
+      <span>ExamForge Arena · AI Study Challenges</span>
+    </div>
+  </footer>
+
+  <script type="module" src="/js/pages/arena.js"></script>
+</body>
+</html>

@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ExamForge — Dashboard</title>
+  <link rel="stylesheet" href="/css/styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+</head>
+
+<body>
+  <header>
+    <div class="container nav">
+      <div class="brand" style="cursor:pointer;" id="brandLogo">
+        <div class="brand-mark">E</div>
+        <div>
+          <div>ExamForge Arena</div>
+          <div style="font-size:12px;color:var(--muted);letter-spacing:0;font-weight:800;">multiplayer study challenges</div>
+        </div>
+      </div>
+
+      <div style="display:flex;align-items:center;gap:14px;">
+        <span id="headerStreak" style="display:none;font-weight:900;font-size:16px;"></span>
+
+        <div id="headerBell" style="position:relative;cursor:pointer;display:none;">
+          <span style="font-size:22px;">🔔</span>
+          <span id="bellBadge" style="display:none;position:absolute;top:-6px;right:-6px;background:var(--red);color:white;border-radius:999px;padding:2px 6px;font-size:10px;font-weight:900;border:2px solid var(--text);"></span>
+        </div>
+
+        <div id="headerUserArea" style="display:none;align-items:center;gap:8px;cursor:pointer;"></div>
+      </div>
+    </div>
+  </header>
+
+  <main class="container" style="padding-top:32px;">
+
+    <!-- History back button (hidden by default) -->
+    <div id="historyNav" class="hidden" style="display:flex;align-items:center;gap:16px;margin-bottom:28px;">
+      <button id="backToDashboard" class="btn btn-secondary" style="padding:10px 16px;">← Dashboard</button>
+      <h2 style="margin:0;">My Quiz History</h2>
+    </div>
+
+    <!-- Dashboard section -->
+    <div id="dashboardContent"></div>
+
+    <!-- History section -->
+    <div id="historyContent" class="hidden" style="display:grid;gap:14px;"></div>
+
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-row">
+      <strong>Pentadee</strong>
+      <span>ExamForge Arena · AI Study Challenges</span>
+    </div>
+  </footer>
+
+  <script type="module" src="/js/pages/dashboard.js"></script>
+</body>
+</html>

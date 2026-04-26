@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ExamForge — Login</title>
+  <link rel="stylesheet" href="/css/styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+</head>
+
+<body>
+  <header>
+    <div class="container nav">
+      <div class="brand" style="cursor:pointer;" id="brandLogo">
+        <div class="brand-mark">E</div>
+        <div>
+          <div>ExamForge Arena</div>
+          <div style="font-size:12px;color:var(--muted);letter-spacing:0;font-weight:800;">multiplayer study challenges</div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <div style="max-width:480px;margin:0 auto;padding-top:40px;">
+      <div class="card">
+        <h2 style="margin-bottom:4px;">Welcome to ExamForge</h2>
+        <p class="muted" style="margin-bottom:24px;">Sign in to create and track your study arenas.</p>
+
+        <div class="auth-tabs">
+          <button class="auth-tab auth-tab-active" id="authTabLogin">Login</button>
+          <button class="auth-tab" id="authTabRegister">Register</button>
+        </div>
+
+        <!-- Login form -->
+        <div id="loginForm" style="display:grid;gap:14px;margin-top:20px;">
+          <input id="loginEmail"    class="input" type="email"    placeholder="Email" />
+          <input id="loginPassword" class="input" type="password" placeholder="Password" />
+          <button id="loginBtn" class="btn" style="width:100%;">Login</button>
+          <p id="loginError" class="muted" style="color:var(--red);font-size:13px;"></p>
+        </div>
+
+        <!-- Register form -->
+        <div id="registerForm" class="hidden" style="display:grid;gap:14px;margin-top:20px;">
+          <input id="registerUsername" class="input" type="text"     placeholder="Username (unique)" />
+          <input id="registerEmail"    class="input" type="email"    placeholder="Email" />
+          <input id="registerPassword" class="input" type="password" placeholder="Password (min 6 chars)" />
+          <button id="registerBtn" class="btn" style="width:100%;">Create account</button>
+          <p id="registerError" class="muted" style="color:var(--red);font-size:13px;"></p>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-row">
+      <strong>Pentadee</strong>
+      <span>ExamForge Arena · AI Study Challenges</span>
+    </div>
+  </footer>
+
+  <script type="module" src="/js/pages/login.js"></script>
+</body>
+</html>
