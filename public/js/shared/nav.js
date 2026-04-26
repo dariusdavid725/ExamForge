@@ -77,9 +77,9 @@ async function _renderUserHeader(user, profile) {
       </div>
 
       <div id="avatarDropdown" style="
-        display:none;position:absolute;top:calc(100% + 10px);right:0;
+        display:none;position:fixed;top:auto;right:12px;
         background:var(--paper);border:3px solid var(--text);box-shadow:4px 4px 0 var(--text);
-        min-width:180px;z-index:999;border-radius:6px;overflow:hidden;">
+        min-width:170px;max-width:calc(100vw - 24px);z-index:9999;border-radius:10px;overflow:hidden;">
         <a href="/dashboard" style="display:block;padding:12px 16px;font-weight:700;
            text-decoration:none;color:var(--text);border-bottom:2px solid var(--text);">
           Dashboard
@@ -102,6 +102,10 @@ async function _renderUserHeader(user, profile) {
     trigger.addEventListener("click", e => {
       e.stopPropagation();
       const open = dropdown.style.display === "block";
+      if (!open) {
+        const rect = trigger.getBoundingClientRect();
+        dropdown.style.top = (rect.bottom + 8) + "px";
+      }
       dropdown.style.display = open ? "none" : "block";
     });
 

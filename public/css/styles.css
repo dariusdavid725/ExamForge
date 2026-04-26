@@ -1094,3 +1094,138 @@ blockquote {
   max-height: 80vh;
   overflow-y: auto;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   MOBILE  ≤ 640px
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@media (max-width: 640px) {
+
+  /* ── Container ── */
+  .container { width: calc(100% - 24px); }
+
+  /* ── Header ── */
+  header { padding: 11px 0; }
+  .brand { font-size: 17px; gap: 8px; }
+  .brand-mark { width: 32px; height: 32px; font-size: 15px; box-shadow: 3px 3px 0 var(--text); }
+  /* Hide the subtitle "multiplayer study challenges" on phones */
+  .brand > div > div:last-child { display: none; }
+
+  /* ── Main ── */
+  main { padding-top: 24px; padding-bottom: 48px; }
+
+  /* ── Typography ── */
+  h1 { font-size: clamp(28px, 9vw, 44px); }
+  h2 { font-size: clamp(20px, 6vw, 28px); }
+  h3 { font-size: 17px; }
+
+  /* ── Cards ── */
+  .card {
+    padding: 16px;
+    border-radius: 14px;
+    box-shadow: 4px 4px 0 var(--text);
+  }
+  .flat-card { padding: 14px; border-radius: 12px; }
+  .dash-col .card { padding: 14px 15px; }
+
+  /* ── Buttons ── */
+  .btn {
+    min-height: 44px;
+    font-size: 13px;
+    padding: 11px 15px;
+    box-shadow: 3px 3px 0 var(--text);
+    border-radius: 11px;
+  }
+  .btn:hover { box-shadow: 5px 5px 0 var(--text); }
+
+  /* ── Inputs ── */
+  .input { font-size: 16px; } /* prevent iOS zoom on focus */
+
+  /* ── Upload box ── */
+  .upload-box { padding: 22px 16px; }
+
+  /* ── Progress track ── */
+  .progress-track { height: 10px; }
+
+  /* ── Eyebrow ── */
+  .eyebrow { font-size: 10px; padding: 5px 8px; }
+
+  /* ── Pills ── */
+  .pill { font-size: 12px; padding: 7px 10px; }
+
+  /* ── Auth tabs ── */
+  .auth-tab { font-size: 13px; padding: 10px 6px; }
+
+  /* ── Quiz answer options (arena + lessons) ── */
+  .option, .step-option { padding: 13px 14px; font-size: 14px; border-radius: 13px; }
+
+  /* ── Arena timer ── */
+  .timer { width: 60px; height: 60px; font-size: 19px; border-radius: 13px; box-shadow: 3px 3px 0 var(--text); }
+
+  /* ── Leaderboard rank badge ── */
+  .rank { width: 34px; height: 34px; font-size: 13px; border-radius: 8px; }
+
+  /* ── Leader rows ── */
+  .leader-row { padding: 10px 12px; gap: 10px; }
+
+  /* ── Dashboard stats: 4 cols → 2×2 on phones ── */
+  .dash-stats-row { grid-template-columns: 1fr 1fr; gap: 6px; }
+  .dash-stat { padding: 9px 6px; }
+  .dash-stat-val { font-size: 20px; }
+  .dash-stat-label { font-size: 10px; }
+
+  /* ── Dash session rows ── */
+  .dash-session-row { padding: 9px 11px; }
+
+  /* ── Room code (lobby) ── */
+  .room-code { font-size: 42px; letter-spacing: 0.05em; }
+
+  /* ── Lesson cards grid → single column ── */
+  #lessonCardsGrid { grid-template-columns: 1fr !important; }
+
+  /* ── Quiz layout (lessons) sidebar above main ── */
+  .quiz-layout > aside { padding: 14px; }
+
+  /* ── Nav dropdown: clamp to viewport ── */
+  #avatarDropdown {
+    right: 0;
+    left: auto;
+    min-width: 160px;
+    max-width: calc(100vw - 20px);
+  }
+
+  /* ── Footer ── */
+  .site-footer { padding: 14px 0; margin-top: 20px; }
+  .footer-row { gap: 10px; font-size: 13px; }
+
+  /* ── Podium ── */
+  .podium-container { gap: 10px; }
+  .podium-block { width: 70px; }
+
+  /* ── Result phase ── */
+  .result-icon { font-size: 52px; }
+  .result-label { font-size: 28px; }
+
+  /* ── Grid helpers ── */
+  .grid-2 { grid-template-columns: 1fr; gap: 16px; }
+
+  /* ── Pricing/features grids that use minmax(300px) ── */
+  [style*="minmax(300px"] { grid-template-columns: 1fr !important; }
+
+  /* ── Home page pricing strip ── */
+  .pricing-strip { grid-template-columns: 1fr; }
+
+  /* ── Dashboard quick start → still 2×2 but smaller buttons ── */
+  #dashCreateBtn, #dashJoinBtn { font-size: 12px; }
+}
+
+/* ── Very small phones ≤ 380px ─────────────────────────────────────────── */
+
+@media (max-width: 380px) {
+  .container { width: calc(100% - 16px); }
+  .brand > div > div:first-child { font-size: 15px; }
+  .card { padding: 13px; }
+  h2 { font-size: 19px; }
+  .dash-stat-val { font-size: 17px; }
+  .timer { width: 52px; height: 52px; font-size: 16px; }
+}
