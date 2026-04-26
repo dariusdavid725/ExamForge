@@ -945,7 +945,7 @@ blockquote {
 .dashboard-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 24px;
+  gap: 16px;
   align-items: start;
 }
 
@@ -954,27 +954,27 @@ blockquote {
 .dash-profile-card { position: relative; }
 
 .dash-avatar {
-  width: 56px;
-  height: 56px;
+  width: 52px;
+  height: 52px;
   border-radius: 14px;
   border: 3px solid var(--text);
   box-shadow: 4px 4px 0 var(--text);
   display: grid;
   place-items: center;
-  font-size: 24px;
+  font-size: 22px;
   font-weight: 900;
   color: white;
   flex-shrink: 0;
 }
 
 .dash-avatar-sm {
-  width: 32px;
-  height: 32px;
+  width: 30px;
+  height: 30px;
   border-radius: 8px;
   border: 2px solid var(--text);
   display: grid;
   place-items: center;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 900;
   color: white;
   flex-shrink: 0;
@@ -982,30 +982,40 @@ blockquote {
 
 .dash-stats-row {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
 }
 
 .dash-stat {
   background: var(--paper-2);
   border: 3px solid var(--text);
-  border-radius: 14px;
-  padding: 14px;
+  border-radius: 12px;
+  padding: 10px 6px;
   text-align: center;
   box-shadow: 3px 3px 0 var(--text);
 }
 
 .dash-stat-val {
-  font-size: 28px;
+  font-size: 22px;
   font-weight: 900;
   line-height: 1;
 }
 
 .dash-stat-label {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 800;
   color: var(--muted);
   margin-top: 4px;
+}
+
+/* Premium gold row in friends leaderboard */
+.dash-session-row.premium-friend {
+  border-color: #c9a227;
+  box-shadow: 3px 3px 0 #c9a227;
+  background: linear-gradient(135deg, #fffdf4 0%, #fff8dc 100%);
+}
+.dash-session-row.premium-friend:hover {
+  box-shadow: 5px 5px 0 #c9a227;
 }
 
 .dash-session-row {

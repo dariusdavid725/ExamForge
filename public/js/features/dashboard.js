@@ -56,84 +56,91 @@ export async function renderDashboard(
   const sessions = await getSessionsForUser(sb, user.id, 5);
   const friendProfiles = await getFriendProfiles(sb, user.id);
 
-  const streak = profile?.streak_count || 0;
-  const maxStreak = profile?.max_streak || 0;
+  const streak      = profile?.streak_count  || 0;
+  const maxStreak   = profile?.max_streak    || 0;
   const totalQuizzes = profile?.total_quizzes || 0;
-  const totalPoints = profile?.total_points || 0;
+  const totalPoints  = profile?.total_points  || 0;
   const avatarLetter = (profile?.username || user.email || "U")[0].toUpperCase();
-  const avatarColor = profile?.avatar_color || "#4f46e5";
+  const avatarColor  = profile?.avatar_color  || "#4f46e5";
+  const isPremium    = (profile?.plan || "free") === "premium";
 
   container.innerHTML = `
     <div class="dashboard-grid">
       <div class="card dash-profile-card">
-        <div class="row" style="align-items:center; gap:16px;">
-          <div class="dash-avatar" style="background:${avatarColor};">
-            ${escapeHTML(avatarLetter)}
+
+        <div class="row" style="align-items:center;gap:14px;">
+          <!-- Avatar with optional crown -->
+          <div style="position:relative;flex-shrink:0;">
+            ${isPremium ? `<span style="position:absolute;top:-15px;left:50%;transform:translateX(-50%);
+              font-size:18px;line-height:1;z-index:1;filter:drop-shadow(0 1px 3px rgba(0,0,0,.25));">👑</span>` : ""}
+            <div class="dash-avatar" style="background:${avatarColor};">
+              ${escapeHTML(avatarLetter)}
+            </div>
           </div>
 
-          <div>
-            <h2>${escapeHTML(profile?.username || "Player")}</h2>
-            <p class="muted">${escapeHTML(user.email || "")}</p>
+          <div style="min-width:0;">
+            <h2 style="font-size:20px;letter-spacing:-.03em;">${escapeHTML(profile?.username || "Player")}</h2>
+            <p class="muted" style="font-size:12px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+              ${escapeHTML(user.email || "")}
+            </p>
+            ${isPremium ? `<span style="display:inline-block;margin-top:5px;background:#c9a227;color:white;
+              font-size:10px;font-weight:900;padding:2px 9px;border-radius:999px;border:2px solid var(--text);
+              letter-spacing:.05em;">⭐ PREMIUM</span>` : ""}
           </div>
         </div>
 
-        <div class="dash-stats-row" style="margin-top:22px;">
+        <div class="dash-stats-row" style="margin-top:14px;">
           <div class="dash-stat">
-            <div class="dash-stat-val">${streak}</div>
-            <div class="dash-stat-label">Day streak</div>
+            <div class="dash-stat-val">${streak > 0 ? streak + " 🔥" : streak}</div>
+            <div class="dash-stat-label">Streak</div>
           </div>
-
           <div class="dash-stat">
             <div class="dash-stat-val">${maxStreak}</div>
-            <div class="dash-stat-label">Best streak</div>
+            <div class="dash-stat-label">Best</div>
           </div>
-
           <div class="dash-stat">
             <div class="dash-stat-val">${totalQuizzes}</div>
             <div class="dash-stat-label">Quizzes</div>
           </div>
+          <div class="dash-stat">
+            <div class="dash-stat-val">${totalPoints}</div>
+            <div class="dash-stat-label">Points</div>
+          </div>
         </div>
-
-        <p class="muted" style="margin-top:14px;">
-          Total points: ${totalPoints}
-        </p>
 
         <button
           id="logoutBtn"
           class="btn btn-secondary"
           type="button"
-          style="margin-top:18px;"
+          style="margin-top:14px;padding:9px 18px;font-size:14px;"
         >
           Logout
         </button>
       </div>
 
       <div class="card">
-        <h2>Quick start</h2>
+        <h2 style="font-size:20px;">Quick start</h2>
 
-        <div class="row" style="margin-top:18px;flex-wrap:wrap;">
-          <button id="dashCreateBtn" class="btn" type="button">
+        <div class="row" style="margin-top:14px;flex-wrap:wrap;gap:8px;">
+          <button id="dashCreateBtn" class="btn" type="button" style="padding:10px 16px;font-size:14px;">
             ⚡ Create Arena
           </button>
-
-          <button id="dashJoinBtn" class="btn btn-secondary" type="button">
+          <button id="dashJoinBtn" class="btn btn-secondary" type="button" style="padding:10px 16px;font-size:14px;">
             Join Arena
           </button>
-
-          <a href="/lessons" class="btn btn-secondary" type="button">
+          <a href="/lessons" class="btn btn-secondary" type="button" style="padding:10px 16px;font-size:14px;">
             📚 My Lessons
           </a>
-
-          <button id="dashHistoryBtn" class="btn btn-secondary" type="button">
+          <button id="dashHistoryBtn" class="btn btn-secondary" type="button" style="padding:10px 16px;font-size:14px;">
             My History
           </button>
         </div>
       </div>
 
       <div class="card">
-        <h2>Recent quizzes</h2>
+        <h2 style="font-size:20px;">Recent quizzes</h2>
 
-        <div style="display:grid; gap:12px; margin-top:16px;">
+        <div style="display:grid;gap:8px;margin-top:12px;">
           ${
             sessions.length > 0
               ? sessions
@@ -149,15 +156,14 @@ export async function renderDashboard(
       </div>
 
       <div class="card">
-        <div class="row" style="justify-content:space-between; align-items:center;">
-          <h2>Friends leaderboard</h2>
-
-          <button id="addFriendBtn" class="btn btn-secondary" type="button">
+        <div class="row" style="justify-content:space-between;align-items:center;">
+          <h2 style="font-size:20px;">Friends leaderboard</h2>
+          <button id="addFriendBtn" class="btn btn-secondary" type="button" style="padding:8px 14px;font-size:13px;">
             Manage friends
           </button>
         </div>
 
-        <div style="display:grid; gap:10px; margin-top:16px;">
+        <div style="display:grid;gap:8px;margin-top:12px;">
           ${renderFriendsLb(friendProfiles, user.id)}
         </div>
       </div>
@@ -469,34 +475,42 @@ function renderFriendsLb(profiles, currentUserId) {
         (profile.total_quizzes || 0) * 50 +
         (profile.streak_count || 0) * 10;
 
-      const letter = (profile.username || "U")[0].toUpperCase();
-      const color = profile.avatar_color || "#4f46e5";
+      const letter     = (profile.username || "U")[0].toUpperCase();
+      const color      = profile.avatar_color || "#4f46e5";
+      const isMe       = profile.id === currentUserId;
+      const premium    = (profile.plan || "free") === "premium";
+      const streak     = profile.streak_count || 0;
+
+      const avatarStyle = premium
+        ? `background:linear-gradient(135deg,#c9a227,#f5d060);border-color:#c9a227;`
+        : `background:${color};`;
 
       return `
-        <div class="dash-session-row" style="cursor:default;">
-          <div class="row" style="gap:12px; min-width:0;">
-            <span class="rank">${index + 1}</span>
+        <div class="dash-session-row${premium ? " premium-friend" : ""}" style="cursor:default;">
+          <div class="row" style="gap:10px;min-width:0;">
+            <span class="rank" style="min-width:18px;">${index + 1}</span>
 
-            <div
-              class="dash-avatar-sm"
-              style="background:${color};"
-            >
-              ${escapeHTML(letter)}
+            <div style="position:relative;flex-shrink:0;">
+              ${premium ? `<span style="position:absolute;top:-11px;left:50%;transform:translateX(-50%);
+                font-size:12px;line-height:1;z-index:1;">👑</span>` : ""}
+              <div class="dash-avatar-sm" style="${avatarStyle}">
+                ${escapeHTML(letter)}
+              </div>
             </div>
 
             <div style="min-width:0;">
-              <strong>
-                ${escapeHTML(profile.username || "Player")}
-                ${profile.id === currentUserId ? " (you)" : ""}
+              <strong style="${premium ? "color:#8a6800;" : ""}">
+                ${escapeHTML(profile.username || "Player")}${isMe ? " (you)" : ""}
+                ${premium ? `<span style="font-size:10px;font-weight:900;background:#c9a227;color:white;
+                  padding:1px 6px;border-radius:999px;margin-left:4px;vertical-align:middle;">PRO</span>` : ""}
               </strong>
-
-              <p class="muted">
-                ${profile.total_quizzes || 0} quizzes · ${profile.streak_count || 0} streak
+              <p class="muted" style="font-size:12px;margin-top:1px;">
+                ${profile.total_quizzes || 0} quizzes · ${streak > 0 ? streak + " 🔥" : "0 streak"}
               </p>
             </div>
           </div>
 
-          <strong>${rating}</strong>
+          <strong style="${premium ? "color:#8a6800;" : ""}">${rating}</strong>
         </div>
       `;
     })
