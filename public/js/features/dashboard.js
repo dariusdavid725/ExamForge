@@ -177,7 +177,7 @@ export async function renderDashboard(
       <div class="card">
         <h2>Quick start</h2>
 
-        <div class="row" style="margin-top:18px;">
+        <div class="row" style="margin-top:18px;flex-wrap:wrap;">
           <button id="dashCreateBtn" class="btn" type="button">
             ⚡ Create Arena
           </button>
@@ -185,6 +185,10 @@ export async function renderDashboard(
           <button id="dashJoinBtn" class="btn btn-secondary" type="button">
             Join Arena
           </button>
+
+          <a href="/lessons" class="btn btn-secondary" type="button">
+            📚 My Lessons
+          </a>
 
           <button id="dashHistoryBtn" class="btn btn-secondary" type="button">
             My History

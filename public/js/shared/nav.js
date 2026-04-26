@@ -9,6 +9,7 @@ export const nav = {
   join:      (code) => { window.location.href = code ? `/join?room=${code}` : "/join"; },
   login:     ()     => { window.location.href = "/login"; },
   dashboard: ()     => { window.location.href = "/dashboard"; },
+  lessons:   ()     => { window.location.href = "/lessons"; },
   arena:     code   => { window.location.href = `/arena?room=${code}`; }
 };
 

@@ -10,6 +10,7 @@ import roomRoutes        from "./src/routes/roomRoutes.js";
 import conspectRoutes    from "./src/routes/conspectRoutes.js";
 import sessionRoutes     from "./src/routes/sessionRoutes.js";
 import roomInviteRoutes  from "./src/routes/roomInviteRoutes.js";
+import lessonRoutes      from "./src/routes/lessonRoutes.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const pub       = p => path.join(__dirname, "public", "pages", p);
@@ -23,6 +24,7 @@ app.get("/join",      (_req, res) => res.sendFile(pub("join.html")));
 app.get("/login",     (_req, res) => res.sendFile(pub("login.html")));
 app.get("/dashboard", (_req, res) => res.sendFile(pub("dashboard.html")));
 app.get("/arena",     (_req, res) => res.sendFile(pub("arena.html")));
+app.get("/lessons",   (_req, res) => res.sendFile(pub("lessons.html")));
 
 // ─── Static assets (css, js, images) ─────────────────────────────────────────
 app.use(express.static(path.join(__dirname, "public")));
@@ -36,6 +38,7 @@ app.use("/api", conspectRoutes);
 app.use("/api", sessionRoutes);
 app.use("/api", roomInviteRoutes);
 app.use("/api/rooms", roomRoutes);
+app.use("/api/lessons", lessonRoutes);
 
 if (!process.env.VERCEL) {
   const port = process.env.PORT || 3000;

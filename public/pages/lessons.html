@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ExamForge — My Lessons</title>
+  <link rel="stylesheet" href="/css/styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+</head>
+
+<body>
+  <header>
+    <div class="container nav">
+      <div class="brand" id="brandLogo" style="cursor:pointer;">
+        <div class="brand-mark">E</div>
+        <div>
+          <div>ExamForge Arena</div>
+          <div style="font-size:12px;color:var(--muted);letter-spacing:0;font-weight:800;">multiplayer study challenges</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:14px;">
+        <span id="headerStreak" style="display:none;font-weight:900;font-size:16px;"></span>
+        <div id="headerUserArea" style="display:none;align-items:center;gap:8px;cursor:pointer;"></div>
+      </div>
+    </div>
+  </header>
+
+  <main class="container" style="padding-top:32px;padding-bottom:60px;">
+
+    <!-- ── Back nav ──────────────────────────────────────────────────────────── -->
+    <div style="margin-bottom:28px;">
+      <a href="/dashboard" class="btn btn-secondary" style="padding:10px 16px;">← Dashboard</a>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════════════════════ -->
+    <!-- STEP 1 — UPLOAD                                                       -->
+    <!-- ══════════════════════════════════════════════════════════════════════ -->
+    <div id="uploadSection">
+      <div class="eyebrow" style="margin-bottom:14px;">Study tool</div>
+      <h1 style="margin-bottom:10px;">My Lessons</h1>
+      <p class="lead" style="margin-bottom:36px;max-width:560px;">
+        Upload a PDF or image. AI reads it, builds a structured lesson, then quizzes you and shows where you have gaps.
+      </p>
+
+      <div class="card" style="max-width:640px;">
+        <div class="eyebrow">Upload your material</div>
+
+        <div id="lessonDropZone" class="upload-box" style="margin-top:18px;">
+          <input id="lessonFileInput" type="file" accept=".pdf,image/*" class="hidden" />
+          <h3 id="lessonFileName">Choose PDF or image</h3>
+          <p class="muted" style="margin-top:8px;">PDF, PNG, JPG · Max 10 MB</p>
+        </div>
+
+        <button id="generateLessonBtn" class="btn" style="width:100%;margin-top:20px;padding:16px;">
+          Generate Lesson
+        </button>
+        <p id="lessonUploadStatus" class="status"></p>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════════════════════ -->
+    <!-- STEP 2 — LESSON                                                       -->
+    <!-- ══════════════════════════════════════════════════════════════════════ -->
+    <div id="lessonSection" class="hidden">
+
+      <div style="display:flex;align-items:center;gap:16px;margin-bottom:32px;flex-wrap:wrap;">
+        <button id="backToUploadBtn" class="btn btn-secondary" style="padding:10px 16px;">← New Lesson</button>
+        <h1 id="lessonTitle" style="margin:0;"></h1>
+      </div>
+
+      <!-- Summary -->
+      <div class="card" style="margin-bottom:16px;">
+        <div class="eyebrow">Summary</div>
+        <p id="lessonSummary" style="margin-top:14px;line-height:1.8;font-size:17px;"></p>
+      </div>
+
+      <!-- Objectives -->
+      <div class="card" style="margin-bottom:16px;">
+        <div class="eyebrow">Learning Objectives</div>
+        <ul id="lessonObjectives" style="margin-top:14px;display:grid;gap:10px;list-style:none;padding:0;"></ul>
+      </div>
+
+      <!-- Key concepts -->
+      <div class="card" style="margin-bottom:16px;">
+        <div class="eyebrow">Key Concepts</div>
+        <div id="lessonKeyConcepts" class="row" style="margin-top:14px;flex-wrap:wrap;"></div>
+      </div>
+
+      <!-- Sections (generated dynamically) -->
+      <div id="lessonSectionsContainer" style="display:grid;gap:16px;margin-bottom:16px;"></div>
+
+      <!-- Memory tips -->
+      <div class="card" style="margin-bottom:36px;">
+        <div class="eyebrow">Memory Tips</div>
+        <ul id="lessonMemoryTips" style="margin-top:14px;display:grid;gap:10px;list-style:none;padding:0;"></ul>
+      </div>
+
+      <!-- Make quiz CTA -->
+      <div style="text-align:center;padding:10px 0 20px;">
+        <button id="makeQuizBtn" class="btn" style="font-size:18px;padding:18px 52px;">
+          Make Quiz
+        </button>
+        <p id="quizGenStatus" class="status" style="margin-top:10px;"></p>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════════════════════ -->
+    <!-- STEP 3 — QUIZ                                                         -->
+    <!-- ══════════════════════════════════════════════════════════════════════ -->
+    <div id="quizSection" class="hidden">
+
+      <div style="display:flex;align-items:center;gap:16px;margin-bottom:28px;flex-wrap:wrap;">
+        <button id="backToLessonBtn" class="btn btn-secondary" style="padding:10px 16px;">← Back to Lesson</button>
+        <h2 id="quizHeading" style="margin:0;"></h2>
+      </div>
+
+      <div class="card">
+        <!-- Progress bar -->
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+          <span class="eyebrow" id="quizProgressLabel" style="font-size:11px;">Question 1 of 8</span>
+          <span id="quizScorePill" class="pill">0 / 8</span>
+        </div>
+        <div class="progress-track" style="margin-bottom:28px;">
+          <div id="quizProgressBar" class="progress-fill" style="width:0%;transition:width .4s ease;"></div>
+        </div>
+
+        <!-- Tags -->
+        <div class="row" style="margin-bottom:18px;gap:8px;">
+          <span id="quizDifficultyTag" class="pill"></span>
+          <span id="quizConceptTag" class="pill"></span>
+        </div>
+
+        <!-- Question -->
+        <h2 id="quizQuestionText" style="font-size:clamp(18px,3vw,26px);line-height:1.5;margin-bottom:24px;"></h2>
+
+        <!-- Options -->
+        <div id="quizOptionsBox" style="display:grid;gap:12px;"></div>
+
+        <!-- Feedback (shown after answer) -->
+        <div id="quizFeedbackBox" class="flat-card hidden" style="margin-top:24px;">
+          <h3 id="quizFeedbackTitle" style="margin-bottom:10px;"></h3>
+          <p id="quizFeedbackExplanation" class="muted" style="line-height:1.7;"></p>
+        </div>
+
+        <!-- Navigation -->
+        <button id="quizNextBtn" class="btn hidden" style="width:100%;margin-top:22px;padding:14px;">
+          Next Question →
+        </button>
+        <button id="quizFinishBtn" class="btn hidden" style="width:100%;margin-top:22px;padding:14px;">
+          See My Report
+        </button>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════════════════════ -->
+    <!-- STEP 4 — REPORT                                                       -->
+    <!-- ══════════════════════════════════════════════════════════════════════ -->
+    <div id="reportSection" class="hidden">
+
+      <div style="display:flex;align-items:center;gap:16px;margin-bottom:28px;flex-wrap:wrap;">
+        <button id="retakeQuizBtn" class="btn btn-secondary" style="padding:10px 16px;">↺ Retake Quiz</button>
+        <button id="newLessonBtn" class="btn btn-secondary" style="padding:10px 16px;">+ New Lesson</button>
+        <h1 style="margin:0;">Performance Report</h1>
+      </div>
+
+      <!-- Score card -->
+      <div class="card" style="text-align:center;margin-bottom:16px;">
+        <div class="eyebrow">Your Score</div>
+        <div id="reportScoreDisplay" style="font-size:80px;font-weight:900;line-height:1;margin:20px 0 8px;"></div>
+        <div id="reportScoreLabel" class="muted" style="font-size:16px;"></div>
+        <p id="reportOverallFeedback" style="margin-top:20px;line-height:1.8;max-width:600px;margin-left:auto;margin-right:auto;font-size:16px;"></p>
+      </div>
+
+      <!-- Strengths -->
+      <div class="card" style="margin-bottom:16px;">
+        <div class="eyebrow">Strengths</div>
+        <div id="reportStrengths" style="margin-top:14px;display:grid;gap:10px;"></div>
+      </div>
+
+      <!-- Mastered concepts -->
+      <div class="card" style="margin-bottom:16px;">
+        <div class="eyebrow">Mastered Concepts</div>
+        <div id="reportMastered" class="row" style="margin-top:14px;flex-wrap:wrap;gap:8px;"></div>
+      </div>
+
+      <!-- Gap analysis -->
+      <div class="card" style="margin-bottom:16px;">
+        <div class="eyebrow" id="gapAnalysisLabel">Gap Analysis</div>
+        <div id="reportGaps" style="margin-top:14px;display:grid;gap:16px;"></div>
+      </div>
+
+      <!-- Study plan -->
+      <div class="card" style="margin-bottom:32px;">
+        <div class="eyebrow">Study Plan</div>
+        <ol id="reportStudyPlan" style="margin-top:14px;display:grid;gap:12px;padding-left:0;list-style:none;"></ol>
+      </div>
+
+    </div>
+
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-row">
+      <strong>Pentadee</strong>
+      <span>ExamForge Arena · AI Study Challenges</span>
+    </div>
+  </footer>
+
+  <script type="module" src="/js/pages/lessons.js"></script>
+</body>
+</html>
