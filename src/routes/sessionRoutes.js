@@ -189,21 +189,21 @@ router.post("/sessions/save", async (req, res) => {
 
         return {
           ...player,
-          userId: player.userId || dbPlayer?.user_id || null,
+          userId:   player.userId   || dbPlayer?.user_id  || null,
           abandoned: Boolean(player.abandoned || dbPlayer?.abandoned),
-          finished:
-            typeof player.finished === "boolean"
-              ? player.finished
-              : Boolean(dbPlayer?.finished)
+          finished:  typeof player.finished === "boolean"
+            ? player.finished
+            : Boolean(dbPlayer?.finished)
         };
       })
-      .filter(player => {
-        return !player.abandoned && player.finished;
-      });
+      // Include every player who did not explicitly leave the room.
+      // Games ending by timer leave finished=false on players who answered
+      // fewer than all questions — we must not exclude them.
+      .filter(player => !player.abandoned);
 
     if (eligibleLeaderboard.length === 0) {
       return res.status(400).json({
-        error: "No eligible finished players to save."
+        error: "No eligible players to save."
       });
     }
 
@@ -226,11 +226,19 @@ router.post("/sessions/save", async (req, res) => {
       .single();
 
     if (sessionError) {
-      console.error("game_sessions insert error:", sessionError);
+      // Unique constraint violation — another player already saved this room's session.
+      if (sessionError.code === "23505") {
+        const { data: existing } = await supabaseAdmin
+          .from("game_sessions")
+          .select("id")
+          .eq("room_code", roomCode)
+          .maybeSingle();
 
-      return res.status(500).json({
-        error: sessionError.message || "Could not save session."
-      });
+        return res.json({ ok: true, alreadySaved: true, sessionId: existing?.id });
+      }
+
+      console.error("game_sessions insert error:", sessionError);
+      return res.status(500).json({ error: sessionError.message || "Could not save session." });
     }
 
     const results = eligibleLeaderboard.map(player => ({

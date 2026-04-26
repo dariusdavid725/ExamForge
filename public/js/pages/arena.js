@@ -515,7 +515,10 @@ async function showLeaderboard() {
   showSection("leaderboardScreen");
   renderPodium(data, state.currentPack);
 
-  if (state.currentUser && state.isHost && state.currentPack) {
+  // Any logged-in player (host or not) triggers the save.
+  // The backend deduplicates: the first request creates the session,
+  // subsequent requests with the same room_code get alreadySaved=true.
+  if (state.currentUser && state.currentPack) {
     saveGameSession({
       user: state.currentUser, profile: state.userProfile,
       pack: state.currentPack, roomCode: state.currentRoomCode,
