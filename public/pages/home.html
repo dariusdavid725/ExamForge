@@ -6,6 +6,180 @@
   <title>ExamForge — Multiplayer Study Challenges</title>
   <link rel="stylesheet" href="/css/styles.css" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <style>
+    /* ── Home-page only overrides ── */
+    main { padding: 0 0 0; }
+
+    .home-hero {
+      padding: 52px 20px 44px;
+      text-align: center;
+    }
+    .home-hero h1 {
+      font-size: clamp(36px, 5.5vw, 68px);
+      line-height: 1.04;
+      letter-spacing: -0.06em;
+      margin: 16px auto 0;
+      max-width: 720px;
+    }
+    .home-hero .sub {
+      font-size: clamp(15px, 1.8vw, 18px);
+      color: var(--muted);
+      font-weight: 600;
+      max-width: 520px;
+      margin: 18px auto 0;
+      line-height: 1.6;
+    }
+    .home-hero .cta-row {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 32px;
+    }
+    .home-hero .cta-row a,
+    .home-hero .cta-row button {
+      font-size: 16px;
+      padding: 14px 32px;
+    }
+
+    /* ── Feature grid ── */
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+    }
+    @media (max-width: 780px) { .features-grid { grid-template-columns: 1fr; } }
+    @media (min-width: 480px) and (max-width: 780px) { .features-grid { grid-template-columns: 1fr 1fr; } }
+
+    .feat-card {
+      background: var(--paper);
+      border: 3px solid var(--text);
+      border-radius: 16px;
+      box-shadow: 5px 5px 0 var(--text);
+      padding: 22px;
+    }
+    .feat-icon {
+      font-size: 30px;
+      line-height: 1;
+      margin-bottom: 12px;
+    }
+    .feat-card h3 {
+      font-size: 17px;
+      margin: 0 0 8px;
+    }
+    .feat-card p {
+      font-size: 14px;
+      color: var(--muted);
+      line-height: 1.6;
+      margin: 0;
+    }
+
+    /* ── Steps ── */
+    .steps-row {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr auto 1fr;
+      align-items: center;
+      gap: 10px;
+    }
+    @media (max-width: 640px) {
+      .steps-row { grid-template-columns: 1fr; }
+      .step-arrow { display: none; }
+    }
+    .step-box {
+      background: var(--paper);
+      border: 3px solid var(--text);
+      border-radius: 16px;
+      box-shadow: 4px 4px 0 var(--text);
+      padding: 20px;
+      text-align: center;
+    }
+    .step-num {
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      background: var(--text);
+      color: var(--paper);
+      font-weight: 900;
+      font-size: 16px;
+      display: grid;
+      place-items: center;
+      margin: 0 auto 12px;
+    }
+    .step-arrow {
+      font-size: 24px;
+      font-weight: 900;
+      color: var(--muted);
+      text-align: center;
+    }
+
+    /* ── Challenge pills ── */
+    .chip-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: center;
+    }
+    .chip {
+      background: var(--paper);
+      border: 3px solid var(--text);
+      border-radius: 999px;
+      padding: 8px 18px;
+      font-weight: 900;
+      font-size: 14px;
+      box-shadow: 3px 3px 0 var(--text);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* ── Pricing strip ── */
+    .pricing-strip {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+    @media (max-width: 580px) { .pricing-strip { grid-template-columns: 1fr; } }
+
+    .plan-box {
+      background: var(--paper);
+      border: 3px solid var(--text);
+      border-radius: 16px;
+      box-shadow: 5px 5px 0 var(--text);
+      padding: 22px;
+    }
+    .plan-box.premium {
+      border-color: #c9a227;
+      box-shadow: 5px 5px 0 #c9a227;
+      background: linear-gradient(135deg, #fffdf4, #fff8dc);
+    }
+    .plan-price {
+      font-size: 38px;
+      font-weight: 900;
+      line-height: 1;
+      margin: 10px 0 4px;
+    }
+    .plan-feat-list {
+      list-style: none;
+      padding: 0;
+      margin: 14px 0 0;
+      display: grid;
+      gap: 7px;
+    }
+    .plan-feat-list li {
+      font-size: 13px;
+      display: flex;
+      gap: 8px;
+      align-items: flex-start;
+    }
+
+    /* ── Section wrapper ── */
+    .home-section {
+      padding: 0 0 40px;
+    }
+    .section-label {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+  </style>
 </head>
 
 <body>
@@ -19,74 +193,160 @@
         </div>
       </div>
 
-      <div style="display:flex;align-items:center;gap:14px;">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <a href="/pricing" style="font-size:13px;font-weight:900;color:var(--text);text-decoration:none;padding:8px 14px;border:3px solid var(--text);border-radius:8px;background:var(--yellow);box-shadow:3px 3px 0 var(--text);">Pricing</a>
         <span id="headerStreak" style="display:none;font-weight:900;font-size:16px;"></span>
-
         <div id="headerBell" style="position:relative;cursor:pointer;display:none;">
           <span style="font-size:22px;">🔔</span>
           <span id="bellBadge" style="display:none;position:absolute;top:-6px;right:-6px;background:var(--red);color:white;border-radius:999px;padding:2px 6px;font-size:10px;font-weight:900;border:2px solid var(--text);"></span>
         </div>
-
         <div id="headerUserArea" style="display:none;align-items:center;gap:8px;cursor:pointer;"></div>
-        <button id="loginNavBtn" class="btn btn-secondary" style="display:none;">Login</button>
+        <button id="loginNavBtn" class="btn btn-secondary" style="display:none;padding:9px 18px;font-size:14px;">Login</button>
       </div>
     </div>
   </header>
 
-  <main class="container">
+  <main>
 
-    <!-- ── Hero ──────────────────────────────────────────────────────────────── -->
-    <section style="text-align:center;padding:80px 20px 60px;">
-      <div class="eyebrow" style="margin-bottom:18px;">AI-powered · Real-time · Multiplayer</div>
-      <h1 style="font-size:clamp(40px,7vw,88px);line-height:1.05;max-width:780px;margin:0 auto;">
-        Turn any document into a live study game.
-      </h1>
-      <p class="lead" style="max-width:560px;margin:28px auto 0;">
-        Upload a PDF or image. AI generates personalised challenges in seconds. Invite friends and compete in real time.
+    <!-- ════════════════════════════════════════════════════════ HERO -->
+    <section class="home-hero container">
+      <div class="eyebrow">AI-powered · Real-time · Multiplayer</div>
+      <h1>Turn any document into a live study game.</h1>
+      <p class="sub">
+        Upload a PDF or write a topic. AI generates personalized challenges in seconds.
+        Invite friends and compete in real time — or study solo with AI lessons.
       </p>
-
-      <div class="row" style="justify-content:center;margin-top:44px;gap:16px;flex-wrap:wrap;">
-        <a id="createArenaLink" href="/create" class="btn" style="font-size:18px;padding:18px 40px;">Create Arena</a>
-        <a href="/join" class="btn btn-secondary" style="font-size:18px;padding:18px 40px;">Join Arena</a>
+      <div class="cta-row">
+        <a id="createArenaLink" href="/create" class="btn" style="background:var(--yellow);">⚡ Create Arena</a>
+        <a href="/join" class="btn btn-secondary">Join Arena</a>
+        <a href="/lessons" class="btn btn-secondary">📚 My Lessons</a>
       </div>
     </section>
 
-    <!-- ── Challenge types ───────────────────────────────────────────────────── -->
-    <section style="margin:0 auto 60px;max-width:860px;">
-      <div class="eyebrow" style="text-align:center;margin-bottom:24px;">5 challenge types generated by AI</div>
-      <div class="challenge-board" style="justify-content:center;">
-        <div class="challenge-chip"><span>01</span><strong>Quiz</strong></div>
-        <div class="challenge-chip"><span>02</span><strong>True / False</strong></div>
-        <div class="challenge-chip"><span>03</span><strong>Fill Blank</strong></div>
-        <div class="challenge-chip"><span>04</span><strong>Matching</strong></div>
-        <div class="challenge-chip"><span>05</span><strong>Spot Mistake</strong></div>
+    <!-- ════════════════════════════════════════════════════════ FEATURES -->
+    <section class="home-section container">
+      <div class="section-label">
+        <div class="eyebrow">What you can do</div>
+      </div>
+      <div class="features-grid">
+
+        <div class="feat-card">
+          <div class="feat-icon">⚡</div>
+          <h3>Multiplayer Arena</h3>
+          <p>Create a live quiz room in seconds. Share the code, friends join from any device — no account needed. Real-time scoring with countdown timer.</p>
+        </div>
+
+        <div class="feat-card">
+          <div class="feat-icon">📚</div>
+          <h3>AI Lessons</h3>
+          <p>Upload a PDF or type any topic. The AI builds a structured lesson with summaries, key concepts, and memory tips — in any language.</p>
+        </div>
+
+        <div class="feat-card">
+          <div class="feat-icon">🧠</div>
+          <h3>Lesson Quiz & Report</h3>
+          <p>Test yourself after every lesson. Get a detailed AI performance report with gap analysis, strengths, and a personalised study plan.</p>
+        </div>
+
+        <div class="feat-card">
+          <div class="feat-icon">🏆</div>
+          <h3>Live Leaderboard</h3>
+          <p>See who's winning in real time. Faster answers earn bonus points. Final podium shown when everyone finishes.</p>
+        </div>
+
+        <div class="feat-card">
+          <div class="feat-icon">🔁</div>
+          <h3>Recovery Lesson</h3>
+          <p>After the arena, get an AI mini-lesson on every concept you missed. Turn weak spots into strengths automatically.</p>
+        </div>
+
+        <div class="feat-card">
+          <div class="feat-icon">👥</div>
+          <h3>Friends & Leaderboard</h3>
+          <p>Add friends, track each other's streaks and points. Compete on the friends leaderboard and send arena invites directly.</p>
+        </div>
+
       </div>
     </section>
 
-    <!-- ── Features ──────────────────────────────────────────────────────────── -->
-    <section style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;margin-bottom:80px;">
-      <div class="flat-card" style="padding:28px;">
-        <div style="font-size:32px;margin-bottom:14px;">📄</div>
-        <h3>Any document</h3>
-        <p class="muted" style="margin-top:8px;">Upload a PDF, PNG, or JPG. Works with lecture slides, textbooks, and handwritten notes.</p>
+    <!-- ════════════════════════════════════════════════════════ HOW IT WORKS -->
+    <section class="home-section container">
+      <div class="section-label">
+        <div class="eyebrow">How it works</div>
       </div>
-
-      <div class="flat-card" style="padding:28px;">
-        <div style="font-size:32px;margin-bottom:14px;">⚡</div>
-        <h3>Instant arena</h3>
-        <p class="muted" style="margin-top:8px;">Share a room code or QR link. Players join from any device, no account required.</p>
+      <div class="steps-row">
+        <div class="step-box">
+          <div class="step-num">1</div>
+          <div style="font-size:24px;margin-bottom:10px;">📄</div>
+          <strong style="font-size:15px;">Upload or type</strong>
+          <p style="font-size:13px;color:var(--muted);margin-top:6px;line-height:1.5;">Drop a PDF, image, or just write a topic. Works in any language.</p>
+        </div>
+        <div class="step-arrow">→</div>
+        <div class="step-box">
+          <div class="step-num">2</div>
+          <div style="font-size:24px;margin-bottom:10px;">🤖</div>
+          <strong style="font-size:15px;">AI generates challenges</strong>
+          <p style="font-size:13px;color:var(--muted);margin-top:6px;line-height:1.5;">Multiple challenge types, different difficulties — ready in seconds.</p>
+        </div>
+        <div class="step-arrow">→</div>
+        <div class="step-box">
+          <div class="step-num">3</div>
+          <div style="font-size:24px;margin-bottom:10px;">🎮</div>
+          <strong style="font-size:15px;">Compete & learn</strong>
+          <p style="font-size:13px;color:var(--muted);margin-top:6px;line-height:1.5;">Share the code. Friends join live. See who knows the most.</p>
+        </div>
       </div>
+    </section>
 
-      <div class="flat-card" style="padding:28px;">
-        <div style="font-size:32px;margin-bottom:14px;">🏆</div>
-        <h3>Live leaderboard</h3>
-        <p class="muted" style="margin-top:8px;">Real-time scoring with a countdown timer. See the final podium when everyone finishes.</p>
+    <!-- ════════════════════════════════════════════════════════ CHALLENGE TYPES -->
+    <section class="home-section container">
+      <div class="section-label">
+        <div class="eyebrow">7 challenge types generated by AI</div>
       </div>
+      <div class="chip-row">
+        <div class="chip"><span style="color:var(--blue);font-weight:900;">01</span> Multiple Choice</div>
+        <div class="chip"><span style="color:var(--green);font-weight:900;">02</span> True / False</div>
+        <div class="chip"><span style="color:var(--yellow);font-weight:900;">03</span> Fill in the Blank</div>
+        <div class="chip"><span style="color:var(--red);font-weight:900;">04</span> Matching</div>
+        <div class="chip"><span style="color:var(--purple);font-weight:900;">05</span> Spot the Mistake</div>
+        <div class="chip"><span style="color:var(--orange);font-weight:900;">06</span> Order the Steps</div>
+        <div class="chip"><span style="color:var(--blue);font-weight:900;">07</span> Multiple Select</div>
+      </div>
+    </section>
 
-      <div class="flat-card" style="padding:28px;">
-        <div style="font-size:32px;margin-bottom:14px;">🧠</div>
-        <h3>Recovery lesson</h3>
-        <p class="muted" style="margin-top:8px;">After the game, get an AI-generated mini lesson covering every concept you missed.</p>
+    <!-- ════════════════════════════════════════════════════════ PRICING STRIP -->
+    <section class="home-section container">
+      <div class="section-label">
+        <div class="eyebrow">Simple pricing</div>
+      </div>
+      <div class="pricing-strip">
+
+        <div class="plan-box">
+          <div class="eyebrow" style="background:var(--paper-2);color:var(--text);">Free</div>
+          <div class="plan-price">€0</div>
+          <p style="font-size:13px;color:var(--muted);margin:0 0 4px;">Forever free, no card needed.</p>
+          <ul class="plan-feat-list">
+            <li><span style="color:var(--green);font-weight:900;">✓</span> 3 lessons per week</li>
+            <li><span style="color:var(--green);font-weight:900;">✓</span> 3 arenas per week</li>
+            <li><span style="color:var(--green);font-weight:900;">✓</span> Unlimited arena joins</li>
+            <li><span style="color:var(--red);font-weight:900;">✗</span> <span style="color:var(--muted);">Lesson quiz & report</span></li>
+          </ul>
+          <a href="/login" class="btn btn-secondary" style="display:block;text-align:center;margin-top:18px;padding:11px;">Get started free</a>
+        </div>
+
+        <div class="plan-box premium">
+          <div class="eyebrow" style="background:#c9a227;color:white;">⭐ Premium</div>
+          <div class="plan-price" style="color:#8a6800;">€5<span style="font-size:16px;font-weight:700;color:var(--muted);">/month</span></div>
+          <p style="font-size:13px;color:var(--muted);margin:0 0 4px;">Everything you need to study better.</p>
+          <ul class="plan-feat-list">
+            <li><span style="color:var(--green);font-weight:900;">✓</span> <strong>Unlimited lessons</strong></li>
+            <li><span style="color:var(--green);font-weight:900;">✓</span> <strong>Unlimited arenas</strong></li>
+            <li><span style="color:var(--green);font-weight:900;">✓</span> Unlimited arena joins</li>
+            <li><span style="color:var(--green);font-weight:900;">✓</span> <strong>Lesson quiz & AI report</strong></li>
+          </ul>
+          <a href="/pricing" class="btn" style="display:block;text-align:center;margin-top:18px;padding:11px;background:var(--yellow);">Upgrade — €5/month</a>
+        </div>
+
       </div>
     </section>
 
@@ -95,6 +355,10 @@
   <footer class="site-footer">
     <div class="container footer-row">
       <strong>Pentadee</strong>
+      <div style="display:flex;gap:20px;align-items:center;">
+        <a href="/pricing" style="color:var(--muted);font-size:13px;text-decoration:none;font-weight:700;">Pricing</a>
+        <a href="/login"   style="color:var(--muted);font-size:13px;text-decoration:none;font-weight:700;">Login</a>
+      </div>
       <span>ExamForge Arena · AI Study Challenges</span>
     </div>
   </footer>
