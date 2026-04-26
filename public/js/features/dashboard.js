@@ -408,26 +408,13 @@ function renderFriendsLb(profiles, currentUserId) {
     `;
   }
 
-  const sorted = [...profiles].sort((a, b) => {
-    const ratingA =
-      (a.total_points || 0) +
-      (a.total_quizzes || 0) * 50 +
-      (a.streak_count || 0) * 10;
-
-    const ratingB =
-      (b.total_points || 0) +
-      (b.total_quizzes || 0) * 50 +
-      (b.streak_count || 0) * 10;
-
-    return ratingB - ratingA;
-  });
+  const sorted = [...profiles].sort((a, b) =>
+    (b.total_points || 0) - (a.total_points || 0)
+  );
 
   return sorted
     .map((profile, index) => {
-      const rating =
-        (profile.total_points || 0) +
-        (profile.total_quizzes || 0) * 50 +
-        (profile.streak_count || 0) * 10;
+      const rating = profile.total_points || 0;
 
       const letter     = (profile.username || "U")[0].toUpperCase();
       const color      = profile.avatar_color || "#4f46e5";
