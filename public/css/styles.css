@@ -963,8 +963,8 @@ blockquote {
 
 .dash-layout {
   display: grid;
-  grid-template-columns: 400px 1fr;
-  gap: 14px;
+  grid-template-columns: 380px 1fr;
+  gap: 16px;
   align-items: start;
 }
 

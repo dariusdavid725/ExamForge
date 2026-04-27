@@ -152,33 +152,41 @@ export async function renderDashboard(
 
       </div>
 
-      <!-- ── RIGHT COLUMN (fluid): Friends + Requests ── -->
-      <div class="dash-col">
+      <!-- ── RIGHT COLUMN (fluid): Grid 2 cols ── -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start;">
         
-        <!-- Friends Leaderboard (top 5) -->
+        <!-- Friends Leaderboard (top 5) - LEFT -->
         <div class="card">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
-            <div class="eyebrow" style="font-size:10px;">Friends leaderboard</div>
+            <div class="eyebrow" style="font-size:10px;">Friends</div>
             <button id="addFriendBtn" class="btn btn-secondary" type="button"
-              style="padding:4px 10px;font-size:10px;">Manage</button>
+              style="padding:3px 8px;font-size:9px;">+</button>
           </div>
-          <div style="display:grid;gap:6px;">
+          <div style="display:grid;gap:5px;">
             ${friendProfiles.length > 0 
               ? renderFriendsLb(friendProfiles, user.id, 5)
-              : `<p class="muted" style="font-size:11px;margin:3px 0;">No friends yet. Add friends to compete!</p>`}
+              : `<p class="muted" style="font-size:10px;margin:3px 0;">No friends yet</p>`}
           </div>
           ${friendProfiles.length > 5 
             ? `<button id="seeAllFriendsBtn" class="btn btn-secondary" type="button"
-                style="margin-top:8px;padding:7px;font-size:11px;width:100%;">
-                See all ${friendProfiles.length} friends
+                style="margin-top:7px;padding:6px;font-size:10px;width:100%;">
+                +${friendProfiles.length - 5} more
               </button>`
             : ''}
         </div>
 
-        <!-- Friend Requests -->
-        <div id="pendingRequestsCard" class="card" style="display:none;">
-          <div class="eyebrow" style="font-size:10px;margin-bottom:8px;">Friend requests</div>
-          <div id="pendingRequestsList" style="display:grid;gap:6px;"></div>
+        <!-- RIGHT COLUMN -->
+        <div class="dash-col" style="gap:12px;">
+          <!-- Friend Requests -->
+          <div id="pendingRequestsCard" class="card" style="display:none;">
+            <div class="eyebrow" style="font-size:10px;margin-bottom:8px;">Friend requests</div>
+            <div id="pendingRequestsList" style="display:grid;gap:5px;"></div>
+          </div>
+
+          <!-- Placeholder for future feature -->
+          <div class="card" style="min-height:120px;display:flex;align-items:center;justify-content:center;">
+            <p class="muted" style="font-size:10px;text-align:center;">More features<br>coming soon</p>
+          </div>
         </div>
 
       </div>
@@ -434,31 +442,29 @@ function renderFriendsLb(profiles, currentUserId, limit = null) {
         : `background:${color};`;
 
       return `
-        <div class="dash-session-row${premium ? " premium-friend" : ""}" style="cursor:default;padding:8px 10px;">
-          <div class="row" style="gap:8px;min-width:0;">
-            <span class="rank" style="min-width:16px;font-size:12px;">${index + 1}</span>
+        <div class="dash-session-row${premium ? " premium-friend" : ""}" style="cursor:default;padding:6px 8px;">
+          <div style="display:flex;align-items:center;gap:6px;min-width:0;flex:1;">
+            <span style="font-size:11px;font-weight:900;min-width:14px;">${index + 1}</span>
 
             <div style="position:relative;flex-shrink:0;">
-              ${premium ? `<span style="position:absolute;top:-9px;left:50%;transform:translateX(-50%);
-                font-size:11px;line-height:1;z-index:1;">👑</span>` : ""}
-              <div class="dash-avatar-sm" style="${avatarStyle}">
+              ${premium ? `<span style="position:absolute;top:-8px;left:50%;transform:translateX(-50%);
+                font-size:10px;line-height:1;z-index:1;">👑</span>` : ""}
+              <div class="dash-avatar-sm" style="${avatarStyle};width:24px;height:24px;font-size:11px;">
                 ${escapeHTML(letter)}
               </div>
             </div>
 
-            <div style="min-width:0;">
-              <strong style="font-size:12px;${premium ? "color:#8a6800;" : ""}">
+            <div style="min-width:0;flex:1;">
+              <strong style="font-size:11px;${premium ? "color:#8a6800;" : ""}">
                 ${escapeHTML(profile.username || "Player")}${isMe ? " (you)" : ""}
-                ${premium ? `<span style="font-size:9px;font-weight:900;background:#c9a227;color:white;
-                  padding:1px 5px;border-radius:999px;margin-left:3px;vertical-align:middle;">PRO</span>` : ""}
               </strong>
-              <p class="muted" style="font-size:10px;margin-top:1px;">
-                ${profile.total_quizzes || 0} quizzes · ${streak > 0 ? streak + " 🔥" : "0 streak"}
+              <p class="muted" style="font-size:9px;margin-top:1px;">
+                ${profile.total_quizzes || 0} quiz${profile.total_quizzes !== 1 ? 'zes' : ''} ${streak > 0 ? "· " + streak + " 🔥" : ""}
               </p>
             </div>
           </div>
 
-          <strong style="font-size:14px;${premium ? "color:#8a6800;" : ""}">${rating}</strong>
+          <strong style="font-size:13px;${premium ? "color:#8a6800;" : ""};margin-left:6px;">${rating}</strong>
         </div>
       `;
     })
