@@ -757,8 +757,10 @@ async function handleSmartProcess() {
     
     showToast(`🎉 Smart Learning Path created with ${result.units.length} units!`, "success");
     
-    // Navigate to learning path section
-    showSection("learningPathSection");
+    // Wait a moment for DB to finish, then navigate
+    setTimeout(() => {
+      showSection("learningPathSection");
+    }, 500);
 
   } catch (error) {
     console.error("Smart processing error:", error);
@@ -773,16 +775,21 @@ async function loadLearningPath() {
   const container = el("learningPathContainer");
   if (!container) return;
 
-  container.innerHTML = '<div class="card" style="text-align:center;padding:32px;"><div class="spinner"></div></div>';
+  container.innerHTML = '<div class="card" style="text-align:center;padding:32px;"><div class="spinner"></div><p class="muted" style="margin-top:12px;">Loading learning path...</p></div>';
 
   try {
     const pathData = await getLearningPath(currentUser.id);
+    console.log("Learning path data:", pathData); // Debug
     renderLearningPath(container, pathData, currentUser.id);
   } catch (error) {
     console.error("Error loading learning path:", error);
     container.innerHTML = `
       <div class="card" style="text-align:center;padding:32px;">
-        <p class="muted">Failed to load learning path. Please try again.</p>
+        <p style="font-size:14px;margin-bottom:8px;">❌ Failed to load learning path</p>
+        <p class="muted" style="font-size:12px;">${error.message || 'Please try again.'}</p>
+        <button onclick="window.location.reload()" class="btn btn-secondary" style="margin-top:16px;padding:8px 16px;font-size:12px;">
+          Refresh Page
+        </button>
       </div>
     `;
   }

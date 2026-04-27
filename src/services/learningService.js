@@ -241,18 +241,33 @@ export async function getUserLearningPath(userId, sourceType = null) {
         *,
         learning_unit:learning_units(*)
       `)
-      .eq('user_id', userId)
-      .order('learning_unit.sequence_order', { ascending: true });
+      .eq('user_id', userId);
 
     if (sourceType) {
-      query = query.eq('learning_unit.source_type', sourceType);
+      // Note: filtering on nested fields doesn't work well in Supabase
+      // We'll filter after fetching
     }
 
     const { data, error } = await query;
 
     if (error) throw error;
 
-    return data || [];
+    let pathData = data || [];
+
+    // Filter by source type if specified
+    if (sourceType && pathData.length > 0) {
+      pathData = pathData.filter(p => p.learning_unit?.source_type === sourceType);
+    }
+
+    // Sort by sequence_order
+    pathData.sort((a, b) => {
+      const orderA = a.learning_unit?.sequence_order || 0;
+      const orderB = b.learning_unit?.sequence_order || 0;
+      return orderA - orderB;
+    });
+
+    console.log(`Found ${pathData.length} learning units for user ${userId}`);
+    return pathData;
   } catch (error) {
     console.error("Error getting learning path:", error);
     return [];
