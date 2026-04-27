@@ -134,14 +134,14 @@ export async function renderDashboard(
         </div>
 
         <!-- Stats -->
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-          <div class="flat-card" style="padding:10px;text-align:center;">
-            <div style="font-size:9px;font-weight:700;color:var(--muted);margin-bottom:4px;letter-spacing:0.05em;">ACCURACY</div>
-            <div style="font-size:22px;font-weight:900;line-height:1;color:${overallAccuracy >= 80 ? 'var(--green)' : overallAccuracy >= 60 ? 'var(--blue)' : 'var(--muted)'};">${overallAccuracy || 0}%</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <div class="flat-card" style="padding:12px;text-align:center;">
+            <div style="font-size:10px;font-weight:700;color:var(--muted);margin-bottom:5px;letter-spacing:0.05em;">ACCURACY</div>
+            <div style="font-size:26px;font-weight:900;line-height:1;color:${overallAccuracy >= 80 ? 'var(--green)' : overallAccuracy >= 60 ? 'var(--blue)' : 'var(--muted)'};">${overallAccuracy || 0}%</div>
           </div>
-          <div class="flat-card" style="padding:10px;text-align:center;">
-            <div style="font-size:9px;font-weight:700;color:var(--muted);margin-bottom:4px;letter-spacing:0.05em;">THIS WEEK</div>
-            <div style="font-size:22px;font-weight:900;line-height:1;color:var(--blue);">${thisWeekQuizzes || 0}</div>
+          <div class="flat-card" style="padding:12px;text-align:center;">
+            <div style="font-size:10px;font-weight:700;color:var(--muted);margin-bottom:5px;letter-spacing:0.05em;">THIS WEEK</div>
+            <div style="font-size:26px;font-weight:900;line-height:1;color:var(--blue);">${thisWeekQuizzes || 0}</div>
           </div>
         </div>
 
@@ -155,7 +155,7 @@ export async function renderDashboard(
       <!-- ── RIGHT COLUMN (fluid): Friends + Requests ── -->
       <div class="dash-col">
         
-        <!-- Friends Leaderboard -->
+        <!-- Friends Leaderboard (top 5) -->
         <div class="card">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
             <div class="eyebrow" style="font-size:10px;">Friends leaderboard</div>
@@ -163,8 +163,16 @@ export async function renderDashboard(
               style="padding:4px 10px;font-size:10px;">Manage</button>
           </div>
           <div style="display:grid;gap:6px;">
-            ${renderFriendsLb(friendProfiles, user.id)}
+            ${friendProfiles.length > 0 
+              ? renderFriendsLb(friendProfiles, user.id, 5)
+              : `<p class="muted" style="font-size:11px;margin:3px 0;">No friends yet. Add friends to compete!</p>`}
           </div>
+          ${friendProfiles.length > 5 
+            ? `<button id="seeAllFriendsBtn" class="btn btn-secondary" type="button"
+                style="margin-top:8px;padding:7px;font-size:11px;width:100%;">
+                See all ${friendProfiles.length} friends
+              </button>`
+            : ''}
         </div>
 
         <!-- Friend Requests -->
@@ -187,6 +195,7 @@ export async function renderDashboard(
   container.querySelector("#dashJoinBtn")?.addEventListener("click", onJoinArena);
   container.querySelector("#dashHistoryBtn")?.addEventListener("click", onHistory);
   container.querySelector("#addFriendBtn")?.addEventListener("click", () => showFriendManagerModal(user.id));
+  container.querySelector("#seeAllFriendsBtn")?.addEventListener("click", () => showFriendManagerModal(user.id));
 
   container.querySelectorAll("[data-session-id]").forEach(button => {
     button.addEventListener("click", () => {
