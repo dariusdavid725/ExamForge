@@ -444,6 +444,7 @@ export async function updateLearningProgress(userId, unitId, progressPercentage,
 
 /**
  * Unlock next learning unit when current is completed
+ * CRITICAL: Only unlock IMMEDIATE next unit (sequence_order + 1)
  */
 async function unlockNextUnit(userId, currentUnitId) {
   try {
@@ -454,29 +455,54 @@ async function unlockNextUnit(userId, currentUnitId) {
       .eq('id', currentUnitId)
       .single();
 
-    if (!currentUnit) return;
+    if (!currentUnit) {
+      console.error('Current unit not found:', currentUnitId);
+      return;
+    }
 
-    // Find next unit in sequence
+    console.log(`Unlocking next after unit ${currentUnitId}, sequence: ${currentUnit.sequence_order}`);
+
+    // Find THE EXACT next unit (sequence_order + 1, not just greater)
     const { data: nextUnit } = await supabase
       .from('learning_units')
-      .select('id')
+      .select('id, sequence_order')
       .eq('user_id', userId)
       .eq('source_type', currentUnit.source_type)
       .eq('source_name', currentUnit.source_name)
-      .gt('sequence_order', currentUnit.sequence_order)
-      .order('sequence_order', { ascending: true })
-      .limit(1)
+      .eq('sequence_order', currentUnit.sequence_order + 1)
       .single();
 
-    if (!nextUnit) return;
+    if (!nextUnit) {
+      console.log('No next unit found (might be last unit)');
+      return;
+    }
 
-    // Unlock it
-    await supabase
+    console.log(`Found next unit ${nextUnit.id}, unlocking...`);
+
+    // Check current status
+    const { data: pathStatus } = await supabase
       .from('user_learning_paths')
-      .update({ status: 'available', updated_at: new Date().toISOString() })
+      .select('status')
       .eq('user_id', userId)
       .eq('learning_unit_id', nextUnit.id)
-      .eq('status', 'locked');
+      .single();
+
+    if (pathStatus && pathStatus.status === 'locked') {
+      // Only unlock if currently locked
+      const { error: unlockError } = await supabase
+        .from('user_learning_paths')
+        .update({ status: 'available', updated_at: new Date().toISOString() })
+        .eq('user_id', userId)
+        .eq('learning_unit_id', nextUnit.id);
+
+      if (unlockError) {
+        console.error('Error updating status:', unlockError);
+      } else {
+        console.log(`✓ Unlocked unit ${nextUnit.id} (sequence ${nextUnit.sequence_order})`);
+      }
+    } else {
+      console.log(`Unit ${nextUnit.id} already unlocked (status: ${pathStatus?.status})`);
+    }
 
   } catch (error) {
     console.error("Error unlocking next unit:", error);

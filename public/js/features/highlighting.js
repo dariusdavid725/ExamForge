@@ -62,19 +62,34 @@ function handleTextSelection(e) {
     return;
   }
   
-  // Calculate offset from start of content
+  // Calculate offset from start of content (more robust)
   const preSelectionRange = range.cloneRange();
   preSelectionRange.selectNodeContents(contentElement);
   preSelectionRange.setEnd(range.startContainer, range.startOffset);
-  const startOffset = preSelectionRange.toString().length;
-  const endOffset = startOffset + selectedText.length;
+  
+  // Get actual text length (not node length)
+  const precedingText = preSelectionRange.toString();
+  const startOffset = precedingText.length;
+  
+  // Use selection's actual text length
+  const actualSelectedText = range.toString();
+  const endOffset = startOffset + actualSelectedText.length;
+  
+  // Validate selection
+  if (endOffset <= startOffset || actualSelectedText.length < 3) {
+    console.warn('Invalid selection:', { startOffset, endOffset, text: actualSelectedText });
+    removeHighlightMenu();
+    return;
+  }
   
   currentSelection = {
-    text: selectedText,
+    text: actualSelectedText,
     startOffset,
     endOffset,
     range
   };
+  
+  console.log('Selection:', { text: actualSelectedText.substring(0, 50), startOffset, endOffset });
   
   // Show highlight menu
   showHighlightMenu(e.clientX, e.clientY);
