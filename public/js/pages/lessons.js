@@ -13,8 +13,6 @@ import {
   renderLearningPath
 } from "../features/learningPath.js";
 
-import { showLoading, updateLoadingStep, hideLoading, showLoadingSuccess } from "../shared/loadingManager.js";
-
 // Expose globally for unit modal callbacks
 window.getLearningPath = getLearningPath;
 window.renderLearningPath = renderLearningPath;
@@ -733,12 +731,17 @@ async function handleSmartProcess() {
 
       // Extract text from file
       try {
-        showLoading("Reading Document", ["Extracting Text"]);
+        showLoadingOverlay({
+          title: "Reading Document",
+          message: "Extracting text...",
+          steps: ["Reading file", "Extracting text", "Processing"]
+        });
 
         const form = new FormData();
         form.append("document", file);
         if (currentUser?.id) form.append("userId", currentUser.id);
 
+        updateLoadingOverlay("Processing document...", 50);
         const res = await fetch("/api/lessons/generate", { method: "POST", body: form });
         const data = await res.json();
 
@@ -750,13 +753,13 @@ async function handleSmartProcess() {
         docName = file.name;
         documentText = textToProcess; // Cache it
 
-        updateLoadingStep(1, "Complete!");
-        await showLoadingSuccess("Document ready!");
-        hideLoading();
+        updateLoadingOverlay("Complete!", 100);
+        await new Promise(resolve => setTimeout(resolve, 300));
+        hideLoadingOverlay();
 
       } catch (error) {
         console.error("Error reading document:", error);
-        hideLoading();
+        hideLoadingOverlay();
         showToast("Failed to read document. Please try again.", "error");
         return;
       }
@@ -764,32 +767,29 @@ async function handleSmartProcess() {
   }
 
   try {
-    showLoading("AI Learning Assistant", [
-      "Analyzing Document",
-      "Creating Learning Units",
-      "Building Knowledge Graph"
-    ]);
+    showLoadingOverlay({
+      title: "Creating Smart Learning Path",
+      message: "AI is analyzing your material...",
+      steps: ["Analyzing document", "Creating units", "Extracting concepts", "Building path"]
+    });
     
-    // Step 1: Analyzing (shown by default)
+    updateLoadingOverlay("Processing with AI...", 25);
     const result = await processIntoLearningPath(
       currentUser.id,
       docName,
       textToProcess
     );
 
-    // Step 2: Units created
-    updateLoadingStep(2, "Structuring content...");
-    await new Promise(resolve => setTimeout(resolve, 400));
+    updateLoadingOverlay("Structuring units...", 70);
+    await new Promise(resolve => setTimeout(resolve, 300));
     
-    // Step 3: Complete
-    updateLoadingStep(3, "Finalizing...");
+    updateLoadingOverlay("Complete!", 100);
     await new Promise(resolve => setTimeout(resolve, 400));
 
     weeklyUsage.lessons = Math.min(3, weeklyUsage.lessons + 1);
     updateUsageBanner();
 
-    await showLoadingSuccess(`Created ${result.units.length} units!`);
-    hideLoading();
+    hideLoadingOverlay();
     
     showToast(`🎉 Smart Learning Path created with ${result.units.length} units!`, "success");
     
@@ -800,7 +800,7 @@ async function handleSmartProcess() {
 
   } catch (error) {
     console.error("Smart processing error:", error);
-    hideLoading();
+    hideLoadingOverlay();
     showToast("Failed to create learning path. Please try again.", "error");
   }
 }

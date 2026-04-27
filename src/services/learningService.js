@@ -117,7 +117,7 @@ STRUCTURE EACH UNIT WITH:
 MATERIAL TO SPLIT INTO MULTIPLE UNITS:
 ${text.substring(0, 25000)}
 
-Return JSON with BOTH units AND concepts in ONE response:
+Return JSON with units (allConcepts is OPTIONAL):
 {
   "units": [
     {
@@ -133,12 +133,14 @@ Return JSON with BOTH units AND concepts in ONE response:
     {
       "name": "string",
       "description": "string",
-      "category": "string (e.g. 'mathematics', 'physics', 'programming')",
+      "category": "string",
       "difficulty": number (1-5),
-      "prerequisites": ["concept names that must be learned first"]
+      "prerequisites": ["concept names"]
     }
   ]
 }
+
+NOTE: allConcepts array is OPTIONAL. If you cannot extract key concepts just return empty array.
 
 IMPORTANT: 
 - CREATE MULTIPLE UNITS (3-5 minimum, more if needed)
@@ -150,7 +152,7 @@ IMPORTANT:
 - Test formula: [FORMULA]frac{dy}{dx} = 3y[/FORMULA]
 - Another test: [FORMULA]int_0^infty e^{-x}dx = 1[/FORMULA]
 - CRITICAL: Write ALL text content in ${detectedLanguage} (detected from source material)
-- ALSO return allConcepts array with key concepts and their relationships`;
+- TRY to return allConcepts array with key concepts (OPTIONAL - return empty array if unsure)`;
 
     const response = await client.chat.completions.create({
       model: "gpt-4o-mini",
@@ -159,12 +161,26 @@ IMPORTANT:
       temperature: 0.4
     });
 
-    const result = JSON.parse(response.choices[0].message.content);
+    let result;
+    try {
+      result = JSON.parse(response.choices[0].message.content);
+    } catch (parseError) {
+      console.error("JSON parse error:", parseError);
+      console.log("Raw AI response:", response.choices[0].message.content);
+      // Try to salvage partial response
+      const content = response.choices[0].message.content;
+      const unitsMatch = content.match(/"units"\s*:\s*\[(.*?)\]/s);
+      if (unitsMatch) {
+        result = { units: JSON.parse(`[${unitsMatch[1]}]`), allConcepts: [] };
+      } else {
+        throw new Error("Failed to parse AI response");
+      }
+    }
     
     // Return both units and concepts for faster processing
     return {
       units: result.units || [],
-      concepts: result.allConcepts || []
+      concepts: result.allConcepts || result.concepts || []
     };
   } catch (error) {
     console.error("Error chunking material:", error);
