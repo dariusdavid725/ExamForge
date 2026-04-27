@@ -174,9 +174,33 @@ fill_blank:
 
 order_steps:
 - exactly 3 steps
-- steps shuffled
-- correctOrder has same exact 3 steps in correct order
+- steps shuffled (not in correct order in the "steps" array)
+- correctOrder has same exact 3 steps in LOGICAL correct order
+- CRITICAL: Steps must have CLEAR logical sequence (chronological, causal, procedural)
+- CRITICAL: correctOrder must contain EXACT same text as steps (just reordered)
+- Each step must be distinct and meaningful
+- Avoid ambiguous ordering where multiple sequences could be correct
 - options []
+
+Example GOOD order_steps:
+{
+  "steps": ["Mix ingredients", "Preheat oven to 180°C", "Bake for 30 minutes"],
+  "correctOrder": ["Preheat oven to 180°C", "Mix ingredients", "Bake for 30 minutes"]
+}
+✓ Same exact strings, just reordered
+
+Example BAD (text mismatch):
+{
+  "steps": ["Mix ingredients well", "Preheat oven", "Bake"],
+  "correctOrder": ["Preheat oven to 180°C", "Mix ingredients", "Bake for 30 minutes"]
+}
+❌ Different text! correctOrder must use exact strings from steps array
+
+Example BAD (ambiguous order):
+{
+  "steps": ["Study biology", "Study chemistry", "Study physics"]
+}
+❌ No clear logical sequence (these can happen in any order)
 
 spot_mistake:
 - mistakeText is one wrong visible claim
@@ -186,6 +210,10 @@ spot_mistake:
 
 matching:
 - pairs exactly 4 objects { "left": "string", "right": "string" }
+- CRITICAL: left and right must be DIFFERENT (no duplicates like "Mitochondria" → "Mitochondria")
+- All left values must be unique (no repeats)
+- All right values must be unique (no repeats)
+- Each pair must make logical sense (term → definition, cause → effect, concept → example)
 - options []
 - correctAnswer ""
 
@@ -332,9 +360,33 @@ fill_blank:
 
 order_steps:
 - exactly 3 steps
-- steps shuffled
-- correctOrder has same 3 steps in correct order
+- steps shuffled (not in correct order in the "steps" array)
+- correctOrder has same exact 3 steps in LOGICAL correct order
+- CRITICAL: Steps must have CLEAR logical sequence (chronological, causal, procedural)
+- CRITICAL: correctOrder must contain EXACT same text as steps (just reordered)
+- Each step must be distinct and meaningful
+- Avoid ambiguous ordering where multiple sequences could be correct
 - options []
+
+Example GOOD order_steps:
+{
+  "steps": ["Electron transport chain", "Glycolysis", "Krebs cycle"],
+  "correctOrder": ["Glycolysis", "Krebs cycle", "Electron transport chain"]
+}
+✓ Same exact strings, just reordered
+
+Example BAD (text mismatch):
+{
+  "steps": ["Electron transport", "Glycolysis process", "Krebs cycle"],
+  "correctOrder": ["Glycolysis", "Krebs cycle", "Electron transport chain"]
+}
+❌ Different text! correctOrder must use exact strings from steps array
+
+Example BAD (no clear order):
+{
+  "steps": ["Drink water", "Exercise", "Sleep"]
+}
+❌ These can happen in any order (no clear sequence)
 
 spot_mistake:
 - mistakeText is one wrong visible claim about the topic
@@ -343,6 +395,10 @@ spot_mistake:
 
 matching:
 - pairs exactly 4 objects { "left": "string", "right": "string" }
+- CRITICAL: left and right must be DIFFERENT (no duplicates like "Mitochondria" → "Mitochondria")
+- All left values must be unique (no repeats)
+- All right values must be unique (no repeats)
+- Each pair must make logical sense (term → definition, cause → effect, concept → example)
 - options []
 - correctAnswer ""
 
@@ -464,6 +520,17 @@ Mark valid=false if ANY challenge:
 - has options glued together or confusing
 - has sourceSnippet that does not support the answer
 - has ambiguous wording that makes the question unclear
+- MATCHING ERRORS:
+  * has matching where left === right (duplicate like "Mitochondria" → "Mitochondria")
+  * has matching where same left value appears twice
+  * has matching where same right value appears twice
+  * has matching pairs that don't make logical sense
+- ORDER_STEPS ERRORS:
+  * has order_steps where sequence is ambiguous (multiple valid orders)
+  * has order_steps where steps don't have clear chronological/causal/procedural relationship
+  * has order_steps already in correct order in "steps" array (should be shuffled)
+  * CRITICAL: has order_steps where correctOrder contains different text than steps array
+  * correctOrder must contain EXACT same strings as steps array, just in different order
 
 Important:
 - The player sees ONLY prompt/options/steps/pairs/mistakeText.
