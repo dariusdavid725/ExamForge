@@ -43,6 +43,8 @@ async function showDashboard() {
       onHistory:     showHistory
     });
 
+    await renderActivationMetrics(container);
+
     await renderRoomInvitesCard(container, currentUser, async invite => {
       const name = userProfile?.username || currentUser?.email?.split("@")[0] || "Player";
 
@@ -68,6 +70,47 @@ async function showDashboard() {
   } catch (err) {
     console.error("Dashboard error:", err);
     document.getElementById("dashboardContent").innerHTML = `<div class="card"><p class="muted">Could not load dashboard.</p></div>`;
+  }
+}
+
+async function renderActivationMetrics(container) {
+  const card = document.createElement("div");
+  card.className = "card";
+  card.innerHTML = `
+    <div class="eyebrow">Activation Funnel</div>
+    <h3 style="margin:10px 0 14px;">Demo conversion (last 7 days)</h3>
+    <p class="muted" style="margin:0;">Loading metrics...</p>
+  `;
+  container.prepend(card);
+
+  try {
+    const response = await fetch("/api/events/stats");
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || "Could not load metrics.");
+
+    const c = data.counts || {};
+    const r = data.rates || {};
+
+    card.innerHTML = `
+      <div class="eyebrow">Activation Funnel</div>
+      <h3 style="margin:10px 0 14px;">Demo conversion (last ${data.windowDays || 7} days)</h3>
+      <div style="display:grid;grid-template-columns:repeat(3,minmax(140px,1fr));gap:10px;">
+        <div class="flat-card"><strong>Clicks</strong><div style="font-size:24px;margin-top:6px;">${c.activation_demo_start_clicked || 0}</div></div>
+        <div class="flat-card"><strong>Starts</strong><div style="font-size:24px;margin-top:6px;">${c.activation_demo_started || 0}</div></div>
+        <div class="flat-card"><strong>Completions</strong><div style="font-size:24px;margin-top:6px;">${c.activation_demo_completed || 0}</div></div>
+      </div>
+      <p class="muted" style="margin-top:12px;">
+        Click → Start: <strong>${r.clickToStart || 0}%</strong> ·
+        Start → Complete: <strong>${r.startToComplete || 0}%</strong> ·
+        Click → Complete: <strong>${r.clickToComplete || 0}%</strong>
+      </p>
+    `;
+  } catch {
+    card.innerHTML = `
+      <div class="eyebrow">Activation Funnel</div>
+      <h3 style="margin:10px 0 8px;">Demo conversion</h3>
+      <p class="muted" style="margin:0;">Metrics are unavailable right now.</p>
+    `;
   }
 }
 

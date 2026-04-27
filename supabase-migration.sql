@@ -1,28 +1,64 @@
 -- Run this in your Supabase SQL editor
+-- Migration goal: align rooms/players schema and add product event tracking.
+-- Safe to re-run (idempotent).
 
--- 1. Subscription & usage tracking columns on profiles
-ALTER TABLE profiles ADD COLUMN IF NOT EXISTS plan TEXT DEFAULT 'free';
-ALTER TABLE profiles ADD COLUMN IF NOT EXISTS stripe_customer_id TEXT;
-ALTER TABLE profiles ADD COLUMN IF NOT EXISTS stripe_subscription_id TEXT;
-ALTER TABLE profiles ADD COLUMN IF NOT EXISTS weekly_lessons_count INT DEFAULT 0;
-ALTER TABLE profiles ADD COLUMN IF NOT EXISTS weekly_quizzes_count INT DEFAULT 0;
-ALTER TABLE profiles ADD COLUMN IF NOT EXISTS weekly_reset_date DATE;
-
--- 2. User lessons table (replaces localStorage)
-CREATE TABLE IF NOT EXISTS user_lessons (
-  id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id       UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  title         TEXT NOT NULL DEFAULT 'Lesson',
-  language      TEXT DEFAULT 'Unknown',
-  lesson        JSONB NOT NULL,
-  document_text TEXT DEFAULT '',
-  last_quiz_score INT,
-  last_quiz_date  TIMESTAMPTZ,
-  review_topics   TEXT[] DEFAULT '{}',
-  created_at    TIMESTAMPTZ DEFAULT NOW()
+-- 1) Core tables
+CREATE TABLE IF NOT EXISTS public.rooms (
+  code TEXT PRIMARY KEY,
+  status TEXT NOT NULL DEFAULT 'lobby',
+  pack JSONB NOT NULL,
+  created_at BIGINT NOT NULL,
+  started_at BIGINT,
+  ends_at BIGINT,
+  question_time INTEGER NOT NULL DEFAULT 20,
+  room_hash TEXT NOT NULL,
+  host_token TEXT NOT NULL DEFAULT '',
+  closed_at BIGINT,
+  closed_by UUID
 );
 
-ALTER TABLE user_lessons ENABLE ROW LEVEL SECURITY;
+CREATE TABLE IF NOT EXISTS public.players (
+  id TEXT PRIMARY KEY,
+  room_code TEXT NOT NULL REFERENCES public.rooms(code) ON DELETE CASCADE,
+  user_id UUID,
+  name TEXT NOT NULL,
+  score INTEGER NOT NULL DEFAULT 0,
+  correct INTEGER NOT NULL DEFAULT 0,
+  total_answered INTEGER NOT NULL DEFAULT 0,
+  finished BOOLEAN NOT NULL DEFAULT FALSE,
+  abandoned BOOLEAN NOT NULL DEFAULT FALSE,
+  left_at BIGINT,
+  answers JSONB NOT NULL DEFAULT '[]'::jsonb,
+  weak_concepts JSONB NOT NULL DEFAULT '[]'::jsonb
+);
 
-CREATE POLICY "Users manage own lessons" ON user_lessons
-  FOR ALL USING (auth.uid() = user_id);
+-- 2) Defensive ALTERs for pre-existing tables
+ALTER TABLE public.rooms
+  ADD COLUMN IF NOT EXISTS room_hash TEXT NOT NULL DEFAULT '',
+  ADD COLUMN IF NOT EXISTS host_token TEXT NOT NULL DEFAULT '',
+  ADD COLUMN IF NOT EXISTS closed_at BIGINT,
+  ADD COLUMN IF NOT EXISTS closed_by UUID;
+
+ALTER TABLE public.players
+  ADD COLUMN IF NOT EXISTS user_id UUID,
+  ADD COLUMN IF NOT EXISTS abandoned BOOLEAN NOT NULL DEFAULT FALSE,
+  ADD COLUMN IF NOT EXISTS left_at BIGINT;
+
+-- 3) Indexes
+CREATE INDEX IF NOT EXISTS idx_players_room_code ON public.players(room_code);
+CREATE INDEX IF NOT EXISTS idx_players_user_id ON public.players(user_id);
+
+-- 4) Product analytics events
+CREATE TABLE IF NOT EXISTS public.product_events (
+  id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  name TEXT NOT NULL,
+  source TEXT NOT NULL DEFAULT 'web',
+  meta JSONB NOT NULL DEFAULT '{}'::jsonb,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_product_events_name_created_at
+  ON public.product_events(name, created_at DESC);
+
+CREATE INDEX IF NOT EXISTS idx_product_events_created_at
+  ON public.product_events(created_at DESC);
