@@ -163,19 +163,16 @@ export function renderLearningPath(container, pathData, userId) {
     if (finishBtn) {
       finishBtn.addEventListener('click', () => {
         console.log('Finish button clicked - navigating to lessons page');
-        // Use clean URL (app.js has route /lessons -> lessons.html)
-        window.location.href = '/lessons';
+        // Navigate with hash to show My Lessons with paths tab
+        window.location.href = '/lessons#my-lessons-paths';
       });
     }
 
     const generateQuizBtn = container.querySelector('.generate-quiz-from-path');
     if (generateQuizBtn) {
-      generateQuizBtn.addEventListener('click', async () => {
+      generateQuizBtn.addEventListener('click', () => {
         try {
-          // Show loading
-          if (typeof window.showToast === 'function') {
-            window.showToast('Redirecting to quiz creation...', 'info');
-          }
+          console.log('Generate Quiz clicked - preparing content');
           
           // Combine all unit content (strip HTML/markup for cleaner quiz generation)
           const combinedContent = path.map(p => {
@@ -190,15 +187,25 @@ export function renderLearningPath(container, pathData, userId) {
             return `${p.learning_unit.title}\n\n${content}`;
           }).join('\n\n---\n\n');
           
-          console.log('Preparing quiz from learning path');
-          console.log('Content length:', combinedContent.length);
+          console.log('Content prepared, length:', combinedContent.length);
           
-          // Store content in sessionStorage and redirect to create page
-          sessionStorage.setItem('quizContent', combinedContent);
-          sessionStorage.setItem('quizSource', `Learning Path: ${sourceName}`);
+          // Create a Blob from the content
+          const blob = new Blob([combinedContent], { type: 'text/plain' });
+          const file = new File([blob], `${sourceName}.txt`, { type: 'text/plain' });
           
-          // Redirect to create page
-          window.location.href = '/create';
+          // Store file and metadata in sessionStorage
+          const reader = new FileReader();
+          reader.onload = function(e) {
+            sessionStorage.setItem('preloadedFile', e.target.result);
+            sessionStorage.setItem('preloadedFileName', `${sourceName}.txt`);
+            sessionStorage.setItem('preloadedFileType', 'text/plain');
+            
+            console.log('File stored in sessionStorage, redirecting to /create');
+            
+            // Redirect to create page
+            window.location.href = '/create#quiz-from-path';
+          };
+          reader.readAsDataURL(blob);
           
         } catch (error) {
           console.error('Error preparing quiz:', error);
