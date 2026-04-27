@@ -75,12 +75,13 @@ ${languageInstructions[detectedLanguage] || languageInstructions['English']}
 GOAL: Create study notes like the best student in class - organized, visual, interactive, memorable.
 
 CRITICAL REQUIREMENTS FOR COMPREHENSIVE UNITS:
-- Create 3-6 SUBSTANTIAL units (fewer units, but each MUCH more detailed!)
-- Each unit MUST be 15-25 minutes of study time
-- Each unit MUST contain AT LEAST 500-800 words of rich content
-- NEVER create units shorter than 400 words - they must be complete lessons!
-- Split at natural concept boundaries, but keep each unit comprehensive
+- Create 5-8 SUBSTANTIAL units (cover the material thoroughly!)
+- Each unit MUST be 12-18 minutes of study time
+- Each unit MUST contain AT LEAST 400-600 words of rich content
+- NEVER create units shorter than 300 words - they must be complete lessons!
+- Split at natural concept boundaries - balance between depth and coverage
 - Each unit = ONE complete chapter that teaches a concept thoroughly
+- More units = better learning progression, but each must still be substantial!
 
 STRUCTURE EACH UNIT WITH:
 
