@@ -162,18 +162,25 @@ export function renderLearningPath(container, pathData, userId) {
     const finishBtn = container.querySelector('#finishPathBtn');
     if (finishBtn) {
       finishBtn.addEventListener('click', () => {
-        console.log('Finish button clicked - navigating to lessons page');
-        // Navigate with hash to show My Lessons with paths tab
-        window.location.href = '/lessons#my-lessons-paths';
+        console.log('Finish button clicked - going back to My Lessons');
+        // Direct call to showMyLessons - we're already on lessons page!
+        if (typeof window.showMyLessons === 'function') {
+          window.showMyLessons('paths');
+        } else {
+          console.error('showMyLessons not found on window');
+          // Fallback: reload page with hash
+          window.location.href = '/lessons#my-lessons-paths';
+          window.location.reload();
+        }
       });
     }
 
     const generateQuizBtn = container.querySelector('.generate-quiz-from-path');
     if (generateQuizBtn) {
       generateQuizBtn.addEventListener('click', () => {
+        console.log('Generate Quiz clicked - preparing content');
+        
         try {
-          console.log('Generate Quiz clicked - preparing content');
-          
           // Combine all unit content (strip HTML/markup for cleaner quiz generation)
           const combinedContent = path.map(p => {
             // Remove HTML tags and formula markers for cleaner content
@@ -188,23 +195,53 @@ export function renderLearningPath(container, pathData, userId) {
           }).join('\n\n---\n\n');
           
           console.log('Content prepared, length:', combinedContent.length);
+          console.log('First 100 chars:', combinedContent.substring(0, 100));
           
           // Create a Blob from the content
           const blob = new Blob([combinedContent], { type: 'text/plain' });
-          const file = new File([blob], `${sourceName}.txt`, { type: 'text/plain' });
+          console.log('Blob created, size:', blob.size);
           
           // Store file and metadata in sessionStorage
           const reader = new FileReader();
-          reader.onload = function(e) {
-            sessionStorage.setItem('preloadedFile', e.target.result);
-            sessionStorage.setItem('preloadedFileName', `${sourceName}.txt`);
-            sessionStorage.setItem('preloadedFileType', 'text/plain');
-            
-            console.log('File stored in sessionStorage, redirecting to /create');
-            
-            // Redirect to create page
-            window.location.href = '/create#quiz-from-path';
+          
+          reader.onerror = function(error) {
+            console.error('FileReader error:', error);
+            if (typeof window.showToast === 'function') {
+              window.showToast('Failed to prepare quiz file.', 'error');
+            }
           };
+          
+          reader.onload = function(e) {
+            console.log('FileReader loaded, data length:', e.target.result.length);
+            
+            try {
+              sessionStorage.setItem('preloadedFile', e.target.result);
+              sessionStorage.setItem('preloadedFileName', `${sourceName}.txt`);
+              sessionStorage.setItem('preloadedFileType', 'text/plain');
+              
+              console.log('Stored in sessionStorage:');
+              console.log('- preloadedFileName:', sessionStorage.getItem('preloadedFileName'));
+              console.log('- preloadedFileType:', sessionStorage.getItem('preloadedFileType'));
+              console.log('- preloadedFile length:', sessionStorage.getItem('preloadedFile')?.length);
+              
+              if (typeof window.showToast === 'function') {
+                window.showToast('Redirecting to quiz creation...', 'info');
+              }
+              
+              // Short delay then redirect
+              setTimeout(() => {
+                console.log('Redirecting to /create#quiz-from-path');
+                window.location.href = '/create#quiz-from-path';
+              }, 500);
+              
+            } catch (storageError) {
+              console.error('sessionStorage error:', storageError);
+              if (typeof window.showToast === 'function') {
+                window.showToast('Storage error. Content might be too large.', 'error');
+              }
+            }
+          };
+          
           reader.readAsDataURL(blob);
           
         } catch (error) {
