@@ -26,6 +26,11 @@ export function initHighlighting(unitId, userId, contentElement) {
   // Load existing highlights
   loadHighlights();
   
+  // Prevent default context menu on content
+  contentElement.addEventListener('contextmenu', (e) => {
+    e.preventDefault();
+  });
+  
   // Add selection listener
   contentElement.addEventListener('mouseup', handleTextSelection);
   
@@ -208,18 +213,21 @@ async function loadHighlights() {
 
 /**
  * Render all highlights in the content
+ * SIMPLIFIED: Just wrap with spans, don't modify DOM too much
  */
 function renderHighlights() {
   const contentElement = document.getElementById('unitContent');
   if (!contentElement) return;
   
-  // Get original text content
-  let textContent = contentElement.textContent;
+  // Remove old highlights first
+  contentElement.querySelectorAll('.highlighted-text').forEach(span => {
+    const text = span.textContent;
+    span.replaceWith(document.createTextNode(text));
+  });
   
-  // Sort highlights by start offset (descending) to apply from end to start
-  const sortedHighlights = [...highlights].sort((a, b) => b.start_offset - a.start_offset);
+  if (highlights.length === 0) return;
   
-  // Create an array of text nodes to process
+  // Get all text content with positions
   const walker = document.createTreeWalker(
     contentElement,
     NodeFilter.SHOW_TEXT,
@@ -241,63 +249,67 @@ function renderHighlights() {
     currentOffset += nodeLength;
   }
   
+  // Sort highlights by start offset
+  const sortedHighlights = [...highlights].sort((a, b) => a.start_offset - b.start_offset);
+  
   // Apply highlights
   sortedHighlights.forEach(highlight => {
     const { start_offset, end_offset, color, id } = highlight;
     const colorData = COLORS[color] || COLORS.yellow;
     
-    // Find text nodes that overlap with this highlight
-    textNodes.forEach(({ node, startOffset, endOffset }) => {
-      if (endOffset <= start_offset || startOffset >= end_offset) return;
-      
-      const highlightStart = Math.max(0, start_offset - startOffset);
-      const highlightEnd = Math.min(node.textContent.length, end_offset - startOffset);
-      
-      if (highlightStart < highlightEnd) {
-        // Split and wrap text
-        const before = node.textContent.substring(0, highlightStart);
-        const highlighted = node.textContent.substring(highlightStart, highlightEnd);
-        const after = node.textContent.substring(highlightEnd);
+    // Find the text node containing the start
+    for (const { node, startOffset, endOffset } of textNodes) {
+      if (start_offset >= startOffset && start_offset < endOffset) {
+        // Calculate position within this node
+        const localStart = start_offset - startOffset;
+        const localEnd = Math.min(end_offset - startOffset, node.textContent.length);
         
-        const span = document.createElement('span');
-        span.className = 'highlighted-text';
-        span.dataset.highlightId = id;
-        span.style.cssText = `
-          background:${colorData.bg};
-          border-bottom:2px solid ${colorData.border};
-          padding:2px 0;
-          cursor:pointer;
-          transition:all 0.2s;
-        `;
-        span.textContent = highlighted;
-        
-        // Add hover effect
-        span.addEventListener('mouseenter', () => {
-          span.style.background = colorData.border;
-          span.style.transform = 'translateY(-1px)';
-        });
-        span.addEventListener('mouseleave', () => {
-          span.style.background = colorData.bg;
-          span.style.transform = 'translateY(0)';
-        });
-        
-        // Add click to delete
-        span.addEventListener('click', (e) => {
-          e.stopPropagation();
-          if (confirm('Delete this highlight?')) {
-            deleteHighlight(id);
-          }
-        });
-        
-        // Replace node
-        const fragment = document.createDocumentFragment();
-        if (before) fragment.appendChild(document.createTextNode(before));
-        fragment.appendChild(span);
-        if (after) fragment.appendChild(document.createTextNode(after));
-        
-        node.parentNode.replaceChild(fragment, node);
+        if (localStart < localEnd && node.parentNode) {
+          const before = node.textContent.substring(0, localStart);
+          const highlighted = node.textContent.substring(localStart, localEnd);
+          const after = node.textContent.substring(localEnd);
+          
+          const span = document.createElement('span');
+          span.className = 'highlighted-text';
+          span.dataset.highlightId = id;
+          span.style.cssText = `
+            background:${colorData.bg};
+            border-bottom:2px solid ${colorData.border};
+            padding:2px 0;
+            cursor:pointer;
+            transition:all 0.2s;
+            border-radius:2px;
+          `;
+          span.textContent = highlighted;
+          
+          // Hover effect
+          span.addEventListener('mouseenter', () => {
+            span.style.background = colorData.border;
+            span.style.boxShadow = '0 2px 4px rgba(0,0,0,0.2)';
+          });
+          span.addEventListener('mouseleave', () => {
+            span.style.background = colorData.bg;
+            span.style.boxShadow = 'none';
+          });
+          
+          // Delete on click
+          span.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            await deleteHighlight(id);
+          });
+          
+          // Replace node
+          const fragment = document.createDocumentFragment();
+          if (before) fragment.appendChild(document.createTextNode(before));
+          fragment.appendChild(span);
+          if (after) fragment.appendChild(document.createTextNode(after));
+          
+          node.parentNode.replaceChild(fragment, node);
+          break;
+        }
       }
-    });
+    }
   });
 }
 
@@ -306,20 +318,27 @@ function renderHighlights() {
  */
 async function deleteHighlight(highlightId) {
   try {
+    console.log('Deleting highlight:', highlightId);
+    
     const response = await fetch(`/api/highlights/${highlightId}`, {
       method: 'DELETE'
     });
     
-    if (!response.ok) throw new Error('Failed to delete highlight');
+    if (!response.ok) {
+      const error = await response.text();
+      console.error('Delete failed:', error);
+      throw new Error('Failed to delete highlight');
+    }
     
     // Remove from local array
-    highlights = highlights.filter(h => h.id !== highlightId);
+    highlights = highlights.filter(h => h.id != highlightId);
+    console.log('Highlights after delete:', highlights.length);
     
-    // Re-render
-    renderHighlights();
+    // Reload content and re-render
+    await loadHighlights();
     
     if (window.showToast) {
-      window.showToast('Highlight removed', 'info');
+      window.showToast('Highlight removed ✓', 'success');
     }
   } catch (error) {
     console.error('Error deleting highlight:', error);

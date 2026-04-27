@@ -380,33 +380,49 @@ function openLearningUnit(pathItem, userId) {
     if (e.target === modal) modal.remove();
   });
 
-  // Mark complete
+  // Mark complete (use once flag to prevent double-click)
   const markCompleteBtn = modal.querySelector('#markCompleteBtn');
   if (markCompleteBtn) {
+    let isProcessing = false;
+    
     markCompleteBtn.addEventListener('click', async () => {
+      if (isProcessing) return; // Prevent double-click
+      isProcessing = true;
+      
       markCompleteBtn.disabled = true;
       markCompleteBtn.textContent = 'Saving...';
       
-      const result = await updateUnitProgress(userId, unit.id, 100, true);
-      if (result.success) {
-        // Don't reload - just close and show success
-        modal.remove();
-        
-        // Show success toast
-        if (window.showToast) {
-          window.showToast('Unit completed! 🎉', 'success');
+      try {
+        const result = await updateUnitProgress(userId, unit.id, 100, true);
+        if (result.success) {
+          // Close modal immediately
+          modal.remove();
+          
+          // Show success toast
+          if (window.showToast) {
+            window.showToast('Unit completed! 🎉', 'success');
+          }
+          
+          // Wait a bit then refresh path (prevents duplicate render)
+          await new Promise(resolve => setTimeout(resolve, 500));
+          
+          // Refresh ONLY the learning path container if it exists
+          const pathContainer = document.getElementById('learningPathContainer');
+          if (pathContainer && window.getLearningPath && window.renderLearningPath) {
+            const pathData = await window.getLearningPath(userId);
+            window.renderLearningPath(pathContainer, pathData, userId);
+          }
+        } else {
+          markCompleteBtn.disabled = false;
+          markCompleteBtn.textContent = '✅ Mark Complete';
+          isProcessing = false;
+          alert('Failed to save progress. Please try again.');
         }
-        
-        // Refresh ONLY the learning path container if it exists
-        const pathContainer = document.getElementById('learningPathContainer');
-        if (pathContainer && window.getLearningPath && window.renderLearningPath) {
-          const pathData = await window.getLearningPath(userId);
-          window.renderLearningPath(pathContainer, pathData, userId);
-        }
-      } else {
+      } catch (error) {
+        console.error('Mark complete error:', error);
         markCompleteBtn.disabled = false;
         markCompleteBtn.textContent = '✅ Mark Complete';
-        alert('Failed to save progress. Please try again.');
+        isProcessing = false;
       }
     });
   }
