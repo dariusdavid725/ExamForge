@@ -139,3 +139,77 @@ CREATE INDEX IF NOT EXISTS idx_concept_mastery_user_concept
 CREATE INDEX IF NOT EXISTS idx_concept_mastery_next_review
   ON public.concept_mastery(user_id, next_review_at)
   WHERE next_review_at IS NOT NULL;
+
+-- 9) Learning units (chunks of material)
+CREATE TABLE IF NOT EXISTS public.learning_units (
+  id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  user_id UUID NOT NULL,
+  title TEXT NOT NULL,
+  source_type TEXT NOT NULL, -- 'document', 'topic', 'custom'
+  source_name TEXT,
+  content TEXT NOT NULL,
+  concepts JSONB NOT NULL DEFAULT '[]'::jsonb, -- array of concept names
+  difficulty_level INTEGER NOT NULL DEFAULT 1, -- 1-5 scale
+  estimated_time_minutes INTEGER NOT NULL DEFAULT 15,
+  sequence_order INTEGER NOT NULL DEFAULT 0,
+  parent_unit_id BIGINT REFERENCES public.learning_units(id) ON DELETE CASCADE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_learning_units_user
+  ON public.learning_units(user_id, sequence_order);
+
+CREATE INDEX IF NOT EXISTS idx_learning_units_parent
+  ON public.learning_units(parent_unit_id);
+
+-- 10) Concepts (extracted from materials)
+CREATE TABLE IF NOT EXISTS public.concepts (
+  id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  name TEXT NOT NULL,
+  description TEXT,
+  category TEXT,
+  difficulty_level INTEGER NOT NULL DEFAULT 1, -- 1-5 scale
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE(name)
+);
+
+CREATE INDEX IF NOT EXISTS idx_concepts_name
+  ON public.concepts(name);
+
+-- 11) Concept dependencies (prerequisite relationships)
+CREATE TABLE IF NOT EXISTS public.concept_dependencies (
+  id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  concept_id BIGINT NOT NULL REFERENCES public.concepts(id) ON DELETE CASCADE,
+  prerequisite_id BIGINT NOT NULL REFERENCES public.concepts(id) ON DELETE CASCADE,
+  strength INTEGER NOT NULL DEFAULT 1, -- 1-3: weak, medium, strong dependency
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE(concept_id, prerequisite_id),
+  CHECK (concept_id != prerequisite_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_concept_dependencies_concept
+  ON public.concept_dependencies(concept_id);
+
+CREATE INDEX IF NOT EXISTS idx_concept_dependencies_prerequisite
+  ON public.concept_dependencies(prerequisite_id);
+
+-- 12) User learning paths
+CREATE TABLE IF NOT EXISTS public.user_learning_paths (
+  id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  user_id UUID NOT NULL,
+  learning_unit_id BIGINT NOT NULL REFERENCES public.learning_units(id) ON DELETE CASCADE,
+  status TEXT NOT NULL DEFAULT 'locked', -- 'locked', 'available', 'in_progress', 'completed'
+  progress_percentage INTEGER NOT NULL DEFAULT 0,
+  started_at TIMESTAMPTZ,
+  completed_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE(user_id, learning_unit_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_user_learning_paths_user
+  ON public.user_learning_paths(user_id, status);
+
+CREATE INDEX IF NOT EXISTS idx_user_learning_paths_unit
+  ON public.user_learning_paths(learning_unit_id);

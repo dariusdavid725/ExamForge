@@ -1,0 +1,215 @@
+import express from "express";
+import { createClient } from "@supabase/supabase-js";
+import {
+  chunkMaterial,
+  extractConceptsAndDependencies,
+  storeLearningUnits,
+  storeConceptsAndDependencies,
+  getUserLearningPath,
+  updateLearningProgress,
+  getConceptMasteryWithPrerequisites
+} from "../services/learningService.js";
+import { extractTextFromFile } from "../services/documentService.js";
+
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_KEY
+);
+
+const router = express.Router();
+
+/**
+ * POST /api/learning/process-material
+ * Process uploaded document into learning units
+ */
+router.post("/process-material", async (req, res) => {
+  try {
+    const { userId, documentName, documentText, sourceType = 'document' } = req.body;
+
+    if (!userId || !documentText) {
+      return res.status(400).json({ error: "Missing required fields" });
+    }
+
+    // Step 1: Chunk material into learning units
+    console.log("Chunking material into learning units...");
+    const units = await chunkMaterial(documentText, documentName, sourceType);
+
+    if (units.length === 0) {
+      return res.status(400).json({ error: "Failed to chunk material" });
+    }
+
+    // Step 2: Extract concepts and dependencies
+    console.log("Extracting concepts and dependencies...");
+    const conceptsData = await extractConceptsAndDependencies(units);
+
+    // Step 3: Store everything in database
+    console.log("Storing learning units...");
+    const storedUnits = await storeLearningUnits(userId, units, documentName, sourceType);
+
+    console.log("Storing concepts and dependencies...");
+    await storeConceptsAndDependencies(conceptsData);
+
+    res.json({
+      success: true,
+      units: storedUnits,
+      conceptsCount: conceptsData.concepts.length,
+      dependenciesCount: conceptsData.dependencies.length,
+      message: `Created ${storedUnits.length} learning units with ${conceptsData.concepts.length} concepts`
+    });
+
+  } catch (error) {
+    console.error("Error processing material:", error);
+    res.status(500).json({ error: "Failed to process material" });
+  }
+});
+
+/**
+ * POST /api/learning/process-upload
+ * Process file upload (PDF/image) into learning path
+ */
+router.post("/process-upload", async (req, res) => {
+  try {
+    const { userId, file } = req.body;
+
+    if (!userId || !file || !file.buffer) {
+      return res.status(400).json({ error: "Missing file or userId" });
+    }
+
+    // Extract text from file
+    const text = await extractTextFromFile(file);
+
+    if (!text || text.length < 100) {
+      return res.status(400).json({ error: "Could not extract enough text from file" });
+    }
+
+    // Process the extracted text
+    const units = await chunkMaterial(text, file.originalname || 'Document', 'document');
+    const conceptsData = await extractConceptsAndDependencies(units);
+    const storedUnits = await storeLearningUnits(userId, units, file.originalname, 'document');
+    await storeConceptsAndDependencies(conceptsData);
+
+    res.json({
+      success: true,
+      units: storedUnits,
+      conceptsCount: conceptsData.concepts.length
+    });
+
+  } catch (error) {
+    console.error("Error processing upload:", error);
+    res.status(500).json({ error: "Failed to process upload" });
+  }
+});
+
+/**
+ * GET /api/learning/path/:userId
+ * Get user's learning path with progress
+ */
+router.get("/path/:userId", async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { sourceType } = req.query;
+
+    const path = await getUserLearningPath(userId, sourceType);
+
+    res.json({
+      success: true,
+      path,
+      totalUnits: path.length,
+      completedUnits: path.filter(p => p.status === 'completed').length,
+      currentUnit: path.find(p => p.status === 'in_progress') || path.find(p => p.status === 'available')
+    });
+
+  } catch (error) {
+    console.error("Error getting learning path:", error);
+    res.status(500).json({ error: "Failed to get learning path" });
+  }
+});
+
+/**
+ * POST /api/learning/progress
+ * Update progress on a learning unit
+ */
+router.post("/progress", async (req, res) => {
+  try {
+    const { userId, unitId, progressPercentage, completed } = req.body;
+
+    if (!userId || !unitId || progressPercentage === undefined) {
+      return res.status(400).json({ error: "Missing required fields" });
+    }
+
+    const success = await updateLearningProgress(
+      userId,
+      unitId,
+      progressPercentage,
+      completed || false
+    );
+
+    res.json({
+      success,
+      message: completed ? "Unit completed!" : "Progress updated"
+    });
+
+  } catch (error) {
+    console.error("Error updating progress:", error);
+    res.status(500).json({ error: "Failed to update progress" });
+  }
+});
+
+/**
+ * GET /api/learning/concept/:userId/:conceptName
+ * Get concept details with prerequisites and user mastery
+ */
+router.get("/concept/:userId/:conceptName", async (req, res) => {
+  try {
+    const { userId, conceptName } = req.params;
+
+    const conceptData = await getConceptMasteryWithPrerequisites(
+      userId,
+      decodeURIComponent(conceptName)
+    );
+
+    if (!conceptData) {
+      return res.status(404).json({ error: "Concept not found" });
+    }
+
+    res.json({
+      success: true,
+      ...conceptData
+    });
+
+  } catch (error) {
+    console.error("Error getting concept:", error);
+    res.status(500).json({ error: "Failed to get concept" });
+  }
+});
+
+/**
+ * GET /api/learning/next-review/:userId
+ * Get concepts due for spaced repetition review
+ */
+router.get("/next-review/:userId", async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    // This uses existing progressService functionality
+    const { data: dueForReview } = await supabase
+      .from('concept_mastery')
+      .select('*')
+      .eq('user_id', userId)
+      .lte('next_review_at', new Date().toISOString())
+      .order('next_review_at', { ascending: true })
+      .limit(10);
+
+    res.json({
+      success: true,
+      concepts: dueForReview || [],
+      count: (dueForReview || []).length
+    });
+
+  } catch (error) {
+    console.error("Error getting review concepts:", error);
+    res.status(500).json({ error: "Failed to get review concepts" });
+  }
+});
+
+export default router;
