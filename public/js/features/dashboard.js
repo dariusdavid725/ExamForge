@@ -132,22 +132,37 @@ export async function renderDashboard(
       <!-- ── RIGHT COLUMN: actions + friends side by side ── -->
       <div class="dash-col">
 
-        <!-- TOP ROW: Quick Start (left) + Friends (right) -->
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <!-- TOP ROW: Quick Start + Stats (left) | Friends (right) -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:start;">
           
-          <!-- Quick Start (bigger) -->
-          <div class="card">
-            <div class="eyebrow" style="font-size:10px;margin-bottom:10px;">QUICK START</div>
-            <div style="display:grid;gap:8px;">
-              <button id="dashCreateBtn" class="btn" type="button" style="padding:12px;font-size:13px;">⚡ Create Arena</button>
-              <button id="dashJoinBtn"   class="btn btn-secondary" type="button" style="padding:12px;font-size:13px;">Join Arena</button>
-              <a href="/lessons"         class="btn btn-secondary" style="padding:12px;font-size:13px;text-align:center;display:block;">📚 My Lessons</a>
-              <button id="dashHistoryBtn" class="btn btn-secondary" type="button" style="padding:12px;font-size:13px;">📊 My History</button>
-              ${isAdmin ? `<a href="/admin" class="btn btn-secondary" style="padding:12px;font-size:13px;text-align:center;display:block;">🛠 Admin Panel</a>` : ""}
+          <!-- LEFT: Quick Start + Stats below -->
+          <div style="display:flex;flex-direction:column;gap:10px;">
+            <!-- Quick Start -->
+            <div class="card" style="padding:12px 14px 12px;">
+              <div class="eyebrow" style="font-size:10px;margin-bottom:10px;">QUICK START</div>
+              <div style="display:grid;gap:8px;">
+                <button id="dashCreateBtn" class="btn" type="button" style="padding:12px;font-size:13px;">⚡ Create Arena</button>
+                <button id="dashJoinBtn"   class="btn btn-secondary" type="button" style="padding:12px;font-size:13px;">Join Arena</button>
+                <a href="/lessons"         class="btn btn-secondary" style="padding:12px;font-size:13px;text-align:center;display:block;">📚 My Lessons</a>
+                <button id="dashHistoryBtn" class="btn btn-secondary" type="button" style="padding:12px;font-size:13px;">📊 My History</button>
+                ${isAdmin ? `<a href="/admin" class="btn btn-secondary" style="padding:12px;font-size:13px;text-align:center;display:block;">🛠 Admin Panel</a>` : ""}
+              </div>
+            </div>
+
+            <!-- Stats below Quick Start -->
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+              <div class="flat-card" style="padding:8px;text-align:center;">
+                <div style="font-size:8px;font-weight:700;color:var(--muted);margin-bottom:3px;letter-spacing:0.05em;">ACCURACY</div>
+                <div style="font-size:18px;font-weight:900;line-height:1;color:${overallAccuracy >= 80 ? 'var(--green)' : overallAccuracy >= 60 ? 'var(--blue)' : 'var(--muted)'};">${overallAccuracy || 0}%</div>
+              </div>
+              <div class="flat-card" style="padding:8px;text-align:center;">
+                <div style="font-size:8px;font-weight:700;color:var(--muted);margin-bottom:3px;letter-spacing:0.05em;">THIS WEEK</div>
+                <div style="font-size:18px;font-weight:900;line-height:1;color:var(--blue);">${thisWeekQuizzes || 0}</div>
+              </div>
             </div>
           </div>
 
-          <!-- Friends Leaderboard (right, no scroll) -->
+          <!-- RIGHT: Friends Leaderboard -->
           <div class="card">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
               <div class="eyebrow" style="font-size:10px;">FRIENDS</div>
@@ -167,18 +182,6 @@ export async function renderDashboard(
               : ''}
           </div>
 
-        </div>
-
-        <!-- BOTTOM ROW: Stats (smaller, full width) -->
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-          <div class="flat-card" style="padding:8px;text-align:center;">
-            <div style="font-size:8px;font-weight:700;color:var(--muted);margin-bottom:3px;letter-spacing:0.05em;">ACCURACY</div>
-            <div style="font-size:18px;font-weight:900;line-height:1;color:${overallAccuracy >= 80 ? 'var(--green)' : overallAccuracy >= 60 ? 'var(--blue)' : 'var(--muted)'};">${overallAccuracy || 0}%</div>
-          </div>
-          <div class="flat-card" style="padding:8px;text-align:center;">
-            <div style="font-size:8px;font-weight:700;color:var(--muted);margin-bottom:3px;letter-spacing:0.05em;">THIS WEEK</div>
-            <div style="font-size:18px;font-weight:900;line-height:1;color:var(--blue);">${thisWeekQuizzes || 0}</div>
-          </div>
         </div>
 
         <!-- Friend Requests (if any) -->

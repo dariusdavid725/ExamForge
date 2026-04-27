@@ -508,8 +508,8 @@ function injectThemeStyles() {
     .ef-theme-toggle {
       position: fixed;
       left: 20px;
-      bottom: 20px;
-      z-index: 80;
+      bottom: 80px;
+      z-index: 150;
       width: 44px;
       height: 44px;
       border-radius: 50%;
