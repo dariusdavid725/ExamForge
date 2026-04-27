@@ -2,13 +2,40 @@ import express from "express";
 import { createClient } from "@supabase/supabase-js";
 
 const router = express.Router();
-const ADMIN_EVENT_EMAILS = new Set([
-  "dariusdavid26@yahoo.com"
-]);
 const supabaseAdmin = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_SERVICE_KEY
 );
+const ADMIN_BOOTSTRAP_EMAILS = new Set(
+  String(process.env.ADMIN_EMAILS || "dariusdavid26@yahoo.com")
+    .split(",")
+    .map(v => v.trim().toLowerCase())
+    .filter(Boolean)
+);
+
+async function getAdminUserFromRequest(req) {
+  const authHeader = String(req.headers.authorization || "");
+  if (!authHeader.startsWith("Bearer ")) return null;
+
+  const token = authHeader.slice("Bearer ".length).trim();
+  if (!token) return null;
+
+  const { data, error } = await supabaseAdmin.auth.getUser(token);
+  if (error || !data?.user) return null;
+
+  const user = data.user;
+  const { data: profile } = await supabaseAdmin
+    .from("profiles")
+    .select("is_admin")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  const email = String(user.email || "").toLowerCase();
+  const isAdmin = Boolean(profile?.is_admin) || ADMIN_BOOTSTRAP_EMAILS.has(email);
+  if (!isAdmin) return null;
+
+  return user;
+}
 
 // Expose public config (anon key is safe for the frontend)
 router.get("/config", (req, res) => {
@@ -48,8 +75,8 @@ router.post("/events", (req, res) => {
 
 router.get("/events/stats", async (req, res) => {
   try {
-    const email = String(req.query.email || "").trim().toLowerCase();
-    if (!ADMIN_EVENT_EMAILS.has(email)) {
+    const adminUser = await getAdminUserFromRequest(req);
+    if (!adminUser) {
       return res.status(403).json({ error: "Forbidden." });
     }
 

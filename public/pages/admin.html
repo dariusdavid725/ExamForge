@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ExamForge — Admin</title>
+  <link rel="stylesheet" href="/css/styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+</head>
+<body>
+  <header>
+    <div class="container nav">
+      <div class="brand" id="brandLogo" style="cursor:pointer;">
+        <div class="brand-mark">E</div>
+        <div>
+          <div>ExamForge Arena</div>
+          <div style="font-size:12px;color:var(--muted);letter-spacing:0;font-weight:800;">admin panel</div>
+        </div>
+      </div>
+      <div id="headerUserArea" style="display:none;align-items:center;gap:8px;cursor:pointer;"></div>
+    </div>
+  </header>
+
+  <main class="container" style="padding-top:32px;max-width:980px;">
+    <div class="card" id="adminGuardCard">
+      <p class="muted">Checking admin access...</p>
+    </div>
+
+    <div id="adminContent" class="hidden" style="display:grid;gap:14px;margin-top:14px;">
+      <div class="card" id="adminOverviewCard"></div>
+
+      <div class="card">
+        <div class="eyebrow">Admin access</div>
+        <h3 style="margin:10px 0 10px;">Manage admins</h3>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;">
+          <input id="adminEmailInput" class="input" placeholder="user@email.com" style="max-width:360px;" />
+          <button id="grantAdminBtn" class="btn" type="button">Grant admin</button>
+        </div>
+        <p id="adminActionStatus" class="status"></p>
+        <div id="adminList" style="display:grid;gap:8px;margin-top:12px;"></div>
+      </div>
+
+      <div class="card">
+        <div class="eyebrow">Product events</div>
+        <h3 style="margin:10px 0 10px;">Recent events</h3>
+        <div id="recentEventsList" style="display:grid;gap:8px;"></div>
+      </div>
+    </div>
+  </main>
+
+  <script type="module" src="/js/pages/admin.js"></script>
+</body>
+</html>

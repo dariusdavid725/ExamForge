@@ -13,6 +13,7 @@ import roomInviteRoutes  from "./src/routes/roomInviteRoutes.js";
 import lessonRoutes      from "./src/routes/lessonRoutes.js";
 import userLessonRoutes  from "./src/routes/userLessonRoutes.js";
 import stripeRoutes      from "./src/routes/stripeRoutes.js";
+import adminRoutes       from "./src/routes/adminRoutes.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const pub       = p => path.join(__dirname, "public", "pages", p);
@@ -29,6 +30,7 @@ app.get("/arena",          (_req, res) => res.sendFile(pub("arena.html")));
 app.get("/lessons",        (_req, res) => res.sendFile(pub("lessons.html")));
 app.get("/pricing",        (_req, res) => res.sendFile(pub("pricing.html")));
 app.get("/demo",           (_req, res) => res.sendFile(pub("demo.html")));
+app.get("/admin",          (_req, res) => res.sendFile(pub("admin.html")));
 app.get("/upgrade-success",(_req, res) => res.sendFile(pub("upgrade-success.html")));
 
 // ─── Static assets (css, js, images) ─────────────────────────────────────────
@@ -50,6 +52,7 @@ app.use("/api", roomInviteRoutes);
 app.use("/api/rooms", roomRoutes);
 app.use("/api/lessons", lessonRoutes);
 app.use("/api", userLessonRoutes);
+app.use("/api", adminRoutes);
 
 if (!process.env.VERCEL) {
   const port = process.env.PORT || 3000;

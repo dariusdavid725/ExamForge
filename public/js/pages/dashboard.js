@@ -1,3 +1,4 @@
+import { getSession } from "../shared/auth.js";
 import { installFeedback } from "../shared/uiFeedback.js";
 import { installThemeToggle } from "../shared/theme.js";
 import { initHeader, nav } from "../shared/nav.js";
@@ -74,8 +75,8 @@ async function showDashboard() {
 }
 
 async function renderActivationMetrics(container, user) {
-  const email = String(user?.email || "").trim().toLowerCase();
-  if (email !== "dariusdavid26@yahoo.com") return;
+  const isBootstrapAdmin = String(user?.email || "").toLowerCase() === "dariusdavid26@yahoo.com";
+  if (!userProfile?.is_admin && !isBootstrapAdmin) return;
 
   const card = document.createElement("div");
   card.className = "card";
@@ -88,7 +89,13 @@ async function renderActivationMetrics(container, user) {
   container.prepend(card);
 
   try {
-    const response = await fetch(`/api/events/stats?email=${encodeURIComponent(email)}`);
+    const session = await getSession();
+    const token = session?.access_token;
+    if (!token) throw new Error("Missing auth session.");
+
+    const response = await fetch("/api/events/stats", {
+      headers: { Authorization: `Bearer ${token}` }
+    });
     const data = await response.json();
     if (!response.ok) throw new Error(data.error || "Could not load metrics.");
 

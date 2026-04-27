@@ -62,3 +62,14 @@ CREATE INDEX IF NOT EXISTS idx_product_events_name_created_at
 
 CREATE INDEX IF NOT EXISTS idx_product_events_created_at
   ON public.product_events(created_at DESC);
+
+-- 5) Admin access control
+ALTER TABLE public.profiles
+  ADD COLUMN IF NOT EXISTS is_admin BOOLEAN NOT NULL DEFAULT FALSE;
+
+-- Bootstrap initial admin (safe to re-run)
+UPDATE public.profiles p
+SET is_admin = TRUE
+FROM auth.users u
+WHERE p.id = u.id
+  AND lower(u.email) = 'dariusdavid26@yahoo.com';

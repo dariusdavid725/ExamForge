@@ -63,6 +63,7 @@ export async function renderDashboard(
   const avatarLetter = (profile?.username || user.email || "U")[0].toUpperCase();
   const avatarColor  = profile?.avatar_color  || "#4f46e5";
   const isPremium    = (profile?.plan || "free") === "premium";
+  const isAdmin      = Boolean(profile?.is_admin) || String(user?.email || "").toLowerCase() === "dariusdavid26@yahoo.com";
 
   container.innerHTML = `
     <div class="dash-layout">
@@ -127,6 +128,7 @@ export async function renderDashboard(
             <button id="dashJoinBtn"   class="btn btn-secondary" type="button" style="padding:10px;font-size:13px;">Join Arena</button>
             <a href="/lessons"         class="btn btn-secondary" style="padding:10px;font-size:13px;text-align:center;">📚 My Lessons</a>
             <button id="dashHistoryBtn" class="btn btn-secondary" type="button" style="padding:10px;font-size:13px;">My History</button>
+            ${isAdmin ? `<a href="/admin" class="btn btn-secondary" style="padding:10px;font-size:13px;text-align:center;grid-column:1 / -1;">🛠 Admin Panel</a>` : ""}
           </div>
         </div>
 

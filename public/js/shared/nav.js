@@ -9,6 +9,7 @@ export const nav = {
   join:      (code) => { window.location.href = code ? `/join?room=${code}` : "/join"; },
   login:     ()     => { window.location.href = "/login"; },
   dashboard: ()     => { window.location.href = "/dashboard"; },
+  admin:     ()     => { window.location.href = "/admin"; },
   lessons:   ()     => { window.location.href = "/lessons"; },
   pricing:   ()     => { window.location.href = "/pricing"; },
   arena:     code   => { window.location.href = `/arena?room=${code}`; }
@@ -88,6 +89,10 @@ async function _renderUserHeader(user, profile) {
            text-decoration:none;color:var(--text);border-bottom:2px solid var(--text);">
           ${plan === "premium" ? "Gestioneaza abonamentul" : "Abonament ⭐"}
         </a>
+        ${profile?.is_admin || String(user?.email || "").toLowerCase() === "dariusdavid26@yahoo.com" ? `<a href="/admin" style="display:block;padding:12px 16px;font-weight:700;
+           text-decoration:none;color:var(--text);border-bottom:2px solid var(--text);">
+          Admin
+        </a>` : ""}
         <button id="dropdownLogout" style="
           display:block;width:100%;text-align:left;padding:12px 16px;font-weight:700;
           background:none;border:none;cursor:pointer;font-family:inherit;font-size:inherit;
