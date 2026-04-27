@@ -216,16 +216,7 @@ export function renderLearningPath(container, pathData, userId) {
   }
 }
 
-function escapeHTML(str) {
-  if (!str) return '';
-  return String(str).replace(/[&<>"']/g, match => ({
-    '&': '&amp;',
-    '<': '&lt;',
-    '>': '&gt;',
-    '"': '&quot;',
-    "'": '&#039;'
-  }[match]));
-}
+// Remove duplicate escapeHTML - already defined at line 219
 
 /**
  * Render individual learning unit card
