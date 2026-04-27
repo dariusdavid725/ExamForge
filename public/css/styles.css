@@ -959,23 +959,38 @@ blockquote {
   align-items: start;
 }
 
-@media (max-width: 860px) { .dash-layout { grid-template-columns: 1fr; } }
+@media (max-width: 960px) { 
+  .dash-grid-3 { grid-template-columns: 1fr; }
+  .dash-top-row { grid-template-columns: 1fr; text-align: center; }
+}
 
 .dash-layout {
   display: grid;
-  grid-template-columns: 380px 1fr;
-  gap: 16px;
+  gap: 12px;
+}
+
+.dash-top-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 12px;
+  align-items: center;
+}
+
+.dash-grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
   align-items: start;
 }
 
 .dash-col {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
 }
 
 .dash-col .card {
-  padding: 12px 14px;
+  padding: 10px 12px;
 }
 
 .dash-profile-card { 
