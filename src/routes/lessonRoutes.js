@@ -87,31 +87,42 @@ router.post("/generate", upload.single("document"), async (req, res) => {
         { role: "system", content: systemMsg },
         {
           role: "user",
-          content: `Create a comprehensive structured lesson.
+          content: `Create a cognitively optimized lesson following evidence-based learning principles.
+
+Research principles to apply:
+1. Dual Coding: combine verbal explanations with concrete examples
+2. Elaborative Interrogation: explain "why" and "how"
+3. Chunking: break complex ideas into digestible pieces
+4. Retrieval Cues: provide memory hooks tied to prior knowledge
+5. Metacognition: help learners monitor their understanding
 
 JSON schema:
 {
   "title": "string",
   "language": "string (e.g. Romanian, English, French)",
   "summary": "string (2-3 sentence overview)",
-  "objectives": ["string"],
-  "keyConcepts": ["string"],
+  "objectives": ["string (specific, measurable learning goals)"],
+  "keyConcepts": ["string (core ideas with brief context)"],
   "sections": [
     {
       "title": "string",
-      "content": "string (detailed explanation, 3-5 sentences)",
-      "keyPoints": ["string"]
+      "content": "string (explanation with WHY/HOW, not just WHAT - aim 4-8 sentences)",
+      "example": "string (concrete example or analogy from real-world)",
+      "keyPoints": ["string (actionable takeaways)"],
+      "commonMisconception": "string (optional: what students often get wrong and why)"
     }
   ],
-  "memoryTips": ["string"]
+  "memoryTips": ["string (mnemonic devices, analogies, visualization cues)"],
+  "selfCheckQuestions": ["string (2-3 questions students should ask themselves)"]
 }
 
-Rules:
-- Match language for ALL text fields
-- 3-6 sections covering the main topics
-- 5-8 key concepts
-- 3-5 learning objectives
-- 2-4 memory tips
+Quality standards:
+- 4-7 sections (focused depth > breadth)
+- Each section: explanation + concrete example + key takeaways
+- Objectives use Bloom's verbs (explain, analyze, apply, compare)
+- Memory tips linked to vivid imagery or existing knowledge
+- Address 1-2 common misconceptions explicitly
+- Self-check questions promote metacognition
 
 ${contentSource}`
         }
@@ -165,23 +176,37 @@ router.post("/quiz", async (req, res) => {
         },
         {
           role: "user",
-          content: `Create 8 quiz questions based on this lesson.
+          content: `Create 8 evidence-based quiz questions optimized for learning (not just testing).
 
-Mix difficulties: 3 easy, 3 medium, 2 hard.
-Cover all major sections of the lesson.
-Each question must have exactly 4 options with ONE correct answer.
+Research principles:
+- Retrieval Practice: questions should strengthen memory through active recall
+- Desirable Difficulty: mix challenge levels to optimize learning
+- Discrimination: distractors based on real misconceptions, not random wrong answers
+- Elaboration: explanations teach, not just confirm right/wrong
+
+Question design standards:
+- AVOID trivial recall ("What is X called?")
+- PREFER application ("When would you use X?")
+- PREFER conceptual understanding ("Why does X happen?")
+- Distractors = plausible errors students actually make
+
+Mix cognitive levels:
+- 2 remember/understand (foundational)
+- 4 apply/analyze (transfer knowledge)
+- 2 evaluate/synthesize (deeper reasoning)
 
 JSON schema:
 {
   "questions": [
     {
       "id": "q1",
-      "question": "string",
+      "question": "string (clear scenario or problem)",
       "options": ["string", "string", "string", "string"],
       "correctAnswer": "string (must match one option exactly)",
-      "explanation": "string (explain why this answer is correct)",
+      "explanation": "string (why correct + why common wrong answers fail - teach through feedback)",
       "concept": "string (which key concept this tests)",
-      "difficulty": "easy|medium|hard"
+      "difficulty": "foundational|application|advanced",
+      "cognitiveLevel": "remember|understand|apply|analyze"
     }
   ]
 }

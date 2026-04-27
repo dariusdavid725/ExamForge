@@ -472,18 +472,87 @@ export function renderPodium(data, currentPack) {
 
 export function renderRecoveryLesson(lesson) {
   dom.lessonBox.innerHTML = "";
-  const title = document.createElement("h2"); title.textContent = lesson.title;
+  
+  const title = document.createElement("h2");
+  title.textContent = lesson.title;
+  title.style.marginBottom = "12px";
   dom.lessonBox.appendChild(title);
-  const summary = document.createElement("p"); summary.className = "muted"; summary.textContent = lesson.summary;
+  
+  const summary = document.createElement("p");
+  summary.className = "muted";
+  summary.textContent = lesson.summary;
+  summary.style.cssText = "line-height:1.7;font-size:15px;margin-bottom:24px;";
   dom.lessonBox.appendChild(summary);
+  
   if (!lesson.sections || lesson.sections.length === 0) {
-    const empty = document.createElement("div"); empty.className = "pill"; empty.textContent = "No missed concepts. Nice run.";
-    dom.lessonBox.appendChild(empty); return;
+    const empty = document.createElement("div");
+    empty.className = "pill";
+    empty.textContent = "No missed concepts. Nice run.";
+    dom.lessonBox.appendChild(empty);
+    return;
   }
+  
   lesson.sections.forEach(section => {
-    const card = document.createElement("div"); card.className = "card";
-    card.style.cssText = "box-shadow:5px 5px 0 var(--text);margin-top:8px;";
-    card.innerHTML = `<div class="eyebrow">${escapeHTML(section.concept)}</div><h3 style="margin-top:14px;">What went wrong</h3><p class="muted" style="margin-top:8px;">${escapeHTML(section.whatWentWrong)}</p><h3 style="margin-top:18px;">Mini lesson</h3><p class="muted" style="margin-top:8px;">${escapeHTML(section.miniLesson)}</p><h3 style="margin-top:18px;">Memory hook</h3><p class="muted" style="margin-top:8px;">${escapeHTML(section.memoryHook)}</p><h3 style="margin-top:18px;">Retry challenge</h3><p style="margin-top:8px;font-weight:900;">${escapeHTML(section.retryChallenge)}</p>`;
+    const card = document.createElement("div");
+    card.className = "card";
+    card.style.cssText = "box-shadow:5px 5px 0 var(--text);margin-bottom:20px;";
+    card.innerHTML = `
+      <div class="eyebrow" style="margin-bottom:16px;">${escapeHTML(section.concept)}</div>
+      
+      <div style="padding:16px;background:#fff4c7;border-left:4px solid var(--orange);border-radius:8px;margin-bottom:20px;">
+        <strong style="font-size:13px;letter-spacing:.04em;color:var(--orange);">🔍 Misconception Identified</strong>
+        <p style="margin-top:10px;line-height:1.7;color:var(--text);">${escapeHTML(section.misconceptionIdentified || section.whatWentWrong || "")}</p>
+      </div>
+      
+      ${section.whyItMatters ? `
+        <div style="margin-bottom:20px;">
+          <strong style="font-size:14px;">Why This Matters</strong>
+          <p class="muted" style="margin-top:10px;line-height:1.7;">${escapeHTML(section.whyItMatters)}</p>
+        </div>
+      ` : ""}
+      
+      <div style="margin-bottom:20px;">
+        <strong style="font-size:14px;">Correct Understanding</strong>
+        <p style="margin-top:12px;line-height:1.8;font-size:15px;">${escapeHTML(section.correctUnderstanding || section.miniLesson || "")}</p>
+      </div>
+      
+      ${section.concreteExample ? `
+        <div style="padding:18px;background:var(--bg-light);border-left:4px solid var(--blue);border-radius:8px;margin-bottom:20px;">
+          <strong style="font-size:13px;letter-spacing:.04em;color:var(--blue);">💡 Concrete Example</strong>
+          <p style="margin-top:10px;line-height:1.7;color:var(--text);">${escapeHTML(section.concreteExample)}</p>
+        </div>
+      ` : ""}
+      
+      <div style="padding:16px;background:var(--bg-light);border-radius:8px;margin-bottom:20px;">
+        <strong style="font-size:13px;letter-spacing:.04em;">🧠 Memory Hook</strong>
+        <p style="margin-top:10px;line-height:1.7;font-weight:600;">${escapeHTML(section.memoryHook)}</p>
+      </div>
+      
+      ${section.selfTestPrompt || section.retryChallenge ? `
+        <div style="padding:16px;background:#e8f4f8;border-left:4px solid var(--green);border-radius:8px;">
+          <strong style="font-size:13px;letter-spacing:.04em;color:var(--green);">✓ Self-Test</strong>
+          <p style="margin-top:10px;line-height:1.7;font-style:italic;">${escapeHTML(section.selfTestPrompt || section.retryChallenge || "")}</p>
+        </div>
+      ` : ""}
+    `;
     dom.lessonBox.appendChild(card);
   });
+  
+  if (lesson.nextSteps && lesson.nextSteps.length > 0) {
+    const nextStepsCard = document.createElement("div");
+    nextStepsCard.className = "card";
+    nextStepsCard.style.cssText = "box-shadow:5px 5px 0 var(--text);margin-top:12px;";
+    nextStepsCard.innerHTML = `
+      <div class="eyebrow">Next Steps</div>
+      <ul style="margin-top:14px;display:grid;gap:12px;list-style:none;padding:0;">
+        ${lesson.nextSteps.map(step => `
+          <li style="display:flex;gap:10px;align-items:flex-start;">
+            <span style="color:var(--green);flex-shrink:0;font-weight:900;font-size:18px;">→</span>
+            <span style="line-height:1.6;font-weight:600;">${escapeHTML(step)}</span>
+          </li>
+        `).join("")}
+      </ul>
+    `;
+    dom.lessonBox.appendChild(nextStepsCard);
+  }
 }

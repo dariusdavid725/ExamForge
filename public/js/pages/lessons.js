@@ -404,25 +404,51 @@ function renderLesson(l) {
   el("lessonSectionsContainer").innerHTML = (l.sections || []).map(s => `
     <div class="card">
       <div class="eyebrow">${escapeHTML(s.title)}</div>
-      <p style="margin-top:14px;line-height:1.8;">${escapeHTML(s.content)}</p>
+      <p style="margin-top:14px;line-height:1.8;font-size:16px;">${escapeHTML(s.content)}</p>
+      
+      ${s.example ? `
+        <div style="margin-top:20px;padding:18px;background:var(--bg-light);border-left:4px solid var(--blue);border-radius:8px;">
+          <strong style="font-size:13px;letter-spacing:.04em;color:var(--blue);">💡 Example</strong>
+          <p style="margin-top:10px;line-height:1.7;color:var(--text);">${escapeHTML(s.example)}</p>
+        </div>` : ""}
+      
       ${s.keyPoints?.length ? `
-        <div style="margin-top:18px;">
-          <strong style="font-size:13px;letter-spacing:.04em;">Key Points</strong>
-          <ul style="margin-top:10px;display:grid;gap:7px;list-style:none;padding:0;">
+        <div style="margin-top:20px;">
+          <strong style="font-size:13px;letter-spacing:.04em;">Key Takeaways</strong>
+          <ul style="margin-top:12px;display:grid;gap:10px;list-style:none;padding:0;">
             ${s.keyPoints.map(p => `
-              <li style="display:flex;gap:8px;align-items:flex-start;">
-                <span style="color:var(--blue);flex-shrink:0;font-weight:900;">→</span>
-                <span>${escapeHTML(p)}</span>
+              <li style="display:flex;gap:10px;align-items:flex-start;">
+                <span style="color:var(--green);flex-shrink:0;font-weight:900;font-size:18px;">✓</span>
+                <span style="line-height:1.6;">${escapeHTML(p)}</span>
               </li>`).join("")}
           </ul>
+        </div>` : ""}
+      
+      ${s.commonMisconception ? `
+        <div style="margin-top:20px;padding:16px;background:#fff4c7;border-left:4px solid var(--orange);border-radius:8px;">
+          <strong style="font-size:13px;letter-spacing:.04em;color:var(--orange);">⚠️ Common Misconception</strong>
+          <p style="margin-top:10px;line-height:1.7;color:var(--text);">${escapeHTML(s.commonMisconception)}</p>
         </div>` : ""}
     </div>`).join("");
 
   el("lessonMemoryTips").innerHTML = (l.memoryTips || []).map(t => `
     <li style="display:flex;gap:10px;align-items:flex-start;">
       <span style="flex-shrink:0;">💡</span>
-      <span>${escapeHTML(t)}</span>
+      <span style="line-height:1.6;">${escapeHTML(t)}</span>
     </li>`).join("");
+
+  const selfCheckSection = el("selfCheckSection");
+  const selfCheckList    = el("lessonSelfCheck");
+  if (l.selfCheckQuestions?.length) {
+    selfCheckSection.style.display = "";
+    selfCheckList.innerHTML = l.selfCheckQuestions.map(q => `
+      <li style="display:flex;gap:12px;align-items:flex-start;padding:14px;background:var(--bg-light);border-radius:8px;">
+        <span style="flex-shrink:0;font-size:20px;">🤔</span>
+        <span style="line-height:1.7;font-weight:600;">${escapeHTML(q)}</span>
+      </li>`).join("");
+  } else {
+    selfCheckSection.style.display = "none";
+  }
 }
 
 // ══════════════════════════════════════════════════════════════════════════════

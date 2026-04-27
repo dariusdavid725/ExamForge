@@ -70,21 +70,36 @@ Ignore:
 Game mode: ${gameMode}
 Seed: ${seed}
 
-Generate exactly 8 challenges:
-- 2 multiple_choice
-- 1 true_false
-- 1 fill_blank
-- 1 order_steps
-- 1 spot_mistake
-- 1 matching
-- 1 multiple_select
+Generate exactly 8 challenges using Bloom's Taxonomy progression:
 
-Field limits:
-- prompt max 180 chars
-- explanation max 220 chars
-- sourceSnippet max 180 chars
-- options max 100 chars each
-- concept max 40 chars
+Cognitive levels (mix across challenges):
+- Remember (1-2): recall facts, terms, concepts
+- Understand (2-3): explain ideas, compare, classify
+- Apply (2-3): use concepts in new situations, solve problems
+- Analyze (1-2): break down, identify patterns, cause-effect
+
+Challenge distribution:
+- 2 multiple_choice (focus on misconceptions, not trivial recall)
+- 1 true_false (test deep understanding, not surface facts)
+- 1 fill_blank (key terms in meaningful context)
+- 1 order_steps (procedural knowledge, cause-effect)
+- 1 spot_mistake (error analysis, critical thinking)
+- 1 matching (conceptual relationships)
+- 1 multiple_select (integration, multiple correct principles)
+
+Quality rules (research-based):
+- Distractors reflect REAL student misconceptions
+- Questions require understanding, not just recognition
+- Include "why" in explanations (elaborative interrogation)
+- Use concrete examples from document
+- Avoid trick questions; test genuine understanding
+
+Field guidelines (aim for clarity, not arbitrary limits):
+- prompt: clear, self-contained question (aim 60-200 chars)
+- explanation: why the answer is correct + why distractors are wrong (aim 150-300 chars)
+- sourceSnippet: supporting evidence from document (aim 80-250 chars)
+- options: distinct, plausible distractors based on common misconceptions (aim 40-150 chars each)
+- concept: specific learning objective (aim 20-60 chars)
 
 Root JSON:
 {
@@ -191,21 +206,36 @@ Use your knowledge to generate accurate, educational challenges about the topic.
 Game mode: ${gameMode}
 Seed: ${seed}
 
-Generate exactly 8 challenges:
-- 2 multiple_choice
-- 1 true_false
-- 1 fill_blank
-- 1 order_steps
-- 1 spot_mistake
-- 1 matching
-- 1 multiple_select
+Generate exactly 8 challenges using Bloom's Taxonomy progression:
 
-Field limits:
-- prompt max 180 chars
-- explanation max 220 chars
-- sourceSnippet: brief fact that supports the answer (max 180 chars)
-- options max 100 chars each
-- concept max 40 chars
+Cognitive levels (mix across challenges):
+- Remember (1-2): recall facts, terms, concepts
+- Understand (2-3): explain ideas, compare, classify
+- Apply (2-3): use concepts in new situations, solve problems
+- Analyze (1-2): break down, identify patterns, cause-effect
+
+Challenge distribution:
+- 2 multiple_choice (focus on misconceptions, not trivial recall)
+- 1 true_false (test deep understanding, not surface facts)
+- 1 fill_blank (key terms in meaningful context)
+- 1 order_steps (procedural knowledge, cause-effect)
+- 1 spot_mistake (error analysis, critical thinking)
+- 1 matching (conceptual relationships)
+- 1 multiple_select (integration, multiple correct principles)
+
+Quality rules (research-based):
+- Distractors reflect REAL student misconceptions
+- Questions require understanding, not just recognition
+- Include "why" in explanations (elaborative interrogation)
+- Use concrete examples from the topic
+- Avoid trick questions; test genuine understanding
+
+Field guidelines (aim for clarity, not arbitrary limits):
+- prompt: clear, self-contained question (aim 60-200 chars)
+- explanation: why the answer is correct + why distractors are wrong (aim 150-300 chars)
+- sourceSnippet: supporting fact or principle (aim 80-250 chars)
+- options: distinct, plausible distractors based on common misconceptions (aim 40-150 chars each)
+- concept: specific learning objective (aim 20-60 chars)
 
 Root JSON:
 {
@@ -425,31 +455,42 @@ export function buildRecoveryLessonPrompt(room, player) {
     });
 
   return `
-Create a short recovery lesson based ONLY on missed challenges.
+Create a personalized recovery lesson based on cognitive learning principles.
+
+Research-based approach:
+1. Error Analysis: identify the specific misconception (not just "you got it wrong")
+2. Elaborative Interrogation: explain WHY the correct answer works
+3. Dual Coding: provide concrete examples or analogies
+4. Retrieval Practice: suggest self-testing strategy
+5. Growth Mindset: frame errors as learning opportunities
 
 Rules:
-- Same language as challenges.
-- Only use provided data.
-- No external knowledge.
-- No links.
-- Output ONLY valid JSON.
+- Same language as challenges
+- Only use provided data
+- No external knowledge
+- No links
+- Output ONLY valid JSON
+- Be encouraging but honest
 
 JSON schema:
 {
   "title": "string",
-  "summary": "string",
+  "summary": "string (encouraging, growth-mindset framing)",
   "sections": [
     {
       "concept": "string",
-      "whatWentWrong": "string",
-      "miniLesson": "string",
-      "memoryHook": "string",
-      "retryChallenge": "string"
+      "misconceptionIdentified": "string (what specific thinking error occurred)",
+      "whyItMatters": "string (why understanding this concept is important)",
+      "correctUnderstanding": "string (clear explanation with WHY/HOW, 3-5 sentences)",
+      "concreteExample": "string (real-world analogy or visualization)",
+      "memoryHook": "string (vivid mnemonic or retrieval cue)",
+      "selfTestPrompt": "string (question to ask yourself to check understanding)"
     }
-  ]
+  ],
+  "nextSteps": ["string (2-3 actionable study recommendations)"]
 }
 
-MISSED:
+MISSED CHALLENGES:
 ${JSON.stringify(wrongAnswers, null, 2)}
 `;
 }

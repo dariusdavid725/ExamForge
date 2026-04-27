@@ -129,7 +129,7 @@ const AUDIT_SCHEMA = {
 const RECOVERY_SCHEMA = {
   type: "object",
   additionalProperties: false,
-  required: ["title", "summary", "sections"],
+  required: ["title", "summary", "sections", "nextSteps"],
   properties: {
     title: { type: "string" },
     summary: { type: "string" },
@@ -140,19 +140,27 @@ const RECOVERY_SCHEMA = {
         additionalProperties: false,
         required: [
           "concept",
-          "whatWentWrong",
-          "miniLesson",
+          "misconceptionIdentified",
+          "whyItMatters",
+          "correctUnderstanding",
+          "concreteExample",
           "memoryHook",
-          "retryChallenge"
+          "selfTestPrompt"
         ],
         properties: {
           concept: { type: "string" },
-          whatWentWrong: { type: "string" },
-          miniLesson: { type: "string" },
+          misconceptionIdentified: { type: "string" },
+          whyItMatters: { type: "string" },
+          correctUnderstanding: { type: "string" },
+          concreteExample: { type: "string" },
           memoryHook: { type: "string" },
-          retryChallenge: { type: "string" }
+          selfTestPrompt: { type: "string" }
         }
       }
+    },
+    nextSteps: {
+      type: "array",
+      items: { type: "string" }
     }
   }
 };
