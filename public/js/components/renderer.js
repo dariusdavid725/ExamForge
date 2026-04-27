@@ -1,5 +1,6 @@
 import * as dom from "./dom.js";
 import { state } from "../shared/state.js";
+import { playSound } from "../shared/soundEffects.js";
 
 export function escapeHTML(value) {
   return String(value ?? "")
@@ -56,6 +57,12 @@ export function updateTimerUI() {
   dom.timerText.textContent = state.timeLeft;
   const percent = Math.max(0, (state.timeLeft / state.questionTime) * 100);
   dom.timerRing.style.setProperty("--timer", `${percent}%`);
+  
+  if (state.timeLeft <= 5 && state.timeLeft > 0) {
+    dom.timerRing.setAttribute("data-warning", "true");
+  } else {
+    dom.timerRing.removeAttribute("data-warning");
+  }
 }
 
 export function renderPlayerList(players) {
@@ -329,6 +336,12 @@ export function renderResultPhase(challenge, submitResult) {
   const isPartial = submitResult?.isPartial ?? false;
   const points    = submitResult?.points    ?? 0;
 
+  if (isCorrect) {
+    playSound("correct");
+  } else {
+    playSound("wrong");
+  }
+
   const correctDisplay = challenge.type === "order_steps"
     ? challenge.correctOrder.join(" → ")
     : challenge.type === "multiple_select"
@@ -412,6 +425,16 @@ export function renderPodium(data, currentPack) {
   dom.leaderboardList.innerHTML = "";
   const total   = currentPack ? currentPack.challenges.length : data.totalChallenges || 8;
   const players = data.leaderboard;
+
+  playSound("finish");
+
+  if (typeof confetti === "function") {
+    setTimeout(() => {
+      confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+      setTimeout(() => confetti({ particleCount: 50, angle: 60, spread: 55, origin: { x: 0 } }), 250);
+      setTimeout(() => confetti({ particleCount: 50, angle: 120, spread: 55, origin: { x: 1 } }), 400);
+    }, 300);
+  }
 
   if (players.length >= 2) {
     const podiumEl = document.createElement("div");
