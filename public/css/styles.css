@@ -1541,3 +1541,47 @@ blockquote {
   line-height: 1.6;
   opacity: 0.95;
 }
+
+/* ══════════════════════════════════════════════════════════════════════════ */
+/* ENHANCED LEARNING CONTENT - Interactive Elements                           */
+/* ══════════════════════════════════════════════════════════════════════════ */
+
+.formula-inline {
+  display: inline-block;
+  padding: 6px 10px;
+  background: rgba(168, 85, 247, 0.08);
+  border: 2px solid #a855f7;
+  border-radius: 8px;
+  margin: 0 4px;
+  font-size: 15px;
+  transition: all 0.2s ease;
+}
+
+.formula-inline:hover {
+  background: rgba(168, 85, 247, 0.15);
+  transform: translateY(-1px);
+  box-shadow: 2px 2px 0 #a855f7;
+}
+
+/* KaTeX styling enhancements */
+.katex {
+  font-size: 1.1em !important;
+}
+
+.katex-display {
+  margin: 20px 0 !important;
+  padding: 16px !important;
+  background: var(--paper-2);
+  border: 3px solid var(--text);
+  border-radius: 10px;
+  overflow-x: auto;
+}
+
+/* Enhanced content boxes already styled inline but adding hover states */
+mark {
+  transition: background 0.2s ease;
+}
+
+mark:hover {
+  background: #fde047 !important;
+}

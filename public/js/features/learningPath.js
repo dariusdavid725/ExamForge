@@ -227,9 +227,9 @@ function openLearningUnit(pathItem, userId) {
           style="width:${pathItem.progress_percentage}%;background:var(--blue);"></div>
       </div>
 
-      <div style="padding:16px;background:var(--paper-2);border:3px solid var(--text);
-        border-radius:10px;margin-bottom:16px;line-height:1.6;">
-        ${escapeHTML(unit.content).split('\n').map(p => p ? `<p style="margin:0 0 12px;">${p}</p>` : '').join('')}
+      <div style="padding:20px;background:var(--paper-2);border:3px solid var(--text);
+        border-radius:10px;margin-bottom:16px;line-height:1.8;">
+        ${renderEnhancedContent(unit.content)}
       </div>
 
       <div style="display:flex;gap:10px;justify-content:flex-end;">
@@ -247,6 +247,23 @@ function openLearningUnit(pathItem, userId) {
   `;
 
   document.body.appendChild(modal);
+
+  // Render LaTeX with KaTeX if available
+  if (window.renderMathInElement) {
+    setTimeout(() => {
+      try {
+        renderMathInElement(modal, {
+          delimiters: [
+            {left: '\\(', right: '\\)', display: false},
+            {left: '\\[', right: '\\]', display: true}
+          ],
+          throwOnError: false
+        });
+      } catch (e) {
+        console.log('KaTeX not loaded yet:', e);
+      }
+    }, 100);
+  }
 
   // Close modal
   modal.querySelector('#closeUnitModal').addEventListener('click', () => {
@@ -285,6 +302,68 @@ function escapeHTML(str) {
   const div = document.createElement('div');
   div.textContent = str;
   return div.innerHTML;
+}
+
+/**
+ * Render enhanced content with LaTeX, highlights, examples, etc.
+ */
+function renderEnhancedContent(content) {
+  if (!content) return '';
+
+  let html = escapeHTML(content);
+
+  // Replace [FORMULA]...[/FORMULA] with LaTeX rendering
+  // We'll use KaTeX inline syntax \\(...\\) which auto-renders
+  html = html.replace(/\[FORMULA\](.*?)\[\/FORMULA\]/g, (match, formula) => {
+    // Wrap in KaTeX delimiters for auto-rendering
+    return `<span class="formula-inline">\\(${formula}\\)</span>`;
+  });
+
+  // Replace [HIGHLIGHT]...[/HIGHLIGHT]
+  html = html.replace(/\[HIGHLIGHT\](.*?)\[\/HIGHLIGHT\]/g, (match, text) => {
+    return `<mark style="background:#fef08a;padding:2px 4px;border-radius:3px;
+      font-weight:700;">${text}</mark>`;
+  });
+
+  // Replace [EXAMPLE]...[/EXAMPLE]
+  html = html.replace(/\[EXAMPLE\](.*?)\[\/EXAMPLE\]/gs, (match, text) => {
+    return `<div style="margin:16px 0;padding:16px;background:rgba(59,130,246,0.1);
+      border-left:4px solid #3b82f6;border-radius:8px;">
+      <div style="font-size:11px;font-weight:900;color:#3b82f6;margin-bottom:8px;
+        text-transform:uppercase;letter-spacing:0.05em;">📘 Example</div>
+      <div style="line-height:1.7;">${text}</div>
+    </div>`;
+  });
+
+  // Replace [TIP]...[/TIP]
+  html = html.replace(/\[TIP\](.*?)\[\/TIP\]/gs, (match, text) => {
+    return `<div style="margin:16px 0;padding:16px;background:rgba(34,197,94,0.1);
+      border-left:4px solid #22c55e;border-radius:8px;">
+      <div style="font-size:11px;font-weight:900;color:#22c55e;margin-bottom:8px;
+        text-transform:uppercase;letter-spacing:0.05em;">💡 Pro Tip</div>
+      <div style="line-height:1.7;">${text}</div>
+    </div>`;
+  });
+
+  // Replace [WARNING]...[/WARNING]
+  html = html.replace(/\[WARNING\](.*?)\[\/WARNING\]/gs, (match, text) => {
+    return `<div style="margin:16px 0;padding:16px;background:rgba(251,146,60,0.1);
+      border-left:4px solid #fb923c;border-radius:8px;">
+      <div style="font-size:11px;font-weight:900;color:#fb923c;margin-bottom:8px;
+        text-transform:uppercase;letter-spacing:0.05em;">⚠️ Common Mistake</div>
+      <div style="line-height:1.7;">${text}</div>
+    </div>`;
+  });
+
+  // Convert line breaks to paragraphs
+  const paragraphs = html.split('\n\n').filter(p => p.trim());
+  html = paragraphs.map(p => {
+    // Check if already wrapped in div (from replacements above)
+    if (p.trim().startsWith('<div')) return p;
+    return `<p style="margin:0 0 16px;line-height:1.8;">${p}</p>`;
+  }).join('');
+
+  return html;
 }
 
 /**

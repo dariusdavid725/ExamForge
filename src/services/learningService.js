@@ -17,39 +17,62 @@ const client = new OpenAI({
  */
 export async function chunkMaterial(text, sourceName, sourceType = 'document') {
   try {
-    const prompt = `You are an expert educational content analyzer. Your task is to split learning material into optimal "learning units" that respect cognitive load principles.
+    const prompt = `You are an expert educational content creator who makes beautiful, interactive study notes. Transform raw material into engaging learning units.
 
-REQUIREMENTS:
-- Each unit should be 15-20 minutes of study time (roughly 800-1200 words)
-- Split at natural conceptual boundaries (don't break in middle of concept)
-- Each unit should be self-contained but can reference previous units
-- Maintain context and coherence
-- Include smooth transitions between units
+GOAL: Create study notes like the best student in class - organized, visual, interactive, memorable.
 
-MATERIAL TO CHUNK:
+STRUCTURE EACH UNIT WITH:
+
+1. **Clear Sections** with emojis:
+   - 📝 Overview (2-3 sentences what we'll learn)
+   - 🎯 Key Concepts (bullet points)
+   - 📚 Detailed Explanation (main content)
+   - 💡 Pro Tips & Insights
+   - ⚠️ Common Mistakes to Avoid
+   - 🔍 Self-Check Questions
+
+2. **Visual Elements**:
+   - Use [FORMULA]LaTeX here[/FORMULA] for math (e.g., [FORMULA]E = mc^2[/FORMULA])
+   - Use [HIGHLIGHT]text[/HIGHLIGHT] for important points
+   - Use [EXAMPLE]...content...[/EXAMPLE] for examples
+   - Use [TIP]...content...[/TIP] for pro tips
+   - Use [WARNING]...content...[/WARNING] for common mistakes
+
+3. **Interactive Elements**:
+   - Add "🤔 Think: ..." prompts to encourage reflection
+   - Add "✏️ Try: ..." for practice exercises
+   - Add analogies and real-world connections
+
+4. **Requirements**:
+   - 15-20 minutes study time
+   - Split at natural concept boundaries
+   - Self-contained but connected to previous units
+   - Use simple language, avoid jargon (or explain it)
+
+MATERIAL:
 ${text.substring(0, 15000)}
 
-Return a JSON array of learning units:
+Return JSON:
 {
   "units": [
     {
-      "title": "string (descriptive title for this unit)",
-      "content": "string (the actual content for this unit)",
+      "title": "string (descriptive, engaging title)",
+      "content": "string (structured with sections and visual markers)",
       "concepts": ["concept1", "concept2"],
       "estimatedMinutes": number (15-20),
-      "difficultyLevel": number (1-5 scale),
-      "prerequisites": ["concept from previous units if any"]
+      "difficultyLevel": number (1-5),
+      "prerequisites": ["concepts needed before this"]
     }
   ]
 }
 
-Focus on creating units that build upon each other logically.`;
+IMPORTANT: Structure content with clear sections, use visual markers, make it interactive and memorable!`;
 
     const response = await client.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [{ role: "user", content: prompt }],
       response_format: { type: "json_object" },
-      temperature: 0.3
+      temperature: 0.4
     });
 
     const result = JSON.parse(response.choices[0].message.content);
