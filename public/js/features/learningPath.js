@@ -162,20 +162,9 @@ export function renderLearningPath(container, pathData, userId) {
     const finishBtn = container.querySelector('#finishPathBtn');
     if (finishBtn) {
       finishBtn.addEventListener('click', () => {
-        console.log('Finish button clicked');
-        // Switch to lessons section
-        const myLessonsSection = document.querySelector('#myLessonsSection');
-        const learningPathSection = document.querySelector('#learningPathSection');
-        
-        if (myLessonsSection && learningPathSection) {
-          learningPathSection.style.display = 'none';
-          myLessonsSection.style.display = 'block';
-        }
-        
-        // Try window function as fallback
-        if (typeof window.showMyLessons === 'function') {
-          window.showMyLessons('lessons');
-        }
+        console.log('Finish button clicked - navigating to lessons.html');
+        // Just navigate to lessons page
+        window.location.href = 'lessons.html';
       });
     }
 
@@ -188,12 +177,22 @@ export function renderLearningPath(container, pathData, userId) {
             window.showLoadingOverlay('Generating quiz from your learning path...');
           }
           
-          // Combine all unit content
-          const combinedContent = path.map(p => 
-            `${p.learning_unit.title}\n\n${p.learning_unit.content}`
-          ).join('\n\n---\n\n');
+          // Combine all unit content (strip HTML/markup for cleaner quiz generation)
+          const combinedContent = path.map(p => {
+            // Remove HTML tags and formula markers for cleaner content
+            let content = p.learning_unit.content || '';
+            content = content.replace(/\[FORMULA\].*?\[\/FORMULA\]/g, ''); // Remove formulas
+            content = content.replace(/\[EXAMPLE\]|\[\/EXAMPLE\]/g, '');
+            content = content.replace(/\[TIP\]|\[\/TIP\]/g, '');
+            content = content.replace(/\[WARNING\]|\[\/WARNING\]/g, '');
+            content = content.replace(/\[HIGHLIGHT\]|\[\/HIGHLIGHT\]/g, '');
+            content = content.replace(/<[^>]*>/g, ''); // Remove any HTML
+            return `${p.learning_unit.title}\n\n${content}`;
+          }).join('\n\n---\n\n');
           
-          console.log('Generating quiz with content length:', combinedContent.length);
+          console.log('Generating quiz from learning path');
+          console.log('Content length:', combinedContent.length);
+          console.log('User ID:', userId);
           
           const response = await fetch('/api/quiz/generate', {
             method: 'POST',
@@ -205,6 +204,17 @@ export function renderLearningPath(container, pathData, userId) {
               questionCount: Math.min(15, totalUnits * 3)
             })
           });
+          
+          console.log('Response status:', response.status);
+          console.log('Response content-type:', response.headers.get('content-type'));
+          
+          // Check if response is actually JSON
+          const contentType = response.headers.get('content-type');
+          if (!contentType || !contentType.includes('application/json')) {
+            const text = await response.text();
+            console.error('Expected JSON but got:', text.substring(0, 200));
+            throw new Error('Server returned HTML instead of JSON. Check if you are logged in.');
+          }
           
           const data = await response.json();
           
