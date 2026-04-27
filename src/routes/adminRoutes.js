@@ -142,12 +142,31 @@ router.post("/admin/admins", requireAdmin, async (req, res) => {
       return res.status(400).json({ error: "You cannot remove your own admin access." });
     }
 
+    if (!isAdmin) {
+      const { count } = await supabaseAdmin
+        .from("profiles")
+        .select("id", { count: "exact", head: true })
+        .eq("is_admin", true);
+
+      if ((count || 0) <= 1) {
+        return res.status(400).json({ error: "Cannot remove the last admin. Add another admin first." });
+      }
+    }
+
     const { error } = await supabaseAdmin
       .from("profiles")
       .update({ is_admin: isAdmin })
       .eq("id", targetUser.id);
 
     if (error) return res.status(500).json({ error: "Could not update admin role." });
+
+    await supabaseAdmin.from("admin_audit_logs").insert({
+      action: isAdmin ? "admin_granted" : "admin_revoked",
+      actor_id: req.adminUser.id,
+      target_email: email,
+      target_id: targetUser.id,
+      metadata: { previous_state: !isAdmin, new_state: isAdmin }
+    }).catch(() => {});
 
     return res.json({ ok: true });
   } catch (error) {
@@ -167,6 +186,30 @@ router.get("/admin/events/recent", requireAdmin, async (_req, res) => {
     return res.json({ events: data || [] });
   } catch (error) {
     return res.status(500).json({ error: "Could not load recent events." });
+  }
+});
+
+router.get("/admin/audit-logs", requireAdmin, async (_req, res) => {
+  try {
+    const { data: logs, error } = await supabaseAdmin
+      .from("admin_audit_logs")
+      .select("id, action, actor_id, target_email, created_at")
+      .order("created_at", { ascending: false })
+      .limit(50);
+    if (error) return res.status(500).json({ error: "Could not load audit logs." });
+
+    const usersByEmail = await listUsersByEmail();
+    const enriched = (logs || []).map(log => {
+      const actor = [...usersByEmail.values()].find(u => u.id === log.actor_id);
+      return {
+        ...log,
+        actor_email: actor?.email || "Unknown"
+      };
+    });
+
+    return res.json({ logs: enriched });
+  } catch (error) {
+    return res.status(500).json({ error: "Could not load audit logs." });
   }
 });
 

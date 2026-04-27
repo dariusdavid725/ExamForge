@@ -65,6 +65,9 @@ async function loadAdmins() {
       const email = button.dataset.revokeAdmin;
       if (!email) return;
 
+      const confirmed = confirm(`Are you sure you want to revoke admin access for ${email}?`);
+      if (!confirmed) return;
+
       try {
         const headersForPost = await authHeaders();
         await fetchJson("/api/admin/admins", {
@@ -73,7 +76,7 @@ async function loadAdmins() {
           body: JSON.stringify({ email, isAdmin: false })
         });
         showToast("Admin revoked.", "success");
-        await loadAdmins();
+        await Promise.all([loadAdmins(), loadAuditLogs()]);
       } catch (error) {
         showToast(error.message, "danger");
       }
@@ -103,6 +106,33 @@ async function loadRecentEvents() {
   `).join("");
 }
 
+async function loadAuditLogs() {
+  const headers = await authHeaders();
+  const data = await fetchJson("/api/admin/audit-logs", { headers });
+  const logs = data.logs || [];
+  const container = el("auditLogsList");
+  if (!container) return;
+
+  if (!logs.length) {
+    container.innerHTML = `<p class="muted">No admin actions yet.</p>`;
+    return;
+  }
+
+  container.innerHTML = logs.map(log => {
+    const actionLabel = log.action === "admin_granted" ? "🔓 Granted admin" : "🔒 Revoked admin";
+    return `
+      <div class="flat-card">
+        <strong>${actionLabel}</strong>
+        <p class="muted" style="margin-top:4px;font-size:12px;">
+          <strong>Target:</strong> ${escapeHTML(log.target_email)} · 
+          <strong>By:</strong> ${escapeHTML(log.actor_email || "Unknown")} · 
+          ${new Date(log.created_at).toLocaleString()}
+        </p>
+      </div>
+    `;
+  }).join("");
+}
+
 async function grantAdmin() {
   const input = el("adminEmailInput");
   const status = el("adminActionStatus");
@@ -111,6 +141,9 @@ async function grantAdmin() {
     showToast("Enter an email first.", "info");
     return;
   }
+
+  const confirmed = confirm(`Grant admin access to ${email}?`);
+  if (!confirmed) return;
 
   try {
     const headers = await authHeaders();
@@ -122,7 +155,7 @@ async function grantAdmin() {
     if (status) status.textContent = `Admin granted to ${email}.`;
     showToast("Admin granted.", "success");
     input.value = "";
-    await loadAdmins();
+    await Promise.all([loadAdmins(), loadAuditLogs()]);
   } catch (error) {
     if (status) status.textContent = error.message;
     showToast(error.message, "danger");
@@ -150,7 +183,7 @@ async function init() {
   el("grantAdminBtn")?.addEventListener("click", grantAdmin);
 
   try {
-    await Promise.all([loadOverview(), loadAdmins(), loadRecentEvents()]);
+    await Promise.all([loadOverview(), loadAdmins(), loadRecentEvents(), loadAuditLogs()]);
   } catch (error) {
     setGuardMessage(error.message || "Could not load admin panel.");
   }

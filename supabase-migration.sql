@@ -73,3 +73,20 @@ SET is_admin = TRUE
 FROM auth.users u
 WHERE p.id = u.id
   AND lower(u.email) = 'dariusdavid26@yahoo.com';
+
+-- 6) Admin audit log
+CREATE TABLE IF NOT EXISTS public.admin_audit_logs (
+  id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  action TEXT NOT NULL,
+  actor_id UUID NOT NULL,
+  target_email TEXT NOT NULL,
+  target_id UUID,
+  metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_admin_audit_logs_created_at
+  ON public.admin_audit_logs(created_at DESC);
+
+CREATE INDEX IF NOT EXISTS idx_admin_audit_logs_actor_id
+  ON public.admin_audit_logs(actor_id);
