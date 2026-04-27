@@ -662,61 +662,112 @@ function renderEnhancedContent(content) {
     formulas.push({ original: match[0], fixed: formula });
   }
   
-  // Now escape HTML BUT keep formula placeholders
+  // Process interactive markers FIRST (before escaping)
   let html = content;
+  
+  // Extract formulas and replace with placeholders
   formulas.forEach((f, i) => {
     html = html.replace(f.original, `__FORMULA_${i}__`);
   });
   
+  // Extract interactive boxes BEFORE escaping
+  const interactiveBoxes = [];
+  
+  html = html.replace(/\[EXAMPLE\](.*?)\[\/EXAMPLE\]/gs, (match, text) => {
+    const index = interactiveBoxes.length;
+    interactiveBoxes.push({
+      type: 'example',
+      content: text
+    });
+    return `__INTERACTIVE_${index}__`;
+  });
+  
+  html = html.replace(/\[TIP\](.*?)\[\/TIP\]/gs, (match, text) => {
+    const index = interactiveBoxes.length;
+    interactiveBoxes.push({
+      type: 'tip',
+      content: text
+    });
+    return `__INTERACTIVE_${index}__`;
+  });
+  
+  html = html.replace(/\[WARNING\](.*?)\[\/WARNING\]/gs, (match, text) => {
+    const index = interactiveBoxes.length;
+    interactiveBoxes.push({
+      type: 'warning',
+      content: text
+    });
+    return `__INTERACTIVE_${index}__`;
+  });
+  
+  html = html.replace(/\[HIGHLIGHT\](.*?)\[\/HIGHLIGHT\]/g, (match, text) => {
+    const index = interactiveBoxes.length;
+    interactiveBoxes.push({
+      type: 'highlight',
+      content: text
+    });
+    return `__INTERACTIVE_${index}__`;
+  });
+  
+  // Process section headers with emojis BEFORE escaping
+  html = html.replace(/^📝\s*\*\*Overview\*\*/gm, '__SECTION_OVERVIEW__');
+  html = html.replace(/^🎯\s*\*\*Key Concepts?\*\*/gm, '__SECTION_CONCEPTS__');
+  html = html.replace(/^📚\s*\*\*Detailed Explanation\*\*/gm, '__SECTION_EXPLANATION__');
+  html = html.replace(/^💡\s*\*\*Pro Tips?.*?\*\*/gm, '__SECTION_TIPS__');
+  html = html.replace(/^⚠️\s*\*\*Common Mistakes?.*?\*\*/gm, '__SECTION_MISTAKES__');
+  html = html.replace(/^🔍\s*\*\*Self-Check.*?\*\*/gm, '__SECTION_QUESTIONS__');
+  
+  // NOW escape HTML (plain text only)
   html = escapeHTML(html);
   
-  // Replace placeholders with LaTeX using data attributes
-  // We'll render these with KaTeX after inserting into DOM
+  // Restore section headers
+  html = html.replace(/__SECTION_OVERVIEW__/g, '<h3 class="section-header">📝 Overview</h3>');
+  html = html.replace(/__SECTION_CONCEPTS__/g, '<h3 class="section-header">🎯 Key Concepts</h3>');
+  html = html.replace(/__SECTION_EXPLANATION__/g, '<h3 class="section-header">📚 Detailed Explanation</h3>');
+  html = html.replace(/__SECTION_TIPS__/g, '<h3 class="section-header">💡 Pro Tips</h3>');
+  html = html.replace(/__SECTION_MISTAKES__/g, '<h3 class="section-header">⚠️ Common Mistakes</h3>');
+  html = html.replace(/__SECTION_QUESTIONS__/g, '<h3 class="section-header">🔍 Self-Check Questions</h3>');
+  
+  // Restore formulas
   formulas.forEach((f, i) => {
     html = html.replace(`__FORMULA_${i}__`, `<span class="formula-inline" data-formula="${escapeHTML(f.fixed)}"></span>`);
   });
-
-  // Replace [HIGHLIGHT]...[/HIGHLIGHT]
-  html = html.replace(/\[HIGHLIGHT\](.*?)\[\/HIGHLIGHT\]/g, (match, text) => {
-    return `<mark style="background:#fef08a;padding:2px 4px;border-radius:3px;
-      font-weight:700;">${text}</mark>`;
+  
+  // Restore interactive boxes
+  interactiveBoxes.forEach((box, i) => {
+    let boxHtml = '';
+    switch(box.type) {
+      case 'example':
+        boxHtml = `<div class="example-box">💡 <strong>Example:</strong><br>${box.content}</div>`;
+        break;
+      case 'tip':
+        boxHtml = `<div class="tip-box">💡 <strong>Tip:</strong> ${box.content}</div>`;
+        break;
+      case 'warning':
+        boxHtml = `<div class="warning-box">⚠️ <strong>Warning:</strong> ${box.content}</div>`;
+        break;
+      case 'highlight':
+        boxHtml = `<mark class="highlight-text">${box.content}</mark>`;
+        break;
+    }
+    html = html.replace(`__INTERACTIVE_${i}__`, boxHtml);
   });
-
-  // Replace [EXAMPLE]...[/EXAMPLE]
-  html = html.replace(/\[EXAMPLE\](.*?)\[\/EXAMPLE\]/gs, (match, text) => {
-    return `<div style="margin:16px 0;padding:16px;background:rgba(59,130,246,0.1);
-      border-left:4px solid #3b82f6;border-radius:8px;">
-      <div style="font-size:11px;font-weight:900;color:#3b82f6;margin-bottom:8px;
-        text-transform:uppercase;letter-spacing:0.05em;">📘 Example</div>
-      <div style="line-height:1.7;">${text}</div>
-    </div>`;
-  });
-
-  // Replace [TIP]...[/TIP]
-  html = html.replace(/\[TIP\](.*?)\[\/TIP\]/gs, (match, text) => {
-    return `<div style="margin:16px 0;padding:16px;background:rgba(34,197,94,0.1);
-      border-left:4px solid #22c55e;border-radius:8px;">
-      <div style="font-size:11px;font-weight:900;color:#22c55e;margin-bottom:8px;
-        text-transform:uppercase;letter-spacing:0.05em;">💡 Pro Tip</div>
-      <div style="line-height:1.7;">${text}</div>
-    </div>`;
-  });
-
-  // Replace [WARNING]...[/WARNING]
-  html = html.replace(/\[WARNING\](.*?)\[\/WARNING\]/gs, (match, text) => {
-    return `<div style="margin:16px 0;padding:16px;background:rgba(251,146,60,0.1);
-      border-left:4px solid #fb923c;border-radius:8px;">
-      <div style="font-size:11px;font-weight:900;color:#fb923c;margin-bottom:8px;
-        text-transform:uppercase;letter-spacing:0.05em;">⚠️ Common Mistake</div>
-      <div style="line-height:1.7;">${text}</div>
-    </div>`;
-  });
-
+  
+  // Process markdown-style formatting
+  html = html
+    .replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>')
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g, '<em>$1</em>');
+  
+  // Convert bullet points
+  html = html.replace(/^- (.+?)$/gm, '<li>$1</li>');
+  html = html.replace(/(<li>.*?<\/li>\s*)+/gs, '<ul>$&</ul>');
+  
   // Convert line breaks to paragraphs
   const paragraphs = html.split('\n\n').filter(p => p.trim());
   html = paragraphs.map(p => {
-    // Check if already wrapped in div (from replacements above)
-    if (p.trim().startsWith('<div')) return p;
+    // Check if already wrapped in div/h3/ul (from replacements above)
+    if (p.trim().match(/^<(div|h3|ul|mark)/)) return p;
     return `<p style="margin:0 0 16px;line-height:1.8;">${p}</p>`;
   }).join('');
 
