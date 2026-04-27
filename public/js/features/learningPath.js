@@ -730,7 +730,7 @@ export function showProcessingModal() {
   return modal;
 }
 
-export function updateProcessingStep(stepNumber) {
+function updateProcessingStep(stepNumber) {
   const steps = document.querySelectorAll('.process-step');
   const progress = document.querySelector('#processingProgress');
   const percent = document.querySelector('#processingPercent');
@@ -777,7 +777,7 @@ export function updateProcessingStep(stepNumber) {
   }
 }
 
-export function closeProcessingModal() {
+function closeProcessingModal() {
   const modal = document.querySelector('#processingModal');
   if (modal) modal.remove();
 }
