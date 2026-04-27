@@ -129,20 +129,44 @@ export async function renderDashboard(
 
       </div>
 
-      <!-- ── RIGHT COLUMN: actions + quizzes + friends ── -->
+      <!-- ── RIGHT COLUMN: actions + friends side by side ── -->
       <div class="dash-col">
 
-        <div class="card">
-          <div class="eyebrow" style="font-size:10px;margin-bottom:12px;">Quick start</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-            <button id="dashCreateBtn" class="btn" type="button" style="padding:10px;font-size:13px;">⚡ Create Arena</button>
-            <button id="dashJoinBtn"   class="btn btn-secondary" type="button" style="padding:10px;font-size:13px;">Join Arena</button>
-            <a href="/lessons"         class="btn btn-secondary" style="padding:10px;font-size:13px;text-align:center;">📚 My Lessons</a>
-            <button id="dashHistoryBtn" class="btn btn-secondary" type="button" style="padding:10px;font-size:13px;">My History</button>
-            ${isAdmin ? `<a href="/admin" class="btn btn-secondary" style="padding:10px;font-size:13px;text-align:center;grid-column:1 / -1;">🛠 Admin Panel</a>` : ""}
+        <!-- TOP ROW: Quick Start (left) + Friends (right) -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          
+          <!-- Quick Start (compact) -->
+          <div class="card">
+            <div class="eyebrow" style="font-size:9px;margin-bottom:10px;">QUICK START</div>
+            <div style="display:grid;gap:6px;">
+              <button id="dashCreateBtn" class="btn" type="button" style="padding:8px;font-size:11px;">⚡ Create Arena</button>
+              <button id="dashJoinBtn"   class="btn btn-secondary" type="button" style="padding:8px;font-size:11px;">Join Arena</button>
+              <a href="/lessons"         class="btn btn-secondary" style="padding:8px;font-size:11px;text-align:center;display:block;">📚 Lessons</a>
+              <button id="dashHistoryBtn" class="btn btn-secondary" type="button" style="padding:8px;font-size:11px;">📊 History</button>
+              ${isAdmin ? `<a href="/admin" class="btn btn-secondary" style="padding:8px;font-size:11px;text-align:center;display:block;">🛠 Admin</a>` : ""}
+            </div>
           </div>
+
+          <!-- Friends Leaderboard (right) -->
+          <div class="card">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+              <div class="eyebrow" style="font-size:9px;">FRIENDS</div>
+              <button id="addFriendBtn" class="btn btn-secondary" type="button"
+                style="padding:2px 6px;font-size:9px;">+</button>
+            </div>
+            <div style="display:grid;gap:4px;max-height:200px;overflow-y:auto;">
+              ${friendProfiles.length > 0 
+                ? renderFriendsLb(friendProfiles, user.id, 5)
+                : `<p class="muted" style="font-size:10px;margin:3px 0;">No friends yet</p>`}
+            </div>
+            ${friendProfiles.length > 5 
+              ? `<p class="muted" style="font-size:8px;margin-top:4px;text-align:center;">+${friendProfiles.length - 5} more</p>`
+              : ''}
+          </div>
+
         </div>
 
+        <!-- BOTTOM ROW: Stats (full width) -->
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
           <div class="flat-card" style="padding:12px;text-align:center;">
             <div style="font-size:9px;font-weight:700;color:var(--muted);margin-bottom:4px;letter-spacing:0.05em;">ACCURACY</div>
@@ -154,24 +178,9 @@ export async function renderDashboard(
           </div>
         </div>
 
-        <div class="card">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-            <div class="eyebrow" style="font-size:10px;">Friends leaderboard</div>
-            <button id="addFriendBtn" class="btn btn-secondary" type="button"
-              style="padding:3px 8px;font-size:10px;">Manage</button>
-          </div>
-          <div style="display:grid;gap:5px;max-height:220px;overflow-y:auto;">
-            ${friendProfiles.length > 0 
-              ? renderFriendsLb(friendProfiles, user.id, 5)
-              : `<p class="muted" style="font-size:11px;margin:3px 0;">No friends yet. Add friends to compete!</p>`}
-          </div>
-          ${friendProfiles.length > 5 
-            ? `<p class="muted" style="font-size:9px;margin-top:6px;text-align:center;">+${friendProfiles.length - 5} more friends</p>`
-            : ''}
-        </div>
-
+        <!-- Friend Requests (if any) -->
         <div id="pendingRequestsCard" class="card" style="display:none;">
-          <div class="eyebrow" style="font-size:10px;margin-bottom:6px;">Friend requests</div>
+          <div class="eyebrow" style="font-size:9px;margin-bottom:6px;">FRIEND REQUESTS</div>
           <div id="pendingRequestsList" style="display:grid;gap:5px;"></div>
         </div>
 
