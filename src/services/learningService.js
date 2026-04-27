@@ -12,12 +12,65 @@ const client = new OpenAI({
 });
 
 /**
+ * Detect language from text sample
+ */
+function detectLanguage(text) {
+  const sample = text.substring(0, 500).toLowerCase();
+  
+  // Romanian indicators
+  const romanianWords = ['și', 'pentru', 'este', 'sunt', 'despre', 'într', 'dacă', 'această', 'mai', 'cum', 'sau'];
+  const romanianCount = romanianWords.filter(word => sample.includes(word)).length;
+  
+  // English indicators  
+  const englishWords = ['the', 'and', 'is', 'are', 'for', 'this', 'that', 'with', 'from', 'have'];
+  const englishCount = englishWords.filter(word => sample.includes(` ${word} `)).length;
+  
+  // French indicators
+  const frenchWords = ['le', 'la', 'les', 'de', 'et', 'est', 'pour', 'dans', 'que', 'avec'];
+  const frenchCount = frenchWords.filter(word => sample.includes(` ${word} `)).length;
+  
+  // Spanish indicators
+  const spanishWords = ['el', 'la', 'los', 'las', 'de', 'y', 'es', 'para', 'en', 'que'];
+  const spanishCount = spanishWords.filter(word => sample.includes(` ${word} `)).length;
+  
+  // German indicators
+  const germanWords = ['der', 'die', 'das', 'und', 'ist', 'für', 'mit', 'von', 'auf', 'zu'];
+  const germanCount = germanWords.filter(word => sample.includes(` ${word} `)).length;
+  
+  const scores = {
+    'Romanian': romanianCount,
+    'English': englishCount,
+    'French': frenchCount,
+    'Spanish': spanishCount,
+    'German': germanCount
+  };
+  
+  const detected = Object.entries(scores).sort((a, b) => b[1] - a[1])[0];
+  return detected[1] > 2 ? detected[0] : 'English'; // Default to English if uncertain
+}
+
+/**
  * Chunk material into optimal learning units (15-20 min each)
  * Uses AI to identify natural breakpoints and maintain context
  */
 export async function chunkMaterial(text, sourceName, sourceType = 'document') {
   try {
+    // Detect language from content
+    const detectedLanguage = detectLanguage(text);
+    console.log(`Detected language: ${detectedLanguage}`);
+    
+    // Language-specific instructions
+    const languageInstructions = {
+      'Romanian': 'IMPORTANT: Generate ALL content in ROMANIAN. All titles, explanations, examples, tips, and questions MUST be in Romanian.',
+      'English': 'IMPORTANT: Generate ALL content in ENGLISH. All titles, explanations, examples, tips, and questions MUST be in English.',
+      'French': 'IMPORTANT: Generate ALL content in FRENCH. All titles, explanations, examples, tips, and questions MUST be in French.',
+      'Spanish': 'IMPORTANT: Generate ALL content in SPANISH. All titles, explanations, examples, tips, and questions MUST be in Spanish.',
+      'German': 'IMPORTANT: Generate ALL content in GERMAN. All titles, explanations, examples, tips, and questions MUST be in German.'
+    };
+    
     const prompt = `You are an expert educational content creator who makes beautiful, interactive study notes. Transform raw material into engaging learning units.
+
+${languageInstructions[detectedLanguage] || languageInstructions['English']}
 
 GOAL: Create study notes like the best student in class - organized, visual, interactive, memorable.
 
@@ -86,7 +139,8 @@ IMPORTANT:
 - For LaTeX: Write commands WITHOUT backslashes (frac not \\frac, sqrt not \\sqrt)
 - Backslashes will be added automatically during rendering
 - Test formula: [FORMULA]frac{dy}{dx} = 3y[/FORMULA]
-- Another test: [FORMULA]int_0^infty e^{-x}dx = 1[/FORMULA]`;
+- Another test: [FORMULA]int_0^infty e^{-x}dx = 1[/FORMULA]
+- CRITICAL: Write ALL text content in ${detectedLanguage} (detected from source material)`;
 
     const response = await client.chat.completions.create({
       model: "gpt-4o-mini",
