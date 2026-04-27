@@ -207,9 +207,39 @@ Remember: Quality > Quantity. Better to have 4 amazing units than 10 shallow one
       }
     }
     
+    // CRITICAL VALIDATION: Reject units that are too short
+    const MIN_WORDS_PER_UNIT = 300; // Minimum acceptable
+    const RECOMMENDED_WORDS = 500; // What we want
+    
+    const units = result.units || [];
+    const validatedUnits = [];
+    
+    for (const unit of units) {
+      const wordCount = unit.content.split(/\s+/).length;
+      
+      if (wordCount < MIN_WORDS_PER_UNIT) {
+        console.warn(`⚠️ Unit "${unit.title}" is TOO SHORT (${wordCount} words). Minimum is ${MIN_WORDS_PER_UNIT}. SKIPPING.`);
+        continue; // Skip this unit
+      }
+      
+      if (wordCount < RECOMMENDED_WORDS) {
+        console.warn(`⚠️ Unit "${unit.title}" is below recommended length (${wordCount}/${RECOMMENDED_WORDS} words)`);
+      } else {
+        console.log(`✓ Unit "${unit.title}" has good length (${wordCount} words)`);
+      }
+      
+      validatedUnits.push(unit);
+    }
+    
+    if (validatedUnits.length === 0) {
+      throw new Error(`AI generated units that are too short. All units were rejected. Please try with more substantial material.`);
+    }
+    
+    console.log(`Validated ${validatedUnits.length}/${units.length} units (${units.length - validatedUnits.length} rejected for being too short)`);
+    
     // Return both units and concepts for faster processing
     return {
-      units: result.units || [],
+      units: validatedUnits,
       concepts: result.allConcepts || result.concepts || []
     };
   } catch (error) {
