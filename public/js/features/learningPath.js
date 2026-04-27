@@ -599,92 +599,169 @@ export function showProcessingModal() {
   const modal = document.createElement('div');
   modal.id = 'processingModal';
   modal.style.cssText = `
-    position:fixed;inset:0;background:rgba(0,0,0,0.9);z-index:9999;
-    display:grid;place-items:center;backdrop-filter:blur(8px);
-    animation: fadeIn 0.3s ease;`;
-
+    position:fixed;inset:0;background:rgba(0,0,0,0.94);z-index:10000;
+    display:grid;place-items:center;padding:20px;
+    backdrop-filter:blur(12px);
+    animation: fadeIn 0.4s ease;`;
+  
   modal.innerHTML = `
-    <div class="card" style="max-width:480px;width:90%;text-align:center;padding:40px 32px;
-      border:4px solid var(--text);box-shadow:8px 8px 0 var(--text);">
+    <div style="max-width:600px;width:100%;background:var(--paper);
+      border:4px solid var(--text);border-radius:20px;
+      box-shadow:16px 16px 0 rgba(0,0,0,0.3);padding:48px 40px;
+      position:relative;overflow:hidden;">
       
-      <!-- Animated Brain Icon -->
-      <div style="font-size:64px;margin-bottom:20px;animation:pulse 2s ease-in-out infinite;">
-        🧠
-      </div>
+      <!-- Animated gradient background -->
+      <div style="position:absolute;inset:0;
+        background:linear-gradient(135deg, rgba(168, 85, 247, 0.08) 0%, rgba(59, 130, 246, 0.08) 100%);
+        opacity:0.6;pointer-events:none;"></div>
       
-      <h3 style="font-size:20px;margin:0 0 8px;letter-spacing:-0.02em;">
-        AI Processing Your Material
-      </h3>
-      
-      <p class="muted" style="font-size:13px;margin:0 0 24px;line-height:1.6;">
-        Creating an optimized learning path with interactive study notes
-      </p>
-      
-      <!-- Progress Bar -->
-      <div class="progress-track" style="margin-bottom:20px;height:8px;">
-        <div id="processingProgress" class="progress-fill" 
-          style="width:20%;background:var(--blue);transition:width 0.5s ease;"></div>
-      </div>
-      
-      <!-- Steps -->
-      <div id="processingSteps" style="text-align:left;display:grid;gap:8px;">
-        <div style="display:flex;align-items:center;gap:10px;padding:8px;background:var(--paper-2);
-          border-radius:8px;border:2px solid var(--text);">
-          <div class="spinner" style="width:16px;height:16px;"></div>
-          <span style="font-size:12px;font-weight:700;">Analyzing content structure...</span>
+      <!-- Content wrapper -->
+      <div style="position:relative;z-index:1;">
+        
+        <!-- Animated brain with rotating rings -->
+        <div style="display:flex;justify-content:center;margin-bottom:32px;">
+          <div style="position:relative;display:inline-block;">
+            <div style="position:absolute;inset:-24px;
+              border:5px solid transparent;border-radius:50%;
+              border-top-color:var(--accent);border-right-color:var(--accent);
+              animation:spin 3s linear infinite;opacity:0.6;"></div>
+            <div style="position:absolute;inset:-12px;
+              border:4px solid transparent;border-radius:50%;
+              border-bottom-color:var(--blue);border-left-color:var(--blue);
+              animation:spinReverse 2s linear infinite;opacity:0.4;"></div>
+            <div style="font-size:80px;animation:pulse 2.5s ease-in-out infinite;">🧠</div>
+          </div>
+        </div>
+        
+        <h2 style="margin:0 0 8px;font-size:28px;font-weight:900;
+          text-align:center;letter-spacing:-0.02em;">AI Learning Assistant</h2>
+        <p style="margin:0 0 36px;font-size:15px;color:var(--muted);text-align:center;">
+          Creating your personalized learning path
+        </p>
+        
+        <div id="processingSteps" style="margin:0 0 32px;">
+          <div class="process-step active-step" data-step="1" style="display:flex;align-items:center;gap:14px;
+            padding:16px;border-radius:12px;margin-bottom:10px;
+            background:linear-gradient(135deg, rgba(168, 85, 247, 0.15), rgba(168, 85, 247, 0.05));
+            border:3px solid var(--accent);animation:slideIn 0.3s ease;">
+            <div style="flex-shrink:0;width:32px;height:32px;border-radius:50%;background:var(--accent);
+              color:white;display:grid;place-items:center;font-weight:900;font-size:14px;
+              box-shadow:0 4px 8px rgba(168, 85, 247, 0.3);">1</div>
+            <div style="flex:1;min-width:0;">
+              <div style="font-weight:900;font-size:15px;margin-bottom:4px;">Analyzing Document</div>
+              <div class="step-status" style="font-size:13px;color:var(--muted);">
+                Reading and understanding your material...
+              </div>
+            </div>
+            <div class="step-spinner" style="flex-shrink:0;width:24px;height:24px;
+              border:4px solid rgba(168, 85, 247, 0.2);border-top-color:var(--accent);
+              border-radius:50%;animation:spin 1s linear infinite;"></div>
+          </div>
+          
+          <div class="process-step" data-step="2" style="display:flex;align-items:center;gap:14px;
+            padding:16px;border-radius:12px;margin-bottom:10px;opacity:0.5;
+            background:rgba(0,0,0,0.05);border:3px solid var(--paper-2);">
+            <div style="flex-shrink:0;width:32px;height:32px;border-radius:50%;background:var(--muted);
+              color:white;display:grid;place-items:center;font-weight:900;font-size:14px;">2</div>
+            <div style="flex:1;min-width:0;">
+              <div style="font-weight:900;font-size:15px;margin-bottom:4px;">Creating Learning Units</div>
+              <div class="step-status" style="font-size:13px;color:var(--muted);">Waiting...</div>
+            </div>
+          </div>
+          
+          <div class="process-step" data-step="3" style="display:flex;align-items:center;gap:14px;
+            padding:16px;border-radius:12px;opacity:0.5;
+            background:rgba(0,0,0,0.05);border:3px solid var(--paper-2);">
+            <div style="flex-shrink:0;width:32px;height:32px;border-radius:50%;background:var(--muted);
+              color:white;display:grid;place-items:center;font-weight:900;font-size:14px;">3</div>
+            <div style="flex:1;min-width:0;">
+              <div style="font-weight:900;font-size:15px;margin-bottom:4px;">Extracting Concepts</div>
+              <div class="step-status" style="font-size:13px;color:var(--muted);">Waiting...</div>
+            </div>
+          </div>
+        </div>
+        
+        <div style="margin:0;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+            <span style="font-size:13px;font-weight:900;text-transform:uppercase;
+              letter-spacing:0.08em;color:var(--muted);">Overall Progress</span>
+            <span id="processingPercent" style="font-size:15px;font-weight:900;color:var(--accent);">0%</span>
+          </div>
+          <div style="height:12px;background:rgba(0,0,0,0.1);border-radius:20px;
+            border:3px solid var(--text);overflow:hidden;position:relative;">
+            <div id="processingProgress" style="height:100%;
+              background:linear-gradient(90deg, var(--accent), var(--blue));
+              width:0%;transition:width 0.6s ease;
+              box-shadow:0 0 16px rgba(168, 85, 247, 0.6);position:relative;overflow:hidden;">
+              <div style="position:absolute;inset:0;
+                background:linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+                animation:shine 2s infinite;"></div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
   `;
-
-  // Add pulse animation
+  
   const style = document.createElement('style');
   style.textContent = `
-    @keyframes pulse {
-      0%, 100% { transform: scale(1); opacity: 1; }
-      50% { transform: scale(1.1); opacity: 0.8; }
-    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes spinReverse { to { transform: rotate(-360deg); } }
+    @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.08); } }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes slideIn { from { transform: translateX(-20px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+    @keyframes shine { 0% { transform: translateX(-100%); } 100% { transform: translateX(200%); } }
   `;
   document.head.appendChild(style);
-
+  
   document.body.appendChild(modal);
   return modal;
 }
 
-export function updateProcessingStep(message) {
-  const steps = document.querySelector('#processingSteps');
+export function updateProcessingStep(stepNumber) {
+  const steps = document.querySelectorAll('.process-step');
   const progress = document.querySelector('#processingProgress');
+  const percent = document.querySelector('#processingPercent');
   
-  if (steps) {
-    // Remove spinner from last step
-    const lastStep = steps.querySelector('.spinner')?.parentElement;
-    if (lastStep) {
-      lastStep.innerHTML = `
-        <span style="color:var(--green);font-size:16px;">✓</span>
-        <span style="font-size:12px;font-weight:700;color:var(--muted);">
-          ${lastStep.querySelector('span').textContent}
-        </span>
-      `;
-    }
+  const stepData = [
+    { title: 'Analyzing Document', status: 'Reading and understanding your material...',  percent: 33 },
+    { title: 'Creating Learning Units', status: 'Breaking down into digestible chunks...', percent: 66 },
+    { title: 'Extracting Concepts', status: 'Building knowledge graph...', percent: 100 }
+  ];
+  
+  steps.forEach((step, i) => {
+    const stepNum = i + 1;
+    const stepIcon = step.querySelector('[style*="width:32px"]');
+    const stepStatus = step.querySelector('.step-status');
+    const spinner = step.querySelector('.step-spinner');
     
-    // Add new step with spinner
-    const newStep = document.createElement('div');
-    newStep.style.cssText = `
-      display:flex;align-items:center;gap:10px;padding:8px;
-      background:var(--paper-2);border-radius:8px;border:2px solid var(--text);
-      animation: slideIn 0.3s ease;`;
-    newStep.innerHTML = `
-      <div class="spinner" style="width:16px;height:16px;"></div>
-      <span style="font-size:12px;font-weight:700;">${message}</span>
-    `;
-    steps.appendChild(newStep);
-  }
+    if (stepNum < stepNumber) {
+      // Completed step
+      step.style.opacity = '1';
+      step.style.background = 'rgba(16, 185, 129, 0.1)';
+      step.style.border = '3px solid #10b981';
+      stepIcon.style.background = '#10b981';
+      stepIcon.textContent = '✓';
+      if (stepStatus) stepStatus.textContent = 'Complete!';
+      if (spinner) spinner.remove();
+    } else if (stepNum === stepNumber) {
+      // Current step
+      step.style.opacity = '1';
+      step.style.background = 'linear-gradient(135deg, rgba(168, 85, 247, 0.15), rgba(168, 85, 247, 0.05))';
+      step.style.border = '3px solid var(--accent)';
+      step.classList.add('active-step');
+      stepIcon.style.background = 'var(--accent)';
+      if (stepStatus && stepData[i]) stepStatus.textContent = stepData[i].status;
+    } else {
+      // Future step
+      step.style.opacity = '0.5';
+    }
+  });
   
-  // Update progress bar
-  if (progress) {
-    const currentWidth = parseInt(progress.style.width) || 20;
-    const newWidth = Math.min(95, currentWidth + 20);
-    progress.style.width = `${newWidth}%`;
+  // Update progress
+  if (progress && stepData[stepNumber - 1]) {
+    progress.style.width = `${stepData[stepNumber - 1].percent}%`;
+    if (percent) percent.textContent = `${stepData[stepNumber - 1].percent}%`;
   }
 }
 

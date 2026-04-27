@@ -735,7 +735,7 @@ async function handleSmartProcess() {
       // Extract text from file
       try {
         const modal = showProcessingModal();
-        updateProcessingStep("Reading document...");
+        // Step 1 already shown by default (Analyzing Document)
 
         const form = new FormData();
         form.append("document", file);
@@ -766,7 +766,7 @@ async function handleSmartProcess() {
   try {
     const modal = showProcessingModal();
     
-    updateProcessingStep("Analyzing content structure...");
+    // Step 1: Analyzing (already shown by default)
     
     const result = await processIntoLearningPath(
       currentUser.id,
@@ -774,13 +774,19 @@ async function handleSmartProcess() {
       textToProcess
     );
 
-    updateProcessingStep(`Created ${result.units.length} learning units`);
-    updateProcessingStep(`Extracted ${result.conceptsCount} key concepts`);
-    updateProcessingStep(`Mapped ${result.dependenciesCount} concept relationships`);
+    // Step 2: Creating units
+    updateProcessingStep(2);
+    await new Promise(resolve => setTimeout(resolve, 800));
+    
+    // Step 3: Extracting concepts  
+    updateProcessingStep(3);
+    await new Promise(resolve => setTimeout(resolve, 1000));
 
     weeklyUsage.lessons = Math.min(3, weeklyUsage.lessons + 1);
     updateUsageBanner();
 
+    // Show success briefly before closing
+    await new Promise(resolve => setTimeout(resolve, 600));
     closeProcessingModal();
     
     showToast(`🎉 Smart Learning Path created with ${result.units.length} units!`, "success");
