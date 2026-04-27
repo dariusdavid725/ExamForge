@@ -849,7 +849,7 @@ async function renderLearningPathsGrid() {
     });
 
     // Render grouped paths
-    container.innerHTML = Object.keys(grouped).map(sourceName => {
+    const html = Object.keys(grouped).map(sourceName => {
       const units = grouped[sourceName];
       const completed = units.filter(u => u.status === 'completed').length;
       const total = units.length;
@@ -879,6 +879,24 @@ async function renderLearningPathsGrid() {
         </div>
       `;
     }).join('');
+    
+    container.innerHTML = html;
+    
+    // Add event listeners for Continue buttons
+    container.querySelectorAll('.view-path-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const sourceName = btn.dataset.source;
+        // Find first unit that's not completed
+        const firstIncomplete = pathData.path.find(p => 
+          p.learning_unit?.source_name === sourceName && 
+          p.status !== 'completed'
+        );
+        
+        if (firstIncomplete || pathData.path.length > 0) {
+          showSection("learningPathSection");
+        }
+      });
+    });
 
   } catch (error) {
     console.error("Error rendering learning paths:", error);

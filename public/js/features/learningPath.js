@@ -196,52 +196,75 @@ function openLearningUnit(pathItem, userId) {
   const unit = pathItem.learning_unit;
 
   const modal = document.createElement('div');
+  modal.className = 'learning-unit-modal';
   modal.style.cssText = `
-    position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;
-    display:flex;align-items:center;justify-content:center;padding:20px;
-    animation: fadeIn 0.2s ease;`;
+    position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:9999;
+    display:grid;place-items:center;padding:20px;
+    animation: fadeIn 0.3s ease;
+    backdrop-filter: blur(4px);`;
 
   modal.innerHTML = `
-    <div class="card" style="max-width:800px;width:100%;max-height:90vh;overflow-y:auto;position:relative;">
-      <button id="closeUnitModal" style="position:absolute;top:12px;right:12px;
-        background:var(--paper-2);border:2px solid var(--text);border-radius:8px;
-        width:32px;height:32px;cursor:pointer;font-size:18px;font-weight:900;">
-        ×
-      </button>
-
-      <h2 style="font-size:20px;margin:0 40px 12px 0;">${escapeHTML(unit.title)}</h2>
+    <div class="learning-unit-container" style="max-width:900px;width:100%;max-height:92vh;
+      background:var(--paper);border:4px solid var(--text);border-radius:16px;
+      box-shadow:8px 8px 0 var(--text);overflow:hidden;display:flex;flex-direction:column;">
       
-      <div style="display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap;">
-        <span style="font-size:12px;padding:4px 8px;background:var(--paper-2);
-          border:2px solid var(--text);border-radius:6px;font-weight:700;">
-          ⏱ ${unit.estimated_time_minutes} minutes
-        </span>
-        <span style="font-size:12px;padding:4px 8px;background:var(--paper-2);
-          border:2px solid var(--text);border-radius:6px;font-weight:700;">
-          ${'⭐'.repeat(unit.difficulty_level)} Difficulty
-        </span>
+      <!-- Header -->
+      <div style="padding:20px 24px;background:var(--paper-2);border-bottom:3px solid var(--text);
+        display:flex;justify-content:space-between;align-items:start;gap:16px;">
+        <div style="flex:1;min-width:0;">
+          <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;">
+            <span class="pill" style="font-size:10px;padding:4px 10px;">
+              ⏱ ${unit.estimated_time_minutes} min
+            </span>
+            <span class="pill" style="font-size:10px;padding:4px 10px;">
+              ${'⭐'.repeat(unit.difficulty_level)} Difficulty
+            </span>
+          </div>
+          <h2 style="font-size:22px;margin:0;line-height:1.3;">${escapeHTML(unit.title)}</h2>
+        </div>
+        <button id="closeUnitModal" class="btn btn-secondary" 
+          style="padding:8px 12px;font-size:14px;flex-shrink:0;">
+          ✕
+        </button>
       </div>
 
-      <div class="progress-track" style="margin-bottom:16px;">
-        <div class="progress-fill" id="unitProgressBar" 
-          style="width:${pathItem.progress_percentage}%;background:var(--blue);"></div>
+      <!-- Progress Bar -->
+      <div style="padding:16px 24px;background:var(--paper);border-bottom:2px solid var(--paper-2);">
+        <div style="display:flex;justify-content:space-between;font-size:11px;font-weight:800;
+          margin-bottom:6px;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;">
+          <span>Your Progress</span>
+          <span style="color:var(--blue);">${pathItem.progress_percentage}%</span>
+        </div>
+        <div class="progress-track" style="height:8px;">
+          <div class="progress-fill" id="unitProgressBar" 
+            style="width:${pathItem.progress_percentage}%;background:var(--blue);"></div>
+        </div>
       </div>
 
-      <div style="padding:20px;background:var(--paper-2);border:3px solid var(--text);
-        border-radius:10px;margin-bottom:16px;line-height:1.8;">
+      <!-- Content -->
+      <div style="flex:1;overflow-y:auto;padding:28px 32px;line-height:1.8;">
         ${renderEnhancedContent(unit.content)}
       </div>
 
-      <div style="display:flex;gap:10px;justify-content:flex-end;">
-        ${pathItem.status !== 'completed' ? `
-          <button id="markCompleteBtn" class="btn" style="padding:10px 20px;">
-            ✅ Mark as Complete
-          </button>
-        ` : `
-          <button id="reviewUnitBtn" class="btn btn-secondary" style="padding:10px 20px;">
-            🔄 Review Again
-          </button>
-        `}
+      <!-- Footer Actions -->
+      <div style="padding:16px 24px;background:var(--paper-2);border-top:3px solid var(--text);
+        display:flex;gap:12px;justify-content:space-between;align-items:center;flex-wrap:wrap;">
+        <div style="font-size:12px;color:var(--muted);">
+          ${pathItem.status === 'completed' ? '✅ Completed' : 
+            pathItem.status === 'in_progress' ? '📝 In Progress' : 
+            '🔓 Ready to learn'}
+        </div>
+        <div style="display:flex;gap:10px;">
+          ${pathItem.status !== 'completed' ? `
+            <button id="markCompleteBtn" class="btn" style="padding:12px 24px;font-size:14px;">
+              ✅ Mark Complete
+            </button>
+          ` : `
+            <button id="reviewUnitBtn" class="btn btn-secondary" style="padding:12px 24px;font-size:14px;">
+              🔄 Review Again
+            </button>
+          `}
+        </div>
       </div>
     </div>
   `;
@@ -324,11 +347,24 @@ function renderEnhancedContent(content) {
   let html = escapeHTML(content);
 
   // Replace [FORMULA]...[/FORMULA] with LaTeX rendering
-  // Use $ delimiters which are more reliable
-  html = html.replace(/\[FORMULA\](.*?)\[\/FORMULA\]/g, (match, formula) => {
-    // Clean the formula and wrap in $ for inline math
-    const cleanFormula = formula.trim();
-    return `<span class="formula-inline">$${cleanFormula}$</span>`;
+  // Use $ delimiters - DON'T escape HTML first to preserve backslashes!
+  const formulaPattern = /\[FORMULA\](.*?)\[\/FORMULA\]/g;
+  const originalContent = content; // Keep original before escapeHTML
+  
+  // Extract formulas before escaping
+  const formulas = [];
+  let match;
+  while ((match = formulaPattern.exec(originalContent)) !== null) {
+    formulas.push(match[1].trim());
+  }
+  
+  // Now escape and replace with placeholders
+  html = escapeHTML(content);
+  
+  // Replace formula placeholders with actual LaTeX
+  formulas.forEach((formula, index) => {
+    const placeholder = escapeHTML(`[FORMULA]${formula}[/FORMULA]`);
+    html = html.replace(placeholder, `<span class="formula-inline">$${formula}$</span>`);
   });
 
   // Replace [HIGHLIGHT]...[/HIGHLIGHT]
@@ -385,21 +421,53 @@ export function showProcessingModal() {
   const modal = document.createElement('div');
   modal.id = 'processingModal';
   modal.style.cssText = `
-    position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:9999;
-    display:flex;align-items:center;justify-content:center;`;
+    position:fixed;inset:0;background:rgba(0,0,0,0.9);z-index:9999;
+    display:grid;place-items:center;backdrop-filter:blur(8px);
+    animation: fadeIn 0.3s ease;`;
 
   modal.innerHTML = `
-    <div class="card" style="max-width:400px;text-align:center;padding:32px;">
-      <div class="spinner" style="margin:0 auto 20px;"></div>
-      <h3 style="font-size:18px;margin:0 0 12px;">🧠 AI Processing Material...</h3>
-      <p class="muted" style="font-size:13px;margin:0;">
-        Creating your personalized learning path
+    <div class="card" style="max-width:480px;width:90%;text-align:center;padding:40px 32px;
+      border:4px solid var(--text);box-shadow:8px 8px 0 var(--text);">
+      
+      <!-- Animated Brain Icon -->
+      <div style="font-size:64px;margin-bottom:20px;animation:pulse 2s ease-in-out infinite;">
+        🧠
+      </div>
+      
+      <h3 style="font-size:20px;margin:0 0 8px;letter-spacing:-0.02em;">
+        AI Processing Your Material
+      </h3>
+      
+      <p class="muted" style="font-size:13px;margin:0 0 24px;line-height:1.6;">
+        Creating an optimized learning path with interactive study notes
       </p>
-      <div id="processingSteps" style="margin-top:20px;text-align:left;">
-        <p style="font-size:12px;margin:6px 0;">⏳ Analyzing content structure...</p>
+      
+      <!-- Progress Bar -->
+      <div class="progress-track" style="margin-bottom:20px;height:8px;">
+        <div id="processingProgress" class="progress-fill" 
+          style="width:20%;background:var(--blue);transition:width 0.5s ease;"></div>
+      </div>
+      
+      <!-- Steps -->
+      <div id="processingSteps" style="text-align:left;display:grid;gap:8px;">
+        <div style="display:flex;align-items:center;gap:10px;padding:8px;background:var(--paper-2);
+          border-radius:8px;border:2px solid var(--text);">
+          <div class="spinner" style="width:16px;height:16px;"></div>
+          <span style="font-size:12px;font-weight:700;">Analyzing content structure...</span>
+        </div>
       </div>
     </div>
   `;
+
+  // Add pulse animation
+  const style = document.createElement('style');
+  style.textContent = `
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.1); opacity: 0.8; }
+    }
+  `;
+  document.head.appendChild(style);
 
   document.body.appendChild(modal);
   return modal;
@@ -407,11 +475,38 @@ export function showProcessingModal() {
 
 export function updateProcessingStep(message) {
   const steps = document.querySelector('#processingSteps');
+  const progress = document.querySelector('#processingProgress');
+  
   if (steps) {
-    const p = document.createElement('p');
-    p.style.cssText = 'font-size:12px;margin:6px 0;';
-    p.innerHTML = `✓ ${message}`;
-    steps.appendChild(p);
+    // Remove spinner from last step
+    const lastStep = steps.querySelector('.spinner')?.parentElement;
+    if (lastStep) {
+      lastStep.innerHTML = `
+        <span style="color:var(--green);font-size:16px;">✓</span>
+        <span style="font-size:12px;font-weight:700;color:var(--muted);">
+          ${lastStep.querySelector('span').textContent}
+        </span>
+      `;
+    }
+    
+    // Add new step with spinner
+    const newStep = document.createElement('div');
+    newStep.style.cssText = `
+      display:flex;align-items:center;gap:10px;padding:8px;
+      background:var(--paper-2);border-radius:8px;border:2px solid var(--text);
+      animation: slideIn 0.3s ease;`;
+    newStep.innerHTML = `
+      <div class="spinner" style="width:16px;height:16px;"></div>
+      <span style="font-size:12px;font-weight:700;">${message}</span>
+    `;
+    steps.appendChild(newStep);
+  }
+  
+  // Update progress bar
+  if (progress) {
+    const currentWidth = parseInt(progress.style.width) || 20;
+    const newWidth = Math.min(95, currentWidth + 20);
+    progress.style.width = `${newWidth}%`;
   }
 }
 
