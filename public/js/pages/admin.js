@@ -38,6 +38,37 @@ async function loadOverview() {
   `;
 }
 
+async function loadActivationFunnel() {
+  const headers = await authHeaders();
+  
+  try {
+    const data = await fetchJson("/api/events/stats", { headers });
+    const c = data.counts || {};
+    const r = data.rates || {};
+
+    el("activationFunnelCard").innerHTML = `
+      <div class="eyebrow">Activation funnel</div>
+      <h3 style="margin:10px 0 14px;">Demo conversion (last ${data.windowDays || 7} days)</h3>
+      <div style="display:grid;grid-template-columns:repeat(3,minmax(140px,1fr));gap:10px;">
+        <div class="flat-card"><strong>Clicks</strong><div style="font-size:24px;margin-top:6px;">${c.activation_demo_start_clicked || 0}</div></div>
+        <div class="flat-card"><strong>Starts</strong><div style="font-size:24px;margin-top:6px;">${c.activation_demo_started || 0}</div></div>
+        <div class="flat-card"><strong>Completions</strong><div style="font-size:24px;margin-top:6px;">${c.activation_demo_completed || 0}</div></div>
+      </div>
+      <p class="muted" style="margin-top:12px;">
+        Click → Start: <strong>${r.clickToStart || 0}%</strong> ·
+        Start → Complete: <strong>${r.startToComplete || 0}%</strong> ·
+        Click → Complete: <strong>${r.clickToComplete || 0}%</strong>
+      </p>
+    `;
+  } catch (error) {
+    el("activationFunnelCard").innerHTML = `
+      <div class="eyebrow">Activation funnel</div>
+      <h3 style="margin:10px 0 8px;">Demo conversion</h3>
+      <p class="muted" style="margin:0;">Metrics unavailable: ${error.message}</p>
+    `;
+  }
+}
+
 async function loadAdmins() {
   const headers = await authHeaders();
   const data = await fetchJson("/api/admin/admins", { headers });
@@ -183,7 +214,7 @@ async function init() {
   el("grantAdminBtn")?.addEventListener("click", grantAdmin);
 
   try {
-    await Promise.all([loadOverview(), loadAdmins(), loadRecentEvents(), loadAuditLogs()]);
+    await Promise.all([loadOverview(), loadActivationFunnel(), loadAdmins(), loadRecentEvents(), loadAuditLogs()]);
   } catch (error) {
     setGuardMessage(error.message || "Could not load admin panel.");
   }

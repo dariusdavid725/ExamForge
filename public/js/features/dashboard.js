@@ -56,10 +56,20 @@ export async function renderDashboard(
   const sessions = await getSessionsForUser(sb, user.id, 3);
   const friendProfiles = await getFriendProfiles(sb, user.id);
 
-  const streak      = profile?.streak_count  || 0;
-  const maxStreak   = profile?.max_streak    || 0;
-  const totalQuizzes = profile?.total_quizzes || 0;
+  // Fetch fresh progress stats
+  let progressStats = null;
+  try {
+    const res = await fetch(`/api/progress/stats?userId=${user.id}&days=7`);
+    if (res.ok) progressStats = await res.json();
+  } catch (err) {
+    console.log("Could not fetch progress stats:", err);
+  }
+
+  const streak      = progressStats?.currentStreak || profile?.streak_count  || 0;
+  const maxStreak   = progressStats?.longestStreak || profile?.max_streak    || 0;
+  const totalQuizzes = progressStats?.totalQuizzes || profile?.total_quizzes || 0;
   const totalPoints  = profile?.total_points  || 0;
+  const overallAccuracy = progressStats?.overallAccuracy || 0;
   const avatarLetter = (profile?.username || user.email || "U")[0].toUpperCase();
   const avatarColor  = profile?.avatar_color  || "#4f46e5";
   const isPremium    = (profile?.plan || "free") === "premium";
@@ -100,8 +110,8 @@ export async function renderDashboard(
               <div class="dash-stat-label">Quizuri</div>
             </div>
             <div class="dash-stat">
-              <div class="dash-stat-val">${totalPoints}</div>
-              <div class="dash-stat-label">Puncte</div>
+              <div class="dash-stat-val" style="color: ${overallAccuracy >= 80 ? 'var(--green)' : overallAccuracy >= 60 ? 'var(--blue)' : 'var(--muted)'};">${overallAccuracy}%</div>
+              <div class="dash-stat-label">Accuracy</div>
             </div>
           </div>
 
