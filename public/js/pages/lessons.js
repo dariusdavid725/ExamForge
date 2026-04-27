@@ -959,32 +959,92 @@ async function renderLearningPathsGrid() {
       btn.addEventListener('click', async (e) => {
         e.stopPropagation();
         const sourceName = btn.dataset.source;
+        const unitsCount = btn.dataset.units;
         
-        if (!confirm(`Delete "${sourceName}" learning path?\n\nThis will remove all ${btn.dataset.units} units.`)) {
-          return;
-        }
+        // Create beautiful confirmation modal
+        const confirmModal = document.createElement('div');
+        confirmModal.style.cssText = `
+          position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:10000;
+          display:grid;place-items:center;padding:20px;
+          animation: fadeIn 0.2s ease;backdrop-filter:blur(6px);`;
         
-        try {
-          // Delete all units for this source
-          const response = await fetch('/api/learning/delete-path', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              userId: currentUser.id,
-              sourceName: sourceName
-            })
-          });
+        confirmModal.innerHTML = `
+          <div style="max-width:440px;width:100%;background:var(--paper);
+            border:4px solid var(--text);border-radius:16px;
+            box-shadow:8px 8px 0 var(--text);padding:32px;text-align:center;">
+            
+            <div style="font-size:48px;margin-bottom:16px;">🗑️</div>
+            
+            <h3 style="margin:0 0 12px;font-size:20px;">Delete Learning Path?</h3>
+            
+            <p style="margin:0 0 8px;color:var(--muted);line-height:1.6;">
+              Are you sure you want to delete
+            </p>
+            <p style="margin:0 0 20px;font-weight:900;font-size:16px;color:var(--accent);">
+              "${sourceName}"
+            </p>
+            
+            <div style="padding:12px;background:rgba(239,68,68,0.1);
+              border:2px solid rgba(239,68,68,0.3);border-radius:8px;margin-bottom:24px;">
+              <p style="margin:0;font-size:13px;color:#ef4444;font-weight:700;">
+                ⚠️ This will permanently remove all ${unitsCount} learning units
+              </p>
+            </div>
+            
+            <div style="display:flex;gap:12px;justify-content:center;">
+              <button id="cancelDelete" class="btn btn-secondary" style="padding:12px 24px;">
+                Cancel
+              </button>
+              <button id="confirmDelete" class="btn" style="padding:12px 24px;
+                background:#ef4444;border-color:#ef4444;">
+                🗑️ Delete Forever
+              </button>
+            </div>
+          </div>
+        `;
+        
+        document.body.appendChild(confirmModal);
+        
+        // Cancel button
+        confirmModal.querySelector('#cancelDelete').addEventListener('click', () => {
+          confirmModal.remove();
+        });
+        
+        // Click outside to cancel
+        confirmModal.addEventListener('click', (ev) => {
+          if (ev.target === confirmModal) confirmModal.remove();
+        });
+        
+        // Confirm delete button
+        confirmModal.querySelector('#confirmDelete').addEventListener('click', async () => {
+          const deleteConfirmBtn = confirmModal.querySelector('#confirmDelete');
+          deleteConfirmBtn.disabled = true;
+          deleteConfirmBtn.textContent = 'Deleting...';
           
-          if (response.ok) {
-            showToast('Learning path deleted', 'success');
-            await renderLearningPathsGrid(); // Refresh
-          } else {
-            throw new Error('Delete failed');
+          try {
+            // Delete all units for this source
+            const response = await fetch('/api/learning/delete-path', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                userId: currentUser.id,
+                sourceName: sourceName
+              })
+            });
+            
+            if (response.ok) {
+              confirmModal.remove();
+              showToast(`Deleted "${sourceName}" ✨`, 'success');
+              await renderLearningPathsGrid(); // Refresh
+            } else {
+              throw new Error('Delete failed');
+            }
+          } catch (error) {
+            console.error('Delete error:', error);
+            confirmModal.remove();
+            showToast('Failed to delete learning path', 'error');
           }
-        } catch (error) {
-          console.error('Delete error:', error);
-          showToast('Failed to delete learning path', 'error');
-        }
+        });
       });
     });
 

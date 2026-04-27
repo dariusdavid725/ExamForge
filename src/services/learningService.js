@@ -21,6 +21,12 @@ export async function chunkMaterial(text, sourceName, sourceType = 'document') {
 
 GOAL: Create study notes like the best student in class - organized, visual, interactive, memorable.
 
+CRITICAL REQUIREMENTS:
+- Create MULTIPLE units (minimum 3-5 units, more if material is extensive)
+- Each unit should be 15-20 minutes of study time
+- Split at natural concept boundaries
+- DO NOT put everything in one giant unit - break it down into digestible chunks!
+
 STRUCTURE EACH UNIT WITH:
 
 1. **Clear Sections** with emojis:
@@ -33,8 +39,8 @@ STRUCTURE EACH UNIT WITH:
 
 2. **Visual Elements**:
    - Use [FORMULA]LaTeX here[/FORMULA] for math
-   - CRITICAL: In LaTeX formulas, ALWAYS use DOUBLE backslashes: \\frac, \\sqrt, \\int, etc.
-   - Examples: [FORMULA]\\frac{dy}{dx} = 3y[/FORMULA], [FORMULA]E = mc^2[/FORMULA], [FORMULA]\\int_0^\\infty e^{-x}dx[/FORMULA]
+   - CRITICAL: In LaTeX formulas, ALWAYS use DOUBLE backslashes: \\\\frac, \\\\sqrt, \\\\int, etc.
+   - Examples: [FORMULA]\\\\frac{dy}{dx} = 3y[/FORMULA], [FORMULA]E = mc^2[/FORMULA], [FORMULA]\\\\int_0^\\\\infty e^{-x}dx[/FORMULA]
    - Use [HIGHLIGHT]text[/HIGHLIGHT] for important points
    - Use [EXAMPLE]...content...[/EXAMPLE] for examples
    - Use [TIP]...content...[/TIP] for pro tips
@@ -45,14 +51,15 @@ STRUCTURE EACH UNIT WITH:
    - Add "✏️ Try: ..." for practice exercises
    - Add analogies and real-world connections
 
-4. **Requirements**:
-   - 15-20 minutes study time
-   - Split at natural concept boundaries
+4. **Unit Guidelines**:
+   - Each unit: ONE main topic or concept cluster
+   - 15-20 minutes study time per unit
    - Self-contained but connected to previous units
    - Use simple language, avoid jargon (or explain it)
+   - Build progressively (easier concepts first)
 
-MATERIAL:
-${text.substring(0, 15000)}
+MATERIAL TO SPLIT INTO MULTIPLE UNITS:
+${text.substring(0, 25000)}
 
 Return JSON:
 {
@@ -69,11 +76,12 @@ Return JSON:
 }
 
 IMPORTANT: 
+- CREATE MULTIPLE UNITS (3-5 minimum, more if needed)
 - Structure content with clear sections
 - Use visual markers
 - Make it interactive and memorable
-- For LaTeX: ALWAYS use DOUBLE backslashes (\\frac not \frac, \\sqrt not \sqrt)
-- Test formula: [FORMULA]\\frac{dy}{dx} = 3y[/FORMULA]`;
+- For LaTeX: ALWAYS use DOUBLE backslashes (\\\\frac not \\frac, \\\\sqrt not \\sqrt)
+- Test formula: [FORMULA]\\\\frac{dy}{dx} = 3y[/FORMULA]`;
 
     const response = await client.chat.completions.create({
       model: "gpt-4o-mini",

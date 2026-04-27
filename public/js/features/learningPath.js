@@ -198,71 +198,113 @@ function openLearningUnit(pathItem, userId) {
   const modal = document.createElement('div');
   modal.className = 'learning-unit-modal';
   modal.style.cssText = `
-    position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:9999;
-    display:grid;place-items:center;padding:20px;
+    position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:9999;
+    display:flex;align-items:stretch;padding:0;
     animation: fadeIn 0.3s ease;
-    backdrop-filter: blur(4px);`;
+    backdrop-filter: blur(8px);`;
 
   modal.innerHTML = `
-    <div class="learning-unit-container" style="max-width:900px;width:100%;max-height:92vh;
-      background:var(--paper);border:4px solid var(--text);border-radius:16px;
-      box-shadow:8px 8px 0 var(--text);overflow:hidden;display:flex;flex-direction:column;">
+    <div class="learning-unit-container" style="width:100%;height:100vh;
+      background:var(--paper);overflow:hidden;display:flex;flex-direction:column;">
       
-      <!-- Header -->
-      <div style="padding:20px 24px;background:var(--paper-2);border-bottom:3px solid var(--text);
-        display:flex;justify-content:space-between;align-items:start;gap:16px;">
-        <div style="flex:1;min-width:0;">
-          <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;">
-            <span class="pill" style="font-size:10px;padding:4px 10px;">
+      <!-- Academic Header -->
+      <div style="padding:28px 48px;background:linear-gradient(135deg, var(--paper-2) 0%, var(--paper) 100%);
+        border-bottom:4px solid var(--text);position:relative;">
+        
+        <!-- Top row: metadata + close -->
+        <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:16px;">
+          <div style="display:flex;gap:10px;flex-wrap:wrap;">
+            <span style="font-size:11px;padding:6px 14px;background:var(--accent);color:white;
+              font-weight:900;border-radius:6px;letter-spacing:0.03em;">
+              UNIT ${pathItem.sequence_order}
+            </span>
+            <span class="pill" style="font-size:11px;padding:6px 14px;font-weight:700;">
               ⏱ ${unit.estimated_time_minutes} min
             </span>
-            <span class="pill" style="font-size:10px;padding:4px 10px;">
-              ${'⭐'.repeat(unit.difficulty_level)} Difficulty
+            <span class="pill" style="font-size:11px;padding:6px 14px;font-weight:700;">
+              ${'⭐'.repeat(unit.difficulty_level)}
             </span>
           </div>
-          <h2 style="font-size:22px;margin:0;line-height:1.3;">${escapeHTML(unit.title)}</h2>
+          <button id="closeUnitModal" class="btn btn-secondary" style="padding:10px 20px;font-size:14px;font-weight:900;">
+            ✕
+          </button>
         </div>
-        <button id="closeUnitModal" class="btn btn-secondary" 
-          style="padding:8px 12px;font-size:14px;flex-shrink:0;">
-          ✕
-        </button>
-      </div>
-
-      <!-- Progress Bar -->
-      <div style="padding:16px 24px;background:var(--paper);border-bottom:2px solid var(--paper-2);">
-        <div style="display:flex;justify-content:space-between;font-size:11px;font-weight:800;
-          margin-bottom:6px;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;">
-          <span>Your Progress</span>
-          <span style="color:var(--blue);">${pathItem.progress_percentage}%</span>
-        </div>
-        <div class="progress-track" style="height:8px;">
-          <div class="progress-fill" id="unitProgressBar" 
-            style="width:${pathItem.progress_percentage}%;background:var(--blue);"></div>
+        
+        <!-- Title -->
+        <h1 style="margin:0;font-size:32px;line-height:1.2;font-weight:900;letter-spacing:-0.03em;
+          max-width:900px;">
+          ${escapeHTML(unit.title)}
+        </h1>
+        
+        <!-- Progress bar -->
+        <div style="margin-top:20px;height:10px;background:rgba(0,0,0,0.1);border-radius:12px;overflow:hidden;
+          border:3px solid var(--text);max-width:600px;">
+          <div id="unitProgressBar" style="height:100%;background:var(--accent);width:${pathItem.progress_percentage || 0}%;
+            transition:width 0.5s ease;"></div>
         </div>
       </div>
 
-      <!-- Content -->
-      <div style="flex:1;overflow-y:auto;padding:28px 32px;line-height:1.8;">
-        ${renderEnhancedContent(unit.content)}
+      <!-- Content - Academic Style -->
+      <div style="flex:1;overflow-y:auto;padding:48px 0;background:var(--paper);">
+        <div style="max-width:840px;margin:0 auto;padding:0 56px;">
+          
+          <!-- Study Session Indicator -->
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:40px;
+            padding-bottom:24px;border-bottom:3px solid var(--text);">
+            <div style="width:10px;height:10px;background:var(--accent);border-radius:50%;
+              animation:pulse 2s infinite;"></div>
+            <span style="font-size:12px;font-weight:900;text-transform:uppercase;
+              letter-spacing:0.1em;color:var(--muted);">Study Session</span>
+          </div>
+          
+          <div style="line-height:2.1;font-size:17px;">
+            ${renderEnhancedContent(unit.content)}
+          </div>
+          
+          <!-- Concepts Covered -->
+          ${unit.concepts && JSON.parse(unit.concepts).length > 0 ? `
+            <div style="margin-top:56px;padding-top:40px;border-top:3px solid var(--text);">
+              <h3 style="margin:0 0 20px;font-size:15px;font-weight:900;
+                text-transform:uppercase;letter-spacing:0.05em;">
+                📌 Key Concepts Mastered
+              </h3>
+              <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;">
+                ${JSON.parse(unit.concepts).map(concept => `
+                  <div style="padding:14px 18px;background:var(--paper-2);
+                    border:3px solid var(--text);border-radius:10px;">
+                    <div style="font-weight:900;font-size:14px;line-height:1.4;">${escapeHTML(concept)}</div>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          ` : ''}
+        </div>
       </div>
 
-      <!-- Footer Actions -->
-      <div style="padding:16px 24px;background:var(--paper-2);border-top:3px solid var(--text);
-        display:flex;gap:12px;justify-content:space-between;align-items:center;flex-wrap:wrap;">
-        <div style="font-size:12px;color:var(--muted);">
-          ${pathItem.status === 'completed' ? '✅ Completed' : 
-            pathItem.status === 'in_progress' ? '📝 In Progress' : 
-            '🔓 Ready to learn'}
+      <!-- Footer Actions - Academic Style -->
+      <div style="padding:28px 48px;background:var(--paper-2);border-top:4px solid var(--text);
+        display:flex;justify-content:space-between;align-items:center;gap:20px;">
+        <div style="flex:1;">
+          ${pathItem.status === 'completed' ? `
+            <button id="reviewUnitBtn" class="btn btn-secondary" style="padding:14px 24px;font-size:14px;font-weight:700;">
+              🔄 Review This Unit
+            </button>
+          ` : `
+            <p style="margin:0;font-size:13px;color:var(--muted);line-height:1.5;">
+              💡 Complete this unit to unlock the next one in your learning path
+            </p>
+          `}
         </div>
-        <div style="display:flex;gap:10px;">
+        <div style="display:flex;gap:12px;">
           ${pathItem.status !== 'completed' ? `
-            <button id="markCompleteBtn" class="btn" style="padding:12px 24px;font-size:14px;">
+            <button id="markCompleteBtn" class="btn" style="padding:16px 32px;font-size:16px;font-weight:900;">
               ✅ Mark Complete
             </button>
           ` : `
-            <button id="reviewUnitBtn" class="btn btn-secondary" style="padding:12px 24px;font-size:14px;">
-              🔄 Review Again
-            </button>
+            <div style="padding:14px 28px;background:#10b981;color:white;font-weight:900;
+              border-radius:10px;border:3px solid #059669;font-size:15px;">
+              ✓ Completed
+            </div>
           `}
         </div>
       </div>
@@ -375,45 +417,69 @@ function escapeHTML(str) {
 function renderEnhancedContent(content) {
   if (!content) return '';
 
-  let html = escapeHTML(content);
-
   // Replace [FORMULA]...[/FORMULA] with LaTeX rendering
   // Extract formulas BEFORE escaping to preserve backslashes
   const formulaPattern = /\[FORMULA\](.*?)\[\/FORMULA\]/gs;
-  const originalContent = content;
   
   const formulas = [];
   let match;
-  const tempContent = originalContent.slice();
-  while ((match = formulaPattern.exec(tempContent)) !== null) {
+  while ((match = formulaPattern.exec(content)) !== null) {
     let formula = match[1].trim();
     
-    // FIX for OLD paths: Add missing backslashes for common LaTeX commands
-    formula = formula.replace(/([^\\])frac/g, '$1\\frac'); // Add \ before frac
-    formula = formula.replace(/^frac/g, '\\frac'); // At start
-    formula = formula.replace(/([^\\])sqrt/g, '$1\\sqrt');
+    // CRITICAL FIX for OLD paths with corrupted LaTeX
+    // Problem: AI generated \frac but \f or \ got stripped, leaving "rac" or "frac"
+    
+    // Fix missing backslash AND missing 'f' (e.g., "rac" -> "\frac")
+    formula = formula.replace(/\brac\b/g, '\\frac');
+    formula = formula.replace(/\brac\{/g, '\\frac{');
+    
+    // Fix missing backslash only (e.g., "frac" -> "\frac")
+    formula = formula.replace(/([^\\a-z])frac/g, '$1\\frac');
+    formula = formula.replace(/^frac/g, '\\frac');
+    
+    // Same for other commands - both missing backslash+letter and just backslash
+    formula = formula.replace(/\bqrt\b/g, '\\sqrt');
+    formula = formula.replace(/\bqrt\{/g, '\\sqrt{');
+    formula = formula.replace(/([^\\a-z])sqrt/g, '$1\\sqrt');
     formula = formula.replace(/^sqrt/g, '\\sqrt');
-    formula = formula.replace(/([^\\])int/g, '$1\\int');
+    
+    formula = formula.replace(/\bnt\b/g, '\\int');
+    formula = formula.replace(/\bnt_/g, '\\int_');
+    formula = formula.replace(/([^\\a-z])int/g, '$1\\int');
     formula = formula.replace(/^int/g, '\\int');
-    formula = formula.replace(/([^\\])sum/g, '$1\\sum');
+    
+    formula = formula.replace(/\bum\b/g, '\\sum');
+    formula = formula.replace(/\bum_/g, '\\sum_');
+    formula = formula.replace(/([^\\a-z])sum/g, '$1\\sum');
     formula = formula.replace(/^sum/g, '\\sum');
-    formula = formula.replace(/([^\\])prod/g, '$1\\prod');
-    formula = formula.replace(/^prod/g, '\\prod');
-    formula = formula.replace(/([^\\])lim/g, '$1\\lim');
-    formula = formula.replace(/^lim/g, '\\lim');
-    formula = formula.replace(/([^\\])infty/g, '$1\\infty');
+    
+    formula = formula.replace(/\bnfty\b/g, '\\infty');
+    formula = formula.replace(/([^\\a-z])infty/g, '$1\\infty');
     formula = formula.replace(/^infty/g, '\\infty');
-    formula = formula.replace(/([^\\])alpha/g, '$1\\alpha');
-    formula = formula.replace(/([^\\])beta/g, '$1\\beta');
-    formula = formula.replace(/([^\\])gamma/g, '$1\\gamma');
-    formula = formula.replace(/([^\\])theta/g, '$1\\theta');
-    formula = formula.replace(/([^\\])pi/g, '$1\\pi');
+    
+    // Greek letters
+    formula = formula.replace(/([^\\a-z])alpha/g, '$1\\alpha');
+    formula = formula.replace(/^alpha/g, '\\alpha');
+    formula = formula.replace(/([^\\a-z])beta/g, '$1\\beta');
+    formula = formula.replace(/^beta/g, '\\beta');
+    formula = formula.replace(/([^\\a-z])gamma/g, '$1\\gamma');
+    formula = formula.replace(/^gamma/g, '\\gamma');
+    formula = formula.replace(/([^\\a-z])theta/g, '$1\\theta');
+    formula = formula.replace(/^theta/g, '\\theta');
+    formula = formula.replace(/([^\\a-z])pi\b/g, '$1\\pi');
+    formula = formula.replace(/^pi\b/g, '\\pi');
+    
+    // Other common commands
+    formula = formula.replace(/([^\\a-z])lim/g, '$1\\lim');
+    formula = formula.replace(/^lim/g, '\\lim');
+    formula = formula.replace(/([^\\a-z])prod/g, '$1\\prod');
+    formula = formula.replace(/^prod/g, '\\prod');
     
     formulas.push({ original: match[0], fixed: formula });
   }
   
   // Now escape HTML BUT keep formula placeholders
-  html = originalContent;
+  let html = content;
   formulas.forEach((f, i) => {
     html = html.replace(f.original, `__FORMULA_${i}__`);
   });
