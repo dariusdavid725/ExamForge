@@ -16,7 +16,6 @@ import {
   renderRecoveryLesson
 } from "../components/renderer.js";
 import * as api from "../shared/api.js";
-import { playSound, toggleSound, isSoundEnabled } from "../shared/soundEffects.js";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -189,13 +188,8 @@ function startSyncedLoop() {
 
           renderChallenge(submitCurrentAnswer);
         }
-        const prevTimeLeft = state.timeLeft;
         state.timeLeft = arena.timeLeft;
         updateTimerUI();
-        
-        if (arena.timeLeft <= 5 && arena.timeLeft > 0 && prevTimeLeft !== arena.timeLeft) {
-          playSound("timer");
-        }
         
         if (!state.answeredCurrentChallenge && arena.timeLeft <= 0) {
           await ensureAnswerSubmitted(arena.challengeIndex);
@@ -311,20 +305,6 @@ function mountArenaActionButtons(context) {
   Object.assign(wrapper.style, { position: "fixed", right: "22px", bottom: "22px", zIndex: "60",
     display: "flex", gap: "10px", alignItems: "center", flexWrap: "wrap", justifyContent: "flex-end",
     maxWidth: "calc(100vw - 44px)" });
-
-  const soundToggle = document.createElement("button");
-  soundToggle.type = "button";
-  soundToggle.className = "btn btn-secondary";
-  soundToggle.style.padding = "10px 14px";
-  soundToggle.textContent = isSoundEnabled() ? "🔊" : "🔇";
-  soundToggle.title = isSoundEnabled() ? "Sound on" : "Sound off";
-  soundToggle.addEventListener("click", () => {
-    const enabled = toggleSound();
-    soundToggle.textContent = enabled ? "🔊" : "🔇";
-    soundToggle.title = enabled ? "Sound on" : "Sound off";
-    showToast(enabled ? "Sound enabled" : "Sound disabled", "info");
-  });
-  wrapper.appendChild(soundToggle);
 
   if (state.isHost && context === "lobby" && state.currentUser) {
     const invBtn = document.createElement("button");

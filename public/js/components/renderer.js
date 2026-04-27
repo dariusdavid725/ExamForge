@@ -1,6 +1,5 @@
 import * as dom from "./dom.js";
 import { state } from "../shared/state.js";
-import { playSound } from "../shared/soundEffects.js";
 
 export function escapeHTML(value) {
   return String(value ?? "")
@@ -336,12 +335,6 @@ export function renderResultPhase(challenge, submitResult) {
   const isPartial = submitResult?.isPartial ?? false;
   const points    = submitResult?.points    ?? 0;
 
-  if (isCorrect) {
-    playSound("correct");
-  } else {
-    playSound("wrong");
-  }
-
   const correctDisplay = challenge.type === "order_steps"
     ? challenge.correctOrder.join(" → ")
     : challenge.type === "multiple_select"
@@ -425,8 +418,6 @@ export function renderPodium(data, currentPack) {
   dom.leaderboardList.innerHTML = "";
   const total   = currentPack ? currentPack.challenges.length : data.totalChallenges || 8;
   const players = data.leaderboard;
-
-  playSound("finish");
 
   if (typeof confetti === "function") {
     setTimeout(() => {
