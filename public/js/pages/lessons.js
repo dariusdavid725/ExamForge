@@ -322,10 +322,10 @@ function setupButtons() {
   el("generateLessonBtn")?.addEventListener("click",          generateLesson);
   el("smartProcessBtn")?.addEventListener("click",            handleSmartProcess);
   el("newLessonFromGridBtn")?.addEventListener("click",       () => showSection("uploadSection"));
-  el("backToMyLessonsBtn")?.addEventListener("click",         showMyLessons);
-  el("backToMyLessonsFromLesson")?.addEventListener("click",  showMyLessons);
-  el("backToMyLessonsFromReport")?.addEventListener("click",  showMyLessons);
-  el("backToMyLessonsFromPath")?.addEventListener("click",    showMyLessons);
+  el("backToMyLessonsBtn")?.addEventListener("click",         () => showMyLessons('lessons'));
+  el("backToMyLessonsFromLesson")?.addEventListener("click",  () => showMyLessons('lessons'));
+  el("backToMyLessonsFromReport")?.addEventListener("click",  () => showMyLessons('lessons'));
+  el("backToMyLessonsFromPath")?.addEventListener("click",    () => showMyLessons('paths'));
   el("makeQuizBtn")?.addEventListener("click",                generateQuiz);
   el("backToLessonBtn")?.addEventListener("click",            () => showSection("lessonSection"));
   el("submitAnswerBtn")?.addEventListener("click",            submitLessonAnswer);

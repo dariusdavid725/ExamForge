@@ -39,8 +39,11 @@ STRUCTURE EACH UNIT WITH:
 
 2. **Visual Elements**:
    - Use [FORMULA]LaTeX here[/FORMULA] for math
-   - CRITICAL: In LaTeX formulas, ALWAYS use DOUBLE backslashes: \\\\frac, \\\\sqrt, \\\\int, etc.
-   - Examples: [FORMULA]\\\\frac{dy}{dx} = 3y[/FORMULA], [FORMULA]E = mc^2[/FORMULA], [FORMULA]\\\\int_0^\\\\infty e^{-x}dx[/FORMULA]
+   - CRITICAL FOR FORMULAS: Write LaTeX commands WITHOUT backslashes!
+   - Write: frac{dy}{dx}, sqrt{x}, int_0^infty, sum_{i=1}^n, alpha, beta, theta
+   - DO NOT write: \\frac, \\sqrt, \\int - backslashes will be added automatically
+   - Examples: [FORMULA]frac{dy}{dx} = 3y[/FORMULA], [FORMULA]E = mc^2[/FORMULA], [FORMULA]int_0^infty e^{-x}dx[/FORMULA]
+   - Common commands (NO backslashes): frac, sqrt, int, sum, prod, lim, infty, alpha, beta, gamma, theta, pi, sin, cos, tan, log
    - Use [HIGHLIGHT]text[/HIGHLIGHT] for important points
    - Use [EXAMPLE]...content...[/EXAMPLE] for examples
    - Use [TIP]...content...[/TIP] for pro tips
@@ -80,8 +83,10 @@ IMPORTANT:
 - Structure content with clear sections
 - Use visual markers
 - Make it interactive and memorable
-- For LaTeX: ALWAYS use DOUBLE backslashes (\\\\frac not \\frac, \\\\sqrt not \\sqrt)
-- Test formula: [FORMULA]\\\\frac{dy}{dx} = 3y[/FORMULA]`;
+- For LaTeX: Write commands WITHOUT backslashes (frac not \\frac, sqrt not \\sqrt)
+- Backslashes will be added automatically during rendering
+- Test formula: [FORMULA]frac{dy}{dx} = 3y[/FORMULA]
+- Another test: [FORMULA]int_0^infty e^{-x}dx = 1[/FORMULA]`;
 
     const response = await client.chat.completions.create({
       model: "gpt-4o-mini",

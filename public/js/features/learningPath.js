@@ -418,7 +418,7 @@ function renderEnhancedContent(content) {
   if (!content) return '';
 
   // Replace [FORMULA]...[/FORMULA] with LaTeX rendering
-  // Extract formulas BEFORE escaping to preserve backslashes
+  // NEW APPROACH: AI sends formulas WITHOUT backslashes, we add them here
   const formulaPattern = /\[FORMULA\](.*?)\[\/FORMULA\]/gs;
   
   const formulas = [];
@@ -426,54 +426,89 @@ function renderEnhancedContent(content) {
   while ((match = formulaPattern.exec(content)) !== null) {
     let formula = match[1].trim();
     
-    // CRITICAL FIX for OLD paths with corrupted LaTeX
-    // Problem: AI generated \frac but \f or \ got stripped, leaving "rac" or "frac"
+    // AUTO-FIX: Add backslashes to LaTeX commands
+    // This works for BOTH new paths (no backslashes) AND old paths (corrupted backslashes)
     
-    // Fix missing backslash AND missing 'f' (e.g., "rac" -> "\frac")
-    formula = formula.replace(/\brac\b/g, '\\frac');
-    formula = formula.replace(/\brac\{/g, '\\frac{');
+    // Step 1: Remove any existing backslashes (clean slate)
+    formula = formula.replace(/\\/g, '');
     
-    // Fix missing backslash only (e.g., "frac" -> "\frac")
-    formula = formula.replace(/([^\\a-z])frac/g, '$1\\frac');
-    formula = formula.replace(/^frac/g, '\\frac');
+    // Step 2: Add backslashes to all LaTeX commands
+    // Match word boundaries to avoid partial replacements
     
-    // Same for other commands - both missing backslash+letter and just backslash
-    formula = formula.replace(/\bqrt\b/g, '\\sqrt');
-    formula = formula.replace(/\bqrt\{/g, '\\sqrt{');
-    formula = formula.replace(/([^\\a-z])sqrt/g, '$1\\sqrt');
-    formula = formula.replace(/^sqrt/g, '\\sqrt');
+    // Math operators
+    formula = formula.replace(/\bfrac\b/g, '\\frac');
+    formula = formula.replace(/\bsqrt\b/g, '\\sqrt');
+    formula = formula.replace(/\bint\b/g, '\\int');
+    formula = formula.replace(/\bsum\b/g, '\\sum');
+    formula = formula.replace(/\bprod\b/g, '\\prod');
+    formula = formula.replace(/\blim\b/g, '\\lim');
+    formula = formula.replace(/\binfty\b/g, '\\infty');
     
-    formula = formula.replace(/\bnt\b/g, '\\int');
-    formula = formula.replace(/\bnt_/g, '\\int_');
-    formula = formula.replace(/([^\\a-z])int/g, '$1\\int');
-    formula = formula.replace(/^int/g, '\\int');
+    // Trigonometric functions
+    formula = formula.replace(/\bsin\b/g, '\\sin');
+    formula = formula.replace(/\bcos\b/g, '\\cos');
+    formula = formula.replace(/\btan\b/g, '\\tan');
+    formula = formula.replace(/\bsec\b/g, '\\sec');
+    formula = formula.replace(/\bcsc\b/g, '\\csc');
+    formula = formula.replace(/\bcot\b/g, '\\cot');
     
-    formula = formula.replace(/\bum\b/g, '\\sum');
-    formula = formula.replace(/\bum_/g, '\\sum_');
-    formula = formula.replace(/([^\\a-z])sum/g, '$1\\sum');
-    formula = formula.replace(/^sum/g, '\\sum');
+    // Logarithms
+    formula = formula.replace(/\blog\b/g, '\\log');
+    formula = formula.replace(/\bln\b/g, '\\ln');
     
-    formula = formula.replace(/\bnfty\b/g, '\\infty');
-    formula = formula.replace(/([^\\a-z])infty/g, '$1\\infty');
-    formula = formula.replace(/^infty/g, '\\infty');
+    // Greek letters (lowercase)
+    formula = formula.replace(/\balpha\b/g, '\\alpha');
+    formula = formula.replace(/\bbeta\b/g, '\\beta');
+    formula = formula.replace(/\bgamma\b/g, '\\gamma');
+    formula = formula.replace(/\bdelta\b/g, '\\delta');
+    formula = formula.replace(/\bepsilon\b/g, '\\epsilon');
+    formula = formula.replace(/\bzeta\b/g, '\\zeta');
+    formula = formula.replace(/\beta\b/g, '\\eta');
+    formula = formula.replace(/\btheta\b/g, '\\theta');
+    formula = formula.replace(/\biota\b/g, '\\iota');
+    formula = formula.replace(/\bkappa\b/g, '\\kappa');
+    formula = formula.replace(/\blambda\b/g, '\\lambda');
+    formula = formula.replace(/\bmu\b/g, '\\mu');
+    formula = formula.replace(/\bnu\b/g, '\\nu');
+    formula = formula.replace(/\bxi\b/g, '\\xi');
+    formula = formula.replace(/\bpi\b/g, '\\pi');
+    formula = formula.replace(/\brho\b/g, '\\rho');
+    formula = formula.replace(/\bsigma\b/g, '\\sigma');
+    formula = formula.replace(/\btau\b/g, '\\tau');
+    formula = formula.replace(/\bupsilon\b/g, '\\upsilon');
+    formula = formula.replace(/\bphi\b/g, '\\phi');
+    formula = formula.replace(/\bchi\b/g, '\\chi');
+    formula = formula.replace(/\bpsi\b/g, '\\psi');
+    formula = formula.replace(/\bomega\b/g, '\\omega');
     
-    // Greek letters
-    formula = formula.replace(/([^\\a-z])alpha/g, '$1\\alpha');
-    formula = formula.replace(/^alpha/g, '\\alpha');
-    formula = formula.replace(/([^\\a-z])beta/g, '$1\\beta');
-    formula = formula.replace(/^beta/g, '\\beta');
-    formula = formula.replace(/([^\\a-z])gamma/g, '$1\\gamma');
-    formula = formula.replace(/^gamma/g, '\\gamma');
-    formula = formula.replace(/([^\\a-z])theta/g, '$1\\theta');
-    formula = formula.replace(/^theta/g, '\\theta');
-    formula = formula.replace(/([^\\a-z])pi\b/g, '$1\\pi');
-    formula = formula.replace(/^pi\b/g, '\\pi');
+    // Greek letters (uppercase)
+    formula = formula.replace(/\bGamma\b/g, '\\Gamma');
+    formula = formula.replace(/\bDelta\b/g, '\\Delta');
+    formula = formula.replace(/\bTheta\b/g, '\\Theta');
+    formula = formula.replace(/\bLambda\b/g, '\\Lambda');
+    formula = formula.replace(/\bXi\b/g, '\\Xi');
+    formula = formula.replace(/\bPi\b/g, '\\Pi');
+    formula = formula.replace(/\bSigma\b/g, '\\Sigma');
+    formula = formula.replace(/\bPhi\b/g, '\\Phi');
+    formula = formula.replace(/\bPsi\b/g, '\\Psi');
+    formula = formula.replace(/\bOmega\b/g, '\\Omega');
     
-    // Other common commands
-    formula = formula.replace(/([^\\a-z])lim/g, '$1\\lim');
-    formula = formula.replace(/^lim/g, '\\lim');
-    formula = formula.replace(/([^\\a-z])prod/g, '$1\\prod');
-    formula = formula.replace(/^prod/g, '\\prod');
+    // Special symbols
+    formula = formula.replace(/\bcdot\b/g, '\\cdot');
+    formula = formula.replace(/\btimes\b/g, '\\times');
+    formula = formula.replace(/\bpm\b/g, '\\pm');
+    formula = formula.replace(/\bmp\b/g, '\\mp');
+    formula = formula.replace(/\bleq\b/g, '\\leq');
+    formula = formula.replace(/\bgeq\b/g, '\\geq');
+    formula = formula.replace(/\bneq\b/g, '\\neq');
+    formula = formula.replace(/\bapprox\b/g, '\\approx');
+    formula = formula.replace(/\bequiv\b/g, '\\equiv');
+    
+    // Arrows
+    formula = formula.replace(/\brightarrow\b/g, '\\rightarrow');
+    formula = formula.replace(/\bleftarrow\b/g, '\\leftarrow');
+    formula = formula.replace(/\bRightarrow\b/g, '\\Rightarrow');
+    formula = formula.replace(/\bLeftarrow\b/g, '\\Leftarrow');
     
     formulas.push({ original: match[0], fixed: formula });
   }
