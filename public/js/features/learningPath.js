@@ -91,6 +91,8 @@ export function renderLearningPath(container, pathData, userId) {
   }
 
   const progressPercentage = totalUnits > 0 ? Math.round((completedUnits / totalUnits) * 100) : 0;
+  const allCompleted = completedUnits === totalUnits && totalUnits > 0;
+  const sourceName = path[0]?.learning_unit?.source_name || "Learning Path";
 
   container.innerHTML = `
     <div class="card" style="margin-bottom:16px;">
@@ -110,6 +112,38 @@ export function renderLearningPath(container, pathData, userId) {
       </p>
     </div>
 
+    ${allCompleted ? `
+      <div class="completion-banner">
+        <div class="completion-content">
+          <div class="completion-icon">🎉</div>
+          <h2>Congratulations! Path Completed!</h2>
+          <p>You've finished all units in this learning path. What's next?</p>
+          <div class="completion-actions">
+            <button class="btn btn-primary generate-quiz-from-path" data-source-name="${escapeHTML(sourceName)}">
+              🎮 Generate Quiz
+            </button>
+            <button class="btn btn-secondary" id="finishPathBtn">
+              ✓ Back to My Lessons
+            </button>
+          </div>
+          <div class="completion-stats">
+            <div class="stat-item">
+              <span class="stat-value">${totalUnits}</span>
+              <span class="stat-label">Units Completed</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-value">${path.reduce((sum, p) => sum + (p.learning_unit?.estimated_time_minutes || 15), 0)}</span>
+              <span class="stat-label">Minutes Studied</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-value">100%</span>
+              <span class="stat-label">Progress</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    ` : ''}
+
     <div id="learningUnitsContainer" style="display:grid;gap:12px;">
       ${path.map(pathItem => renderLearningUnit(pathItem, userId)).join('')}
     </div>
@@ -122,6 +156,75 @@ export function renderLearningPath(container, pathData, userId) {
       unitEl.addEventListener('click', () => openLearningUnit(pathItem, userId));
     }
   });
+
+  // Completion banner event listeners
+  if (allCompleted) {
+    const finishBtn = container.querySelector('#finishPathBtn');
+    if (finishBtn && window.showMyLessons) {
+      finishBtn.addEventListener('click', () => {
+        window.showMyLessons('lessons');
+      });
+    }
+
+    const generateQuizBtn = container.querySelector('.generate-quiz-from-path');
+    if (generateQuizBtn) {
+      generateQuizBtn.addEventListener('click', async () => {
+        try {
+          const { showLoadingOverlay, hideLoadingOverlay } = await import('../shared/uiFeedback.js');
+          const { showToast } = await import('../shared/uiFeedback.js');
+          
+          showLoadingOverlay('Generating quiz from your learning path...', [
+            { text: 'Analyzing completed units...', duration: 2000 },
+            { text: 'Creating challenging questions...', duration: 3000 },
+            { text: 'Finalizing quiz...', duration: 2000 }
+          ]);
+          
+          // Combine all unit content
+          const combinedContent = path.map(p => 
+            `${p.learning_unit.title}\n\n${p.learning_unit.content}`
+          ).join('\n\n---\n\n');
+          
+          const response = await fetch('/api/quiz/generate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              userId,
+              documentText: combinedContent,
+              documentName: `Quiz: ${sourceName}`,
+              questionCount: Math.min(15, totalUnits * 3)
+            })
+          });
+          
+          if (!response.ok) throw new Error('Failed to generate quiz');
+          
+          const data = await response.json();
+          hideLoadingOverlay();
+          showToast('Quiz generated! Redirecting...', 'success');
+          
+          setTimeout(() => {
+            window.location.href = `quiz.html?quizId=${data.quizId}`;
+          }, 1000);
+          
+        } catch (error) {
+          console.error('Error generating quiz:', error);
+          const { hideLoadingOverlay, showToast } = await import('../shared/uiFeedback.js');
+          hideLoadingOverlay();
+          showToast('Failed to generate quiz. Please try again.', 'error');
+        }
+      });
+    }
+  }
+}
+
+function escapeHTML(str) {
+  if (!str) return '';
+  return String(str).replace(/[&<>"']/g, match => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#039;'
+  }[match]));
 }
 
 /**
