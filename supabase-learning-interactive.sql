@@ -5,9 +5,9 @@
 
 -- User highlights in learning units
 CREATE TABLE IF NOT EXISTS public.unit_highlights (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id BIGSERIAL PRIMARY KEY,
   user_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
-  unit_id UUID NOT NULL REFERENCES public.learning_units(id) ON DELETE CASCADE,
+  unit_id BIGINT NOT NULL REFERENCES public.learning_units(id) ON DELETE CASCADE,
   text_content TEXT NOT NULL,
   start_offset INTEGER NOT NULL,
   end_offset INTEGER NOT NULL,
@@ -21,9 +21,9 @@ CREATE INDEX IF NOT EXISTS idx_unit_highlights_user_unit
 
 -- User notes on learning units
 CREATE TABLE IF NOT EXISTS public.unit_notes (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id BIGSERIAL PRIMARY KEY,
   user_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
-  unit_id UUID NOT NULL REFERENCES public.learning_units(id) ON DELETE CASCADE,
+  unit_id BIGINT NOT NULL REFERENCES public.learning_units(id) ON DELETE CASCADE,
   note_text TEXT NOT NULL,
   position_offset INTEGER, -- where in content the note is anchored
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
@@ -35,9 +35,9 @@ CREATE INDEX IF NOT EXISTS idx_unit_notes_user_unit
 
 -- Error reports for AI-generated content
 CREATE TABLE IF NOT EXISTS public.content_error_reports (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id BIGSERIAL PRIMARY KEY,
   user_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
-  unit_id UUID NOT NULL REFERENCES public.learning_units(id) ON DELETE CASCADE,
+  unit_id BIGINT NOT NULL REFERENCES public.learning_units(id) ON DELETE CASCADE,
   error_type VARCHAR(50) NOT NULL, -- 'incorrect_info', 'typo', 'unclear', 'formula_error'
   error_description TEXT NOT NULL,
   text_snippet TEXT, -- the problematic text
@@ -56,9 +56,9 @@ CREATE INDEX IF NOT EXISTS idx_error_reports_user
 
 -- Learning sessions (for multiplayer/collaborative learning)
 CREATE TABLE IF NOT EXISTS public.learning_sessions (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id BIGSERIAL PRIMARY KEY,
   host_user_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
-  unit_id UUID NOT NULL REFERENCES public.learning_units(id) ON DELETE CASCADE,
+  unit_id BIGINT NOT NULL REFERENCES public.learning_units(id) ON DELETE CASCADE,
   session_code VARCHAR(10) UNIQUE NOT NULL, -- short code for inviting others
   is_active BOOLEAN DEFAULT true,
   max_participants INTEGER DEFAULT 10,
@@ -75,8 +75,8 @@ CREATE INDEX IF NOT EXISTS idx_learning_sessions_code
 
 -- Session participants (who's in the study session)
 CREATE TABLE IF NOT EXISTS public.session_participants (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  session_id UUID NOT NULL REFERENCES public.learning_sessions(id) ON DELETE CASCADE,
+  id BIGSERIAL PRIMARY KEY,
+  session_id BIGINT NOT NULL REFERENCES public.learning_sessions(id) ON DELETE CASCADE,
   user_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
   joined_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   last_seen_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
