@@ -132,8 +132,8 @@ export function renderLearningPath(container, pathData, userId) {
               <span class="stat-label">Units Completed</span>
             </div>
             <div class="stat-item">
-              <span class="stat-value">${path.reduce((sum, p) => sum + (p.learning_unit?.estimated_time_minutes || 15), 0)}</span>
-              <span class="stat-label">Minutes Studied</span>
+              <span class="stat-value">${completedUnits}</span>
+              <span class="stat-label">Units Mastered</span>
             </div>
             <div class="stat-item">
               <span class="stat-value">100%</span>
@@ -160,9 +160,22 @@ export function renderLearningPath(container, pathData, userId) {
   // Completion banner event listeners
   if (allCompleted) {
     const finishBtn = container.querySelector('#finishPathBtn');
-    if (finishBtn && window.showMyLessons) {
+    if (finishBtn) {
       finishBtn.addEventListener('click', () => {
-        window.showMyLessons('lessons');
+        console.log('Finish button clicked');
+        // Switch to lessons section
+        const myLessonsSection = document.querySelector('#myLessonsSection');
+        const learningPathSection = document.querySelector('#learningPathSection');
+        
+        if (myLessonsSection && learningPathSection) {
+          learningPathSection.style.display = 'none';
+          myLessonsSection.style.display = 'block';
+        }
+        
+        // Try window function as fallback
+        if (typeof window.showMyLessons === 'function') {
+          window.showMyLessons('lessons');
+        }
       });
     }
 
@@ -170,19 +183,17 @@ export function renderLearningPath(container, pathData, userId) {
     if (generateQuizBtn) {
       generateQuizBtn.addEventListener('click', async () => {
         try {
-          const { showLoadingOverlay, hideLoadingOverlay } = await import('../shared/uiFeedback.js');
-          const { showToast } = await import('../shared/uiFeedback.js');
-          
-          showLoadingOverlay('Generating quiz from your learning path...', [
-            { text: 'Analyzing completed units...', duration: 2000 },
-            { text: 'Creating challenging questions...', duration: 3000 },
-            { text: 'Finalizing quiz...', duration: 2000 }
-          ]);
+          // Use global functions from uiFeedback
+          if (typeof window.showLoadingOverlay === 'function') {
+            window.showLoadingOverlay('Generating quiz from your learning path...');
+          }
           
           // Combine all unit content
           const combinedContent = path.map(p => 
             `${p.learning_unit.title}\n\n${p.learning_unit.content}`
           ).join('\n\n---\n\n');
+          
+          console.log('Generating quiz with content length:', combinedContent.length);
           
           const response = await fetch('/api/quiz/generate', {
             method: 'POST',
@@ -195,11 +206,19 @@ export function renderLearningPath(container, pathData, userId) {
             })
           });
           
-          if (!response.ok) throw new Error('Failed to generate quiz');
-          
           const data = await response.json();
-          hideLoadingOverlay();
-          showToast('Quiz generated! Redirecting...', 'success');
+          
+          if (!response.ok) {
+            throw new Error(data.error || 'Failed to generate quiz');
+          }
+          
+          if (typeof window.hideLoadingOverlay === 'function') {
+            window.hideLoadingOverlay();
+          }
+          
+          if (typeof window.showToast === 'function') {
+            window.showToast('Quiz generated! Redirecting...', 'success');
+          }
           
           setTimeout(() => {
             window.location.href = `quiz.html?quizId=${data.quizId}`;
@@ -207,9 +226,12 @@ export function renderLearningPath(container, pathData, userId) {
           
         } catch (error) {
           console.error('Error generating quiz:', error);
-          const { hideLoadingOverlay, showToast } = await import('../shared/uiFeedback.js');
-          hideLoadingOverlay();
-          showToast('Failed to generate quiz. Please try again.', 'error');
+          if (typeof window.hideLoadingOverlay === 'function') {
+            window.hideLoadingOverlay();
+          }
+          if (typeof window.showToast === 'function') {
+            window.showToast(error.message || 'Failed to generate quiz. Please try again.', 'error');
+          }
         }
       });
     }
@@ -377,30 +399,30 @@ function openLearningUnit(pathItem, userId) {
       </div>
 
       <!-- Footer Actions - Academic Style -->
-      <div style="padding:28px 48px;background:var(--paper-2);border-top:4px solid var(--text);
-        display:flex;justify-content:space-between;align-items:center;gap:20px;flex-wrap:wrap;">
+      <div style="padding:20px 40px;background:var(--paper-2);border-top:4px solid var(--text);
+        display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;flex-shrink:0;">
         <div style="flex:1;min-width:200px;">
           ${pathItem.status === 'completed' ? `
-            <button id="reviewUnitBtn" class="btn btn-secondary" style="padding:14px 24px;font-size:14px;font-weight:700;">
+            <button id="reviewUnitBtn" class="btn btn-secondary" style="padding:12px 20px;font-size:13px;font-weight:700;">
               🔄 Review This Unit
             </button>
           ` : `
-            <p style="margin:0;font-size:13px;color:var(--muted);line-height:1.5;">
+            <p style="margin:0;font-size:12px;color:var(--muted);line-height:1.4;">
               💡 Complete this unit to unlock the next one
             </p>
           `}
-          <p style="margin:8px 0 0;font-size:12px;color:var(--muted);">
+          <p style="margin:6px 0 0;font-size:11px;color:var(--muted);">
             💡 Tip: Select text to highlight it
           </p>
         </div>
         <div style="display:flex;gap:12px;align-items:center;">
           ${pathItem.status !== 'completed' ? `
-            <button id="markCompleteBtn" class="btn" style="padding:16px 32px;font-size:16px;font-weight:900;">
+            <button id="markCompleteBtn" class="btn" style="padding:14px 28px;font-size:15px;font-weight:900;">
               ✅ Mark Complete
             </button>
           ` : `
-            <div style="padding:14px 28px;background:#10b981;color:white;font-weight:900;
-              border-radius:10px;border:3px solid #059669;font-size:15px;">
+            <div style="padding:12px 24px;background:#10b981;color:white;font-weight:900;
+              border-radius:10px;border:3px solid #059669;font-size:14px;">
               ✓ Completed
             </div>
           `}
