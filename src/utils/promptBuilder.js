@@ -89,18 +89,18 @@ Challenge distribution (EXACTLY 8 total):
 - 1 multiple_select (integration, multiple correct principles)
 
 Quality rules (research-based):
-- Distractors reflect REAL student misconceptions (not obviously wrong)
-- All options should be plausible at first glance
+- CRITICAL: For multiple_choice, EXACTLY 1 answer must be correct, others must be CLEARLY wrong
+- If 2+ options could be correct, use multiple_select instead (NOT multiple_choice)
+- Distractors should be wrong but based on common student errors
+- Make 1-2 distractors obviously wrong, 1-2 more subtle (graduated difficulty)
 - Avoid pattern giveaways:
-  * Don't make correct answer much longer/shorter than others
+  * Don't make correct answer always the longest/most detailed
   * Don't use "all of the above" or "none of the above"
-  * Don't make correct answer the only one with specific details
-  * Don't use absolute words ("always", "never", "only") in wrong answers only
   * Balance correct answer positions (A, B, C, D equally likely)
 - Questions require understanding, not just recognition
-- Include "why" in explanations (elaborative interrogation)
+- Include "why" in explanations (why correct + why others are wrong)
 - Use concrete examples from document
-- Avoid trick questions; test genuine understanding
+- Avoid ambiguous wording that makes multiple answers defensible
 - VARY question formats and styles (don't be predictable or formulaic)
 
 Field guidelines (aim for clarity, not arbitrary limits):
@@ -142,9 +142,23 @@ Type rules:
 
 multiple_choice:
 - exactly 4 options
-- exactly 1 correct answer
+- EXACTLY 1 correct answer (others must be CLEARLY wrong)
 - correctAnswer must be one of options
-- do NOT use if 2+ options are correct
+- do NOT use if 2+ options could be considered correct
+- If unsure, make question more specific or use multiple_select
+
+Example GOOD multiple_choice:
+Q: "Care este rolul principal al clorofilei în fotosinteză?"
+A: "Absoarbe lumina solară" ✓ CORRECT
+B: "Produce oxigen" ✗ (oxigenul e produs, dar nu de clorofilă direct)
+C: "Descompune apa" ✗ (apa e descompusă de alt proces)
+D: "Fixează carbonul" ✗ (fixarea e în Calvin cycle)
+
+Example BAD (ambiguous):
+Q: "Ce face cloroplastul?"
+A: "Produce energie" ← Could be defended (ATP)
+B: "Face fotosinteză" ← Also correct!
+(This should be multiple_select OR more specific question)
 
 true_false:
 - options ["Adevărat","Fals"] or ["True","False"]
@@ -234,18 +248,18 @@ Challenge distribution (EXACTLY 8 total):
 - 1 multiple_select (integration, multiple correct principles)
 
 Quality rules (research-based):
-- Distractors reflect REAL student misconceptions (not obviously wrong)
-- All options should be plausible at first glance
+- CRITICAL: For multiple_choice, EXACTLY 1 answer must be correct, others must be CLEARLY wrong
+- If 2+ options could be correct, use multiple_select instead (NOT multiple_choice)
+- Distractors should be wrong but based on common student errors
+- Make 1-2 distractors obviously wrong, 1-2 more subtle (graduated difficulty)
 - Avoid pattern giveaways:
-  * Don't make correct answer much longer/shorter than others
+  * Don't make correct answer always the longest/most detailed
   * Don't use "all of the above" or "none of the above"
-  * Don't make correct answer the only one with specific details
-  * Don't use absolute words ("always", "never", "only") in wrong answers only
   * Balance correct answer positions (A, B, C, D equally likely)
 - Questions require understanding, not just recognition
-- Include "why" in explanations (elaborative interrogation)
+- Include "why" in explanations (why correct + why others are wrong)
 - Use concrete examples from the topic
-- Avoid trick questions; test genuine understanding
+- Avoid ambiguous wording that makes multiple answers defensible
 - VARY question formats and styles (don't be predictable or formulaic)
 
 Field guidelines (aim for clarity, not arbitrary limits):
@@ -287,8 +301,23 @@ Type rules:
 
 multiple_choice:
 - exactly 4 options
-- exactly 1 correct answer
+- EXACTLY 1 correct answer (others must be CLEARLY wrong)
 - correctAnswer must be one of options
+- do NOT use if 2+ options could be considered correct
+- Make 1-2 options obviously wrong, 1-2 more subtle
+
+Example GOOD:
+Q: "What is the primary function of mitochondria?"
+A: "Produce ATP through cellular respiration" ✓
+B: "Synthesize proteins" ✗ (that's ribosomes)
+C: "Store genetic material" ✗ (too vague, main function is energy)
+D: "Digest cellular waste" ✗ (that's lysosomes)
+
+Example BAD (multiple correct):
+Q: "What does the heart do?"
+A: "Pumps blood" ← Correct
+B: "Circulates oxygen" ← Also technically correct!
+(Make question more specific or use multiple_select)
 
 true_false:
 - options ["Adevărat","Fals"] or ["True","False"] depending on language
@@ -429,10 +458,12 @@ Mark valid=false if ANY challenge:
 - invents facts, numbers, examples, prices, quantities, dates, names, formulas, or assumptions
 - has a fill_blank where the missing answer cannot be inferred from prompt alone
 - has a math question without all needed values in prompt
-- has a multiple_choice with more than one correct option
+- CRITICAL: has a multiple_choice where 2 or more options could be considered correct (ambiguous question)
+- has a multiple_choice where all 4 options are equally plausible (needs clearer wrong answers)
 - should be multiple_select but is multiple_choice
 - has options glued together or confusing
 - has sourceSnippet that does not support the answer
+- has ambiguous wording that makes the question unclear
 
 Important:
 - The player sees ONLY prompt/options/steps/pairs/mistakeText.

@@ -185,12 +185,13 @@ Research principles:
 - Elaboration: explanations teach, not just confirm right/wrong
 
 Question design standards:
+- CRITICAL: Each question must have EXACTLY 1 correct answer (no ambiguity)
 - AVOID trivial recall ("What is X called?")
 - PREFER application ("When would you use X?")
 - PREFER conceptual understanding ("Why does X happen?")
-- Distractors = plausible errors students actually make
-- Make ALL options similar in length and specificity
-- Avoid pattern giveaways (no "all/none of above", no obvious outliers)
+- Distractors = wrong but reflect common student errors
+- Make 1-2 distractors obviously wrong, 1-2 more subtle (not all equally plausible)
+- Avoid ambiguous wording where multiple answers could be defended
 - Balance answer positions (don't always make A or D correct)
 - Vary question stems and formats for engagement
 
