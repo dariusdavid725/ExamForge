@@ -246,7 +246,7 @@ function openLearningUnit(pathItem, userId) {
 
       <!-- Content - Academic Style -->
       <div style="flex:1;overflow-y:auto;padding:48px 0;background:var(--paper);">
-        <div style="max-width:840px;margin:0 auto;padding:0 56px;">
+        <div id="unitContent" style="max-width:840px;margin:0 auto;padding:0 56px;">
           
           <!-- Study Session Indicator -->
           <div style="display:flex;align-items:center;gap:12px;margin-bottom:40px;
@@ -313,33 +313,43 @@ function openLearningUnit(pathItem, userId) {
 
   document.body.appendChild(modal);
 
-  // Render LaTeX with KaTeX - wait for it to load
+  // Render LaTeX with KaTeX
   const renderLatex = () => {
-    if (window.renderMathInElement) {
-      try {
-        const contentDiv = modal.querySelector('.card > div');
-        if (contentDiv) {
-          renderMathInElement(contentDiv, {
-            delimiters: [
-              {left: '\\(', right: '\\)', display: false},
-              {left: '\\[', right: '\\]', display: true},
-              {left: '$', right: '$', display: false},
-              {left: '$$', right: '$$', display: true}
-            ],
-            throwOnError: false,
-            trust: true
-          });
-        }
-      } catch (e) {
-        console.log('KaTeX rendering error:', e);
+    // Wait for KaTeX to load
+    if (!window.renderMathInElement) {
+      setTimeout(renderLatex, 100);
+      return;
+    }
+    
+    try {
+      // Target the unitContent div specifically
+      const contentDiv = document.getElementById('unitContent');
+      if (!contentDiv) {
+        console.warn('Unit content div not found');
+        return;
       }
-    } else {
-      // KaTeX not loaded yet, wait and retry
-      setTimeout(renderLatex, 200);
+      
+      // Render ALL math in the content area
+      window.renderMathInElement(contentDiv, {
+        delimiters: [
+          {left: '$$', right: '$$', display: true},
+          {left: '$', right: '$', display: false},
+          {left: '\\[', right: '\\]', display: true},
+          {left: '\\(', right: '\\)', display: false}
+        ],
+        throwOnError: false,
+        strict: false,
+        trust: true
+      });
+      
+      console.log('✅ KaTeX rendered formulas');
+    } catch (e) {
+      console.error('❌ KaTeX error:', e);
     }
   };
   
-  setTimeout(renderLatex, 150);
+  // Render after DOM is ready
+  setTimeout(renderLatex, 300);
 
   // Close modal
   modal.querySelector('#closeUnitModal').addEventListener('click', () => {
