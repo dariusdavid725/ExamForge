@@ -135,46 +135,49 @@ export async function renderDashboard(
         <!-- TOP ROW: Quick Start (left) + Friends (right) -->
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
           
-          <!-- Quick Start (compact) -->
+          <!-- Quick Start (bigger) -->
           <div class="card">
-            <div class="eyebrow" style="font-size:9px;margin-bottom:10px;">QUICK START</div>
-            <div style="display:grid;gap:6px;">
-              <button id="dashCreateBtn" class="btn" type="button" style="padding:8px;font-size:11px;">⚡ Create Arena</button>
-              <button id="dashJoinBtn"   class="btn btn-secondary" type="button" style="padding:8px;font-size:11px;">Join Arena</button>
-              <a href="/lessons"         class="btn btn-secondary" style="padding:8px;font-size:11px;text-align:center;display:block;">📚 Lessons</a>
-              <button id="dashHistoryBtn" class="btn btn-secondary" type="button" style="padding:8px;font-size:11px;">📊 History</button>
-              ${isAdmin ? `<a href="/admin" class="btn btn-secondary" style="padding:8px;font-size:11px;text-align:center;display:block;">🛠 Admin</a>` : ""}
+            <div class="eyebrow" style="font-size:10px;margin-bottom:10px;">QUICK START</div>
+            <div style="display:grid;gap:8px;">
+              <button id="dashCreateBtn" class="btn" type="button" style="padding:12px;font-size:13px;">⚡ Create Arena</button>
+              <button id="dashJoinBtn"   class="btn btn-secondary" type="button" style="padding:12px;font-size:13px;">Join Arena</button>
+              <a href="/lessons"         class="btn btn-secondary" style="padding:12px;font-size:13px;text-align:center;display:block;">📚 My Lessons</a>
+              <button id="dashHistoryBtn" class="btn btn-secondary" type="button" style="padding:12px;font-size:13px;">📊 My History</button>
+              ${isAdmin ? `<a href="/admin" class="btn btn-secondary" style="padding:12px;font-size:13px;text-align:center;display:block;">🛠 Admin Panel</a>` : ""}
             </div>
           </div>
 
-          <!-- Friends Leaderboard (right) -->
+          <!-- Friends Leaderboard (right, no scroll) -->
           <div class="card">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-              <div class="eyebrow" style="font-size:9px;">FRIENDS</div>
+              <div class="eyebrow" style="font-size:10px;">FRIENDS</div>
               <button id="addFriendBtn" class="btn btn-secondary" type="button"
-                style="padding:2px 6px;font-size:9px;">+</button>
+                style="padding:3px 8px;font-size:10px;">Manage</button>
             </div>
-            <div style="display:grid;gap:4px;max-height:200px;overflow-y:auto;">
+            <div style="display:grid;gap:5px;">
               ${friendProfiles.length > 0 
                 ? renderFriendsLb(friendProfiles, user.id, 5)
-                : `<p class="muted" style="font-size:10px;margin:3px 0;">No friends yet</p>`}
+                : `<p class="muted" style="font-size:11px;margin:3px 0;">No friends yet</p>`}
             </div>
             ${friendProfiles.length > 5 
-              ? `<p class="muted" style="font-size:8px;margin-top:4px;text-align:center;">+${friendProfiles.length - 5} more</p>`
+              ? `<button id="seeMoreFriendsBtn" class="btn btn-secondary" type="button"
+                  style="margin-top:8px;padding:6px;font-size:10px;width:100%;">
+                  See all ${friendProfiles.length} friends
+                </button>`
               : ''}
           </div>
 
         </div>
 
-        <!-- BOTTOM ROW: Stats (full width) -->
+        <!-- BOTTOM ROW: Stats (smaller, full width) -->
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-          <div class="flat-card" style="padding:12px;text-align:center;">
-            <div style="font-size:9px;font-weight:700;color:var(--muted);margin-bottom:4px;letter-spacing:0.05em;">ACCURACY</div>
-            <div style="font-size:24px;font-weight:900;line-height:1;color:${overallAccuracy >= 80 ? 'var(--green)' : overallAccuracy >= 60 ? 'var(--blue)' : 'var(--muted)'};">${overallAccuracy || 0}%</div>
+          <div class="flat-card" style="padding:8px;text-align:center;">
+            <div style="font-size:8px;font-weight:700;color:var(--muted);margin-bottom:3px;letter-spacing:0.05em;">ACCURACY</div>
+            <div style="font-size:18px;font-weight:900;line-height:1;color:${overallAccuracy >= 80 ? 'var(--green)' : overallAccuracy >= 60 ? 'var(--blue)' : 'var(--muted)'};">${overallAccuracy || 0}%</div>
           </div>
-          <div class="flat-card" style="padding:12px;text-align:center;">
-            <div style="font-size:9px;font-weight:700;color:var(--muted);margin-bottom:4px;letter-spacing:0.05em;">THIS WEEK</div>
-            <div style="font-size:24px;font-weight:900;line-height:1;color:var(--blue);">${thisWeekQuizzes || 0}</div>
+          <div class="flat-card" style="padding:8px;text-align:center;">
+            <div style="font-size:8px;font-weight:700;color:var(--muted);margin-bottom:3px;letter-spacing:0.05em;">THIS WEEK</div>
+            <div style="font-size:18px;font-weight:900;line-height:1;color:var(--blue);">${thisWeekQuizzes || 0}</div>
           </div>
         </div>
 
@@ -197,6 +200,7 @@ export async function renderDashboard(
   container.querySelector("#dashJoinBtn")?.addEventListener("click", onJoinArena);
   container.querySelector("#dashHistoryBtn")?.addEventListener("click", onHistory);
   container.querySelector("#addFriendBtn")?.addEventListener("click", () => showFriendManagerModal(user.id));
+  container.querySelector("#seeMoreFriendsBtn")?.addEventListener("click", () => showFriendManagerModal(user.id));
 
   container.querySelectorAll("[data-session-id]").forEach(button => {
     button.addEventListener("click", () => {
