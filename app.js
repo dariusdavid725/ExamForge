@@ -28,6 +28,7 @@ app.get("/dashboard",      (_req, res) => res.sendFile(pub("dashboard.html")));
 app.get("/arena",          (_req, res) => res.sendFile(pub("arena.html")));
 app.get("/lessons",        (_req, res) => res.sendFile(pub("lessons.html")));
 app.get("/pricing",        (_req, res) => res.sendFile(pub("pricing.html")));
+app.get("/demo",           (_req, res) => res.sendFile(pub("demo.html")));
 app.get("/upgrade-success",(_req, res) => res.sendFile(pub("upgrade-success.html")));
 
 // ─── Static assets (css, js, images) ─────────────────────────────────────────

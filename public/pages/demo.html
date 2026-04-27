@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ExamForge — Quick Demo</title>
+  <link rel="stylesheet" href="/css/styles.css" />
+</head>
+<body>
+  <header>
+    <div class="container nav">
+      <div class="brand" id="brandLogo" style="cursor:pointer;">
+        <div class="brand-mark">E</div>
+        <div>
+          <div>ExamForge Arena</div>
+          <div style="font-size:12px;color:var(--muted);letter-spacing:0;font-weight:800;">quick product demo</div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="container" style="max-width:760px;padding-top:30px;">
+    <div class="card">
+      <div class="eyebrow">2-minute demo</div>
+      <h2 style="margin:10px 0 8px;">Try a 5-question AI-style quiz</h2>
+      <p class="muted" style="margin:0 0 18px;">
+        No signup required. Finish the demo, then create your full arena.
+      </p>
+
+      <div id="demoIntro">
+        <button id="startDemoBtn" class="btn" style="background:var(--yellow);">Start Demo</button>
+      </div>
+
+      <div id="demoQuiz" class="hidden">
+        <p class="status" id="demoProgressText"></p>
+        <h3 id="demoQuestionText" style="margin-top:8px;"></h3>
+        <div id="demoOptions" style="display:grid;gap:10px;margin-top:14px;"></div>
+      </div>
+
+      <div id="demoResult" class="hidden">
+        <h3 id="demoScoreText"></h3>
+        <p id="demoSummaryText" class="muted"></p>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:14px;">
+          <a class="btn" href="/create" style="background:var(--yellow);">Create Full Arena</a>
+          <a class="btn btn-secondary" href="/login">Sign up to save progress</a>
+          <button id="retryDemoBtn" class="btn btn-secondary" type="button">Retry Demo</button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script type="module" src="/js/pages/demo.js"></script>
+</body>
+</html>
