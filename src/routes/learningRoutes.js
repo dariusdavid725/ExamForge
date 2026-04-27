@@ -239,6 +239,8 @@ router.post("/delete-path", async (req, res) => {
       return res.status(400).json({ error: "Missing userId or sourceName" });
     }
 
+    console.log(`Deleting path for user ${userId}, source: ${sourceName}`);
+
     // Find all units for this source
     const { data: units } = await supabase
       .from('learning_units')
@@ -251,6 +253,23 @@ router.post("/delete-path", async (req, res) => {
     }
 
     const unitIds = units.map(u => u.id);
+    console.log(`Found ${unitIds.length} units to delete`);
+
+    // Delete highlights first (foreign key)
+    const { error: highlightsError } = await supabase
+      .from('unit_highlights')
+      .delete()
+      .in('unit_id', unitIds);
+    
+    if (highlightsError) console.error('Highlights delete error:', highlightsError);
+
+    // Delete notes
+    const { error: notesError } = await supabase
+      .from('unit_notes')
+      .delete()
+      .in('unit_id', unitIds);
+    
+    if (notesError) console.error('Notes delete error:', notesError);
 
     // Delete user learning paths
     await supabase
@@ -265,6 +284,8 @@ router.post("/delete-path", async (req, res) => {
       .delete()
       .eq('user_id', userId)
       .eq('source_name', sourceName);
+
+    console.log(`Successfully deleted path: ${sourceName}`);
 
     res.json({
       success: true,

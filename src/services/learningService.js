@@ -283,7 +283,9 @@ export async function storeLearningUnits(userId, units, sourceName, sourceType) 
     if (unitsError) throw unitsError;
 
     // Create user learning paths for each unit
-    const pathsToInsert = insertedUnits.map((unit, index) => ({
+    // CRITICAL: Sort by sequence_order to ensure correct lock progression
+    const sortedUnits = [...insertedUnits].sort((a, b) => a.sequence_order - b.sequence_order);
+    const pathsToInsert = sortedUnits.map((unit, index) => ({
       user_id: userId,
       learning_unit_id: unit.id,
       status: index === 0 ? 'available' : 'locked', // First unit available, rest locked
