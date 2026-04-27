@@ -90,3 +90,52 @@ CREATE INDEX IF NOT EXISTS idx_admin_audit_logs_created_at
 
 CREATE INDEX IF NOT EXISTS idx_admin_audit_logs_actor_id
   ON public.admin_audit_logs(actor_id);
+
+-- 7) User progress tracking & streaks
+CREATE TABLE IF NOT EXISTS public.user_progress (
+  id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  user_id UUID NOT NULL,
+  date DATE NOT NULL,
+  quizzes_completed INTEGER NOT NULL DEFAULT 0,
+  lessons_completed INTEGER NOT NULL DEFAULT 0,
+  total_questions_answered INTEGER NOT NULL DEFAULT 0,
+  correct_answers INTEGER NOT NULL DEFAULT 0,
+  time_spent_minutes INTEGER NOT NULL DEFAULT 0,
+  concepts_learned JSONB NOT NULL DEFAULT '[]'::jsonb,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE(user_id, date)
+);
+
+CREATE INDEX IF NOT EXISTS idx_user_progress_user_date
+  ON public.user_progress(user_id, date DESC);
+
+-- Add streak fields to profiles
+ALTER TABLE public.profiles
+  ADD COLUMN IF NOT EXISTS current_streak INTEGER NOT NULL DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS longest_streak INTEGER NOT NULL DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS last_activity_date DATE,
+  ADD COLUMN IF NOT EXISTS total_quizzes_completed INTEGER NOT NULL DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS total_questions_answered INTEGER NOT NULL DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS total_correct_answers INTEGER NOT NULL DEFAULT 0;
+
+-- 8) Concept mastery tracking
+CREATE TABLE IF NOT EXISTS public.concept_mastery (
+  id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  user_id UUID NOT NULL,
+  concept TEXT NOT NULL,
+  times_seen INTEGER NOT NULL DEFAULT 0,
+  times_correct INTEGER NOT NULL DEFAULT 0,
+  last_seen_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  next_review_at TIMESTAMPTZ,
+  mastery_level INTEGER NOT NULL DEFAULT 0,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE(user_id, concept)
+);
+
+CREATE INDEX IF NOT EXISTS idx_concept_mastery_user_concept
+  ON public.concept_mastery(user_id, concept);
+
+CREATE INDEX IF NOT EXISTS idx_concept_mastery_next_review
+  ON public.concept_mastery(user_id, next_review_at)
+  WHERE next_review_at IS NOT NULL;

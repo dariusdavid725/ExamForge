@@ -49,8 +49,8 @@ function _renderGuestHeader(onClickFn) {
     area.onclick = onClickFn;
   }
 
-  const streak = document.getElementById("headerStreak");
-  if (streak) streak.style.display = "none";
+  const streakEl = document.getElementById("headerStreak");
+  if (streakEl) streakEl.style.display = "none";
 
   const bell = document.getElementById("headerBell");
   if (bell) bell.style.display = "none";
@@ -59,8 +59,19 @@ function _renderGuestHeader(onClickFn) {
 async function _renderUserHeader(user, profile) {
   const letter = (profile?.username || user.email || "U")[0].toUpperCase();
   const color  = profile?.avatar_color || "#4f46e5";
-  const streak = profile?.streak_count || 0;
   const plan   = profile?.plan || "free";
+  
+  // Fetch current streak
+  let streak = 0;
+  try {
+    const res = await fetch(`/api/progress/stats?userId=${user.id}&days=1`);
+    if (res.ok) {
+      const data = await res.json();
+      streak = data.currentStreak || 0;
+    }
+  } catch (err) {
+    console.log("Could not fetch streak:", err);
+  }
 
   const area = document.getElementById("headerUserArea");
 
@@ -125,9 +136,11 @@ async function _renderUserHeader(user, profile) {
   }
 
   const streakEl = document.getElementById("headerStreak");
-  if (streakEl) {
-    streakEl.textContent = streak > 0 ? `${streak} 🔥` : "";
-    streakEl.style.display = streak > 0 ? "" : "none";
+  if (streakEl && streak > 0) {
+    streakEl.innerHTML = `<span class="streak-badge"><span class="streak-icon">🔥</span>${streak}</span>`;
+    streakEl.style.display = "";
+  } else if (streakEl) {
+    streakEl.style.display = "none";
   }
 
   // Notification badge

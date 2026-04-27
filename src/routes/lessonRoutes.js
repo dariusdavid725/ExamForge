@@ -4,6 +4,7 @@ import { upload } from "../middleware/uploadMiddleware.js";
 import { extractTextFromFile } from "../services/documentService.js";
 import { cleanExtractedText, removeExternalLinks, prepareDocumentSlice } from "../utils/textUtils.js";
 import { checkAndIncrementLimit, getUserPlan } from "../middleware/planMiddleware.js";
+import { trackUserProgress, trackConceptMastery } from "../services/progressService.js";
 
 const router  = express.Router();
 const client  = new OpenAI({ apiKey: process.env.OPENAI_API_KEY, timeout: 90000 });
@@ -316,6 +317,27 @@ ${JSON.stringify(results, null, 2)}`
 
     const raw      = completion.choices[0].message.content;
     const analysis = JSON.parse(raw.replace(/```json|```/g, "").trim());
+
+    // Track progress & concept mastery
+    if (userId) {
+      // Track each concept
+      results.forEach(r => {
+        if (r.concept) {
+          trackConceptMastery(userId, r.concept, r.isCorrect).catch(err =>
+            console.error("Error tracking concept:", err)
+          );
+        }
+      });
+
+      // Track overall progress
+      trackUserProgress(userId, {
+        quizCompleted: true,
+        questionsAnswered: questions.length,
+        correctAnswers: score,
+        timeSpentMinutes: 5, // Estimate
+        concepts: (lesson.keyConcepts || []).slice(0, 5)
+      }).catch(err => console.error("Error tracking progress:", err));
+    }
 
     return res.json({ score, total: questions.length, percentage, results, analysis });
   } catch (error) {

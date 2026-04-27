@@ -14,6 +14,7 @@ import lessonRoutes      from "./src/routes/lessonRoutes.js";
 import userLessonRoutes  from "./src/routes/userLessonRoutes.js";
 import stripeRoutes      from "./src/routes/stripeRoutes.js";
 import adminRoutes       from "./src/routes/adminRoutes.js";
+import progressRoutes    from "./src/routes/progressRoutes.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const pub       = p => path.join(__dirname, "public", "pages", p);
@@ -53,6 +54,7 @@ app.use("/api/rooms", roomRoutes);
 app.use("/api/lessons", lessonRoutes);
 app.use("/api", userLessonRoutes);
 app.use("/api", adminRoutes);
+app.use("/api/progress", progressRoutes);
 
 if (!process.env.VERCEL) {
   const port = process.env.PORT || 3000;

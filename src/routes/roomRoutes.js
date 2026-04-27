@@ -16,6 +16,7 @@ import {
 } from "../services/roomService.js";
 import { normalizeLearningPack } from "../validators/packValidator.js";
 import { generateRecoveryLessonWithAI } from "../services/aiService.js";
+import { trackUserProgress, trackConceptMastery } from "../services/progressService.js";
 import {
   evaluateAnswer,
   getCorrectAnswerDisplay,
@@ -472,14 +473,33 @@ router.post("/:code/submit", async (req, res) => {
       ? player.weak_concepts || []
       : [...(player.weak_concepts || []), challenge.concept || "Unknown concept"];
 
+    const isFinished = newTotalAnswered >= room.pack.challenges.length;
+
     await updatePlayer(playerId, {
       score: newScore,
       correct: newCorrect,
       total_answered: newTotalAnswered,
-      finished: newTotalAnswered >= room.pack.challenges.length,
+      finished: isFinished,
       answers: [...answers, newAnswer],
       weak_concepts: newWeakConcepts
     });
+
+    // Track progress & concept mastery
+    if (player.user_id) {
+      trackConceptMastery(player.user_id, challenge.concept, evaluation.correct).catch(err => 
+        console.error("Error tracking concept mastery:", err)
+      );
+
+      if (isFinished) {
+        trackUserProgress(player.user_id, {
+          quizCompleted: true,
+          questionsAnswered: room.pack.challenges.length,
+          correctAnswers: newCorrect,
+          timeSpentMinutes: Math.ceil((Date.now() - room.started_at) / 60000),
+          concepts: room.pack.concepts || []
+        }).catch(err => console.error("Error tracking user progress:", err));
+      }
+    }
 
     const advance = await advanceRoomAfterSubmit(room.code, index);
 
