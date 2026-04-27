@@ -108,11 +108,11 @@ export async function renderDashboard(
             </div>
             <div class="dash-stat">
               <div class="dash-stat-val">${totalQuizzes}</div>
-              <div class="dash-stat-label">Quizuri</div>
+              <div class="dash-stat-label">Quizzes</div>
             </div>
             <div class="dash-stat">
               <div class="dash-stat-val">${totalPoints}</div>
-              <div class="dash-stat-label">Puncte</div>
+              <div class="dash-stat-label">Points</div>
             </div>
           </div>
 
@@ -139,13 +139,13 @@ export async function renderDashboard(
           <div style="display:flex;flex-direction:column;gap:10px;">
             <!-- Quick Start -->
             <div class="card" style="padding:12px 14px 12px;">
-              <div class="eyebrow" style="font-size:10px;margin-bottom:10px;">QUICK START</div>
+              <div class="eyebrow" style="font-size:10px;margin-bottom:10px;">QUICK ACTIONS</div>
               <div style="display:grid;gap:8px;">
                 <button id="dashCreateBtn" class="btn" type="button" style="padding:12px;font-size:13px;">⚡ Create Arena</button>
                 <button id="dashJoinBtn"   class="btn btn-secondary" type="button" style="padding:12px;font-size:13px;">Join Arena</button>
                 <a href="/lessons"         class="btn btn-secondary" style="padding:12px;font-size:13px;text-align:center;display:block;">📚 My Lessons</a>
-                <button id="dashHistoryBtn" class="btn btn-secondary" type="button" style="padding:12px;font-size:13px;">📊 My History</button>
-                ${isAdmin ? `<a href="/admin" class="btn btn-secondary" style="padding:12px;font-size:13px;text-align:center;display:block;">🛠 Admin Panel</a>` : ""}
+              <button id="dashHistoryBtn" class="btn btn-secondary" type="button" style="padding:12px;font-size:13px;">📊 History</button>
+              ${isAdmin ? `<a href="/admin" class="btn btn-secondary" style="padding:12px;font-size:13px;text-align:center;display:block;">🛠 Admin</a>` : ""}
               </div>
             </div>
 
@@ -165,7 +165,7 @@ export async function renderDashboard(
           <!-- RIGHT: Friends Leaderboard -->
           <div class="card">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-              <div class="eyebrow" style="font-size:10px;">FRIENDS</div>
+              <div class="eyebrow" style="font-size:10px;">LEADERBOARD</div>
               <button id="addFriendBtn" class="btn btn-secondary" type="button"
                 style="padding:3px 8px;font-size:10px;">Manage</button>
             </div>
