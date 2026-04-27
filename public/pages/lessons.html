@@ -35,7 +35,7 @@
     <!-- MY LESSONS — overview grid                                             -->
     <!-- ══════════════════════════════════════════════════════════════════════ -->
     <div id="myLessonsSection" class="hidden">
-      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;margin-bottom:32px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;margin-bottom:24px;">
         <div>
           <a href="/dashboard" class="btn btn-secondary" style="padding:10px 16px;margin-right:12px;">← Dashboard</a>
           <h1 style="display:inline;vertical-align:middle;">My Lessons</h1>
@@ -43,8 +43,20 @@
         <button id="newLessonFromGridBtn" class="btn" style="padding:12px 24px;">+ New Lesson</button>
       </div>
 
+      <!-- Tabs for Lessons vs Learning Paths -->
+      <div class="auth-tabs" style="margin-bottom:24px;">
+        <button class="auth-tab auth-tab-active" id="tabLessons" type="button">📚 Quick Lessons</button>
+        <button class="auth-tab" id="tabLearningPaths" type="button">🧠 Learning Paths</button>
+      </div>
+
+      <!-- Quick Lessons Grid -->
       <div id="lessonCardsGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:20px;">
         <!-- Lesson cards rendered by JS -->
+      </div>
+
+      <!-- Learning Paths Grid -->
+      <div id="learningPathsGrid" class="hidden" style="display:grid;gap:16px;">
+        <!-- Learning paths rendered by JS -->
       </div>
     </div>
 

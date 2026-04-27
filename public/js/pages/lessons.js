@@ -320,6 +320,22 @@ function setupButtons() {
   el("quizNextBtn")?.addEventListener("click",                nextQuestion);
   el("quizFinishBtn")?.addEventListener("click",              generateReport);
   el("retakeQuizBtn")?.addEventListener("click",              startQuiz);
+  
+  // Tab switching in My Lessons
+  el("tabLessons")?.addEventListener("click", () => {
+    el("tabLessons")?.classList.add("auth-tab-active");
+    el("tabLearningPaths")?.classList.remove("auth-tab-active");
+    el("lessonCardsGrid")?.classList.remove("hidden");
+    el("learningPathsGrid")?.classList.add("hidden");
+  });
+  
+  el("tabLearningPaths")?.addEventListener("click", async () => {
+    el("tabLessons")?.classList.remove("auth-tab-active");
+    el("tabLearningPaths")?.classList.add("auth-tab-active");
+    el("lessonCardsGrid")?.classList.add("hidden");
+    el("learningPathsGrid")?.classList.remove("hidden");
+    await renderLearningPathsGrid();
+  });
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -790,6 +806,85 @@ async function loadLearningPath() {
         <button onclick="window.location.reload()" class="btn btn-secondary" style="margin-top:16px;padding:8px 16px;font-size:12px;">
           Refresh Page
         </button>
+      </div>
+    `;
+  }
+}
+
+async function renderLearningPathsGrid() {
+  if (!currentUser) return;
+
+  const container = el("learningPathsGrid");
+  if (!container) return;
+
+  container.innerHTML = '<div class="card" style="text-align:center;padding:32px;"><div class="spinner"></div></div>';
+
+  try {
+    const pathData = await getLearningPath(currentUser.id);
+    
+    if (!pathData.path || pathData.path.length === 0) {
+      container.innerHTML = `
+        <div class="card" style="text-align:center;padding:40px;">
+          <div style="font-size:48px;margin-bottom:16px;">🧠</div>
+          <h3 style="margin:0 0 12px;">No Learning Paths Yet</h3>
+          <p class="muted" style="margin-bottom:20px;">
+            Create your first AI-powered learning path by uploading a document and clicking "Smart Learning Path"
+          </p>
+          <button onclick="document.getElementById('newLessonFromGridBtn').click()" class="btn" style="padding:12px 24px;">
+            + Create Learning Path
+          </button>
+        </div>
+      `;
+      return;
+    }
+
+    // Group units by source
+    const grouped = {};
+    pathData.path.forEach(item => {
+      const source = item.learning_unit?.source_name || 'Untitled';
+      if (!grouped[source]) {
+        grouped[source] = [];
+      }
+      grouped[source].push(item);
+    });
+
+    // Render grouped paths
+    container.innerHTML = Object.keys(grouped).map(sourceName => {
+      const units = grouped[sourceName];
+      const completed = units.filter(u => u.status === 'completed').length;
+      const total = units.length;
+      const progress = Math.round((completed / total) * 100);
+
+      return `
+        <div class="card">
+          <h3 style="font-size:18px;margin:0 0 12px;">📖 ${escapeHTML(sourceName)}</h3>
+          <div style="display:flex;gap:16px;align-items:center;margin-bottom:12px;">
+            <div style="flex:1;">
+              <div style="display:flex;justify-content:space-between;font-size:12px;font-weight:700;margin-bottom:6px;">
+                <span>Progress</span>
+                <span style="color:var(--blue);">${completed}/${total} units</span>
+              </div>
+              <div class="progress-track">
+                <div class="progress-fill" style="width:${progress}%;background:var(--blue);"></div>
+              </div>
+            </div>
+            <button class="btn btn-secondary" onclick="window.location.href='/lessons#path-${encodeURIComponent(sourceName)}'" 
+              style="padding:8px 16px;font-size:12px;">
+              ${completed === total ? 'Review' : 'Continue'} →
+            </button>
+          </div>
+          <p class="muted" style="font-size:11px;margin:0;">
+            ${total} learning units · ~${total * 15}-${total * 20} minutes total
+          </p>
+        </div>
+      `;
+    }).join('');
+
+  } catch (error) {
+    console.error("Error rendering learning paths:", error);
+    container.innerHTML = `
+      <div class="card" style="text-align:center;padding:32px;">
+        <p class="muted">Failed to load learning paths</p>
       </div>
     `;
   }

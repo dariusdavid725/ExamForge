@@ -248,22 +248,33 @@ function openLearningUnit(pathItem, userId) {
 
   document.body.appendChild(modal);
 
-  // Render LaTeX with KaTeX if available
-  if (window.renderMathInElement) {
-    setTimeout(() => {
+  // Render LaTeX with KaTeX - wait for it to load
+  const renderLatex = () => {
+    if (window.renderMathInElement) {
       try {
-        renderMathInElement(modal, {
-          delimiters: [
-            {left: '\\(', right: '\\)', display: false},
-            {left: '\\[', right: '\\]', display: true}
-          ],
-          throwOnError: false
-        });
+        const contentDiv = modal.querySelector('.card > div');
+        if (contentDiv) {
+          renderMathInElement(contentDiv, {
+            delimiters: [
+              {left: '\\(', right: '\\)', display: false},
+              {left: '\\[', right: '\\]', display: true},
+              {left: '$', right: '$', display: false},
+              {left: '$$', right: '$$', display: true}
+            ],
+            throwOnError: false,
+            trust: true
+          });
+        }
       } catch (e) {
-        console.log('KaTeX not loaded yet:', e);
+        console.log('KaTeX rendering error:', e);
       }
-    }, 100);
-  }
+    } else {
+      // KaTeX not loaded yet, wait and retry
+      setTimeout(renderLatex, 200);
+    }
+  };
+  
+  setTimeout(renderLatex, 150);
 
   // Close modal
   modal.querySelector('#closeUnitModal').addEventListener('click', () => {
@@ -313,10 +324,11 @@ function renderEnhancedContent(content) {
   let html = escapeHTML(content);
 
   // Replace [FORMULA]...[/FORMULA] with LaTeX rendering
-  // We'll use KaTeX inline syntax \\(...\\) which auto-renders
+  // Use $ delimiters which are more reliable
   html = html.replace(/\[FORMULA\](.*?)\[\/FORMULA\]/g, (match, formula) => {
-    // Wrap in KaTeX delimiters for auto-rendering
-    return `<span class="formula-inline">\\(${formula}\\)</span>`;
+    // Clean the formula and wrap in $ for inline math
+    const cleanFormula = formula.trim();
+    return `<span class="formula-inline">$${cleanFormula}$</span>`;
   });
 
   // Replace [HIGHLIGHT]...[/HIGHLIGHT]
