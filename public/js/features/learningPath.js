@@ -313,36 +313,44 @@ function openLearningUnit(pathItem, userId) {
 
   document.body.appendChild(modal);
 
-  // Render LaTeX with KaTeX
+  // Render LaTeX with KaTeX - DIRECT rendering approach
   const renderLatex = () => {
     // Wait for KaTeX to load
-    if (!window.renderMathInElement) {
+    if (!window.katex) {
       setTimeout(renderLatex, 100);
       return;
     }
     
     try {
-      // Target the unitContent div specifically
+      // Find ALL formula spans and render them directly
       const contentDiv = document.getElementById('unitContent');
       if (!contentDiv) {
         console.warn('Unit content div not found');
         return;
       }
       
-      // Render ALL math in the content area
-      window.renderMathInElement(contentDiv, {
-        delimiters: [
-          {left: '$$', right: '$$', display: true},
-          {left: '$', right: '$', display: false},
-          {left: '\\[', right: '\\]', display: true},
-          {left: '\\(', right: '\\)', display: false}
-        ],
-        throwOnError: false,
-        strict: false,
-        trust: true
+      const formulaSpans = contentDiv.querySelectorAll('.formula-inline[data-formula]');
+      console.log(`Found ${formulaSpans.length} formulas to render`);
+      
+      formulaSpans.forEach(span => {
+        const formula = span.getAttribute('data-formula');
+        if (formula) {
+          try {
+            // Render directly into the span
+            window.katex.render(formula, span, {
+              throwOnError: false,
+              displayMode: false,
+              trust: true,
+              strict: false
+            });
+          } catch (err) {
+            console.error('Formula render error:', formula, err);
+            span.textContent = formula; // Fallback to text
+          }
+        }
       });
       
-      console.log('✅ KaTeX rendered formulas');
+      console.log('✅ KaTeX rendered all formulas');
     } catch (e) {
       console.error('❌ KaTeX error:', e);
     }
@@ -531,9 +539,10 @@ function renderEnhancedContent(content) {
   
   html = escapeHTML(html);
   
-  // Replace placeholders with LaTeX
+  // Replace placeholders with LaTeX using data attributes
+  // We'll render these with KaTeX after inserting into DOM
   formulas.forEach((f, i) => {
-    html = html.replace(`__FORMULA_${i}__`, `<span class="formula-inline">$${f.fixed}$</span>`);
+    html = html.replace(`__FORMULA_${i}__`, `<span class="formula-inline" data-formula="${escapeHTML(f.fixed)}"></span>`);
   });
 
   // Replace [HIGHLIGHT]...[/HIGHLIGHT]
