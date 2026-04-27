@@ -172,9 +172,9 @@ export function renderLearningPath(container, pathData, userId) {
     if (generateQuizBtn) {
       generateQuizBtn.addEventListener('click', async () => {
         try {
-          // Use global functions from uiFeedback
-          if (typeof window.showLoadingOverlay === 'function') {
-            window.showLoadingOverlay('Generating quiz from your learning path...');
+          // Show loading
+          if (typeof window.showToast === 'function') {
+            window.showToast('Redirecting to quiz creation...', 'info');
           }
           
           // Combine all unit content (strip HTML/markup for cleaner quiz generation)
@@ -190,57 +190,20 @@ export function renderLearningPath(container, pathData, userId) {
             return `${p.learning_unit.title}\n\n${content}`;
           }).join('\n\n---\n\n');
           
-          console.log('Generating quiz from learning path');
+          console.log('Preparing quiz from learning path');
           console.log('Content length:', combinedContent.length);
-          console.log('User ID:', userId);
           
-          // Use the correct API endpoint - /api/generate-quiz expects event-stream
-          // We need to handle SSE (Server-Sent Events) response
-          const formData = new FormData();
-          formData.append('documentText', combinedContent);
-          formData.append('gameMode', 'arena_mix');
+          // Store content in sessionStorage and redirect to create page
+          sessionStorage.setItem('quizContent', combinedContent);
+          sessionStorage.setItem('quizSource', `Learning Path: ${sourceName}`);
           
-          const response = await fetch('/api/generate-quiz', {
-            method: 'POST',
-            body: formData
-          });
-          
-          console.log('Response status:', response.status);
-          console.log('Response content-type:', response.headers.get('content-type'));
-          
-          // Check if response is actually JSON
-          const contentType = response.headers.get('content-type');
-          if (!contentType || !contentType.includes('application/json')) {
-            const text = await response.text();
-            console.error('Expected JSON but got:', text.substring(0, 200));
-            throw new Error('Server returned HTML instead of JSON. Check if you are logged in.');
-          }
-          
-          const data = await response.json();
-          
-          if (!response.ok) {
-            throw new Error(data.error || 'Failed to generate quiz');
-          }
-          
-          if (typeof window.hideLoadingOverlay === 'function') {
-            window.hideLoadingOverlay();
-          }
-          
-          if (typeof window.showToast === 'function') {
-            window.showToast('Quiz generated! Redirecting...', 'success');
-          }
-          
-          setTimeout(() => {
-            window.location.href = `quiz.html?quizId=${data.quizId}`;
-          }, 1000);
+          // Redirect to create page
+          window.location.href = '/create';
           
         } catch (error) {
-          console.error('Error generating quiz:', error);
-          if (typeof window.hideLoadingOverlay === 'function') {
-            window.hideLoadingOverlay();
-          }
+          console.error('Error preparing quiz:', error);
           if (typeof window.showToast === 'function') {
-            window.showToast(error.message || 'Failed to generate quiz. Please try again.', 'error');
+            window.showToast('Failed to prepare quiz. Please try again.', 'error');
           }
         }
       });
