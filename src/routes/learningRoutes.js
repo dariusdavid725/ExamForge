@@ -30,31 +30,46 @@ router.post("/process-material", async (req, res) => {
       return res.status(400).json({ error: "Missing required fields" });
     }
 
-    // Step 1: Chunk material into learning units
-    console.log("Chunking material into learning units...");
-    const units = await chunkMaterial(documentText, documentName, sourceType);
+    // Step 1: Chunk material AND extract concepts in ONE AI call (faster!)
+    console.log("Processing material with AI...");
+    const result = await chunkMaterial(documentText, documentName, sourceType);
+    
+    const units = result.units || [];
+    const concepts = result.concepts || [];
 
     if (units.length === 0) {
-      return res.status(400).json({ error: "Failed to chunk material" });
+      return res.status(400).json({ error: "Failed to process material" });
     }
 
-    // Step 2: Extract concepts and dependencies
-    console.log("Extracting concepts and dependencies...");
-    const conceptsData = await extractConceptsAndDependencies(units);
-
-    // Step 3: Store everything in database
+    // Step 2: Store units in database
     console.log("Storing learning units...");
     const storedUnits = await storeLearningUnits(userId, units, documentName, sourceType);
 
-    console.log("Storing concepts and dependencies...");
-    await storeConceptsAndDependencies(conceptsData);
+    // Step 3: Store concepts (if any were extracted)
+    if (concepts.length > 0) {
+      console.log("Storing concepts...");
+      const conceptsData = {
+        concepts: concepts.map(c => ({
+          name: c.name,
+          description: c.description,
+          category: c.category,
+          difficulty: c.difficulty
+        })),
+        dependencies: concepts.flatMap(c => 
+          (c.prerequisites || []).map(prereq => ({
+            concept: c.name,
+            prerequisite: prereq
+          }))
+        )
+      };
+      await storeConceptsAndDependencies(conceptsData);
+    }
 
     res.json({
       success: true,
       units: storedUnits,
-      conceptsCount: conceptsData.concepts.length,
-      dependenciesCount: conceptsData.dependencies.length,
-      message: `Created ${storedUnits.length} learning units with ${conceptsData.concepts.length} concepts`
+      conceptsCount: concepts.length,
+      message: `Created ${storedUnits.length} learning units with ${concepts.length} concepts`
     });
 
   } catch (error) {

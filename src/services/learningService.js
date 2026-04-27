@@ -117,7 +117,7 @@ STRUCTURE EACH UNIT WITH:
 MATERIAL TO SPLIT INTO MULTIPLE UNITS:
 ${text.substring(0, 25000)}
 
-Return JSON:
+Return JSON with BOTH units AND concepts in ONE response:
 {
   "units": [
     {
@@ -127,6 +127,15 @@ Return JSON:
       "estimatedMinutes": number (15-20),
       "difficultyLevel": number (1-5),
       "prerequisites": ["concepts needed before this"]
+    }
+  ],
+  "allConcepts": [
+    {
+      "name": "string",
+      "description": "string",
+      "category": "string (e.g. 'mathematics', 'physics', 'programming')",
+      "difficulty": number (1-5),
+      "prerequisites": ["concept names that must be learned first"]
     }
   ]
 }
@@ -140,7 +149,8 @@ IMPORTANT:
 - Backslashes will be added automatically during rendering
 - Test formula: [FORMULA]frac{dy}{dx} = 3y[/FORMULA]
 - Another test: [FORMULA]int_0^infty e^{-x}dx = 1[/FORMULA]
-- CRITICAL: Write ALL text content in ${detectedLanguage} (detected from source material)`;
+- CRITICAL: Write ALL text content in ${detectedLanguage} (detected from source material)
+- ALSO return allConcepts array with key concepts and their relationships`;
 
     const response = await client.chat.completions.create({
       model: "gpt-4o-mini",
@@ -150,7 +160,12 @@ IMPORTANT:
     });
 
     const result = JSON.parse(response.choices[0].message.content);
-    return result.units || [];
+    
+    // Return both units and concepts for faster processing
+    return {
+      units: result.units || [],
+      concepts: result.allConcepts || []
+    };
   } catch (error) {
     console.error("Error chunking material:", error);
     // Fallback: simple character-based chunking

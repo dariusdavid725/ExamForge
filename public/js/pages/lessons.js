@@ -10,11 +10,10 @@ import {
 import {
   processIntoLearningPath,
   getLearningPath,
-  renderLearningPath,
-  showProcessingModal,
-  updateProcessingStep,
-  closeProcessingModal
+  renderLearningPath
 } from "../features/learningPath.js";
+
+import { showLoading, updateLoadingStep, hideLoading, showLoadingSuccess } from "../shared/loadingManager.js";
 
 // Expose globally for unit modal callbacks
 window.getLearningPath = getLearningPath;
@@ -734,8 +733,7 @@ async function handleSmartProcess() {
 
       // Extract text from file
       try {
-        const modal = showProcessingModal();
-        // Step 1 already shown by default (Analyzing Document)
+        showLoading("Reading Document", ["Extracting Text"]);
 
         const form = new FormData();
         form.append("document", file);
@@ -752,11 +750,13 @@ async function handleSmartProcess() {
         docName = file.name;
         documentText = textToProcess; // Cache it
 
-        closeProcessingModal();
+        updateLoadingStep(1, "Complete!");
+        await showLoadingSuccess("Document ready!");
+        hideLoading();
 
       } catch (error) {
         console.error("Error reading document:", error);
-        closeProcessingModal();
+        hideLoading();
         showToast("Failed to read document. Please try again.", "error");
         return;
       }
@@ -764,30 +764,32 @@ async function handleSmartProcess() {
   }
 
   try {
-    const modal = showProcessingModal();
+    showLoading("AI Learning Assistant", [
+      "Analyzing Document",
+      "Creating Learning Units",
+      "Building Knowledge Graph"
+    ]);
     
-    // Step 1: Analyzing (already shown by default)
-    
+    // Step 1: Analyzing (shown by default)
     const result = await processIntoLearningPath(
       currentUser.id,
       docName,
       textToProcess
     );
 
-    // Step 2: Creating units
-    updateProcessingStep(2);
-    await new Promise(resolve => setTimeout(resolve, 800));
+    // Step 2: Units created
+    updateLoadingStep(2, "Structuring content...");
+    await new Promise(resolve => setTimeout(resolve, 400));
     
-    // Step 3: Extracting concepts  
-    updateProcessingStep(3);
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    // Step 3: Complete
+    updateLoadingStep(3, "Finalizing...");
+    await new Promise(resolve => setTimeout(resolve, 400));
 
     weeklyUsage.lessons = Math.min(3, weeklyUsage.lessons + 1);
     updateUsageBanner();
 
-    // Show success briefly before closing
-    await new Promise(resolve => setTimeout(resolve, 600));
-    closeProcessingModal();
+    await showLoadingSuccess(`Created ${result.units.length} units!`);
+    hideLoading();
     
     showToast(`🎉 Smart Learning Path created with ${result.units.length} units!`, "success");
     
