@@ -5,7 +5,17 @@ const pdfParse = require("pdf-parse");
 
 export async function extractTextFromFile(file) {
   if (file.mimetype === "application/pdf") {
-    const data = await pdfParse(file.buffer);
+    const data = await pdfParse(file.buffer, {
+      max: 30  // Limit to first 30 pages for performance
+    });
+    
+    // If PDF is very large, truncate early to avoid excessive processing
+    const MAX_CHARS = 50000;
+    if (data.text.length > MAX_CHARS) {
+      console.log(`PDF truncated from ${data.text.length} to ${MAX_CHARS} chars for performance`);
+      return data.text.slice(0, MAX_CHARS);
+    }
+    
     return data.text;
   }
 

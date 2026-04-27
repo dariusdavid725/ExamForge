@@ -11,6 +11,7 @@ import {
   parseAndNormalizePack,
   cleanJson
 } from "../validators/packValidator.js";
+import { shuffleArray } from "../utils/textUtils.js";
 
 const client = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -290,6 +291,7 @@ async function repairUntilValid({
       repairedPack.aiOnly = true;
       repairedPack.repairedByAI = true;
       repairedPack.repairAttempt = repairAttempt;
+      repairedPack.challenges = shuffleArray(repairedPack.challenges || []);
 
       return repairedPack;
     }
@@ -338,6 +340,7 @@ async function tryGenerateAndRepair(model, text, gameMode, onProgress, isTopic =
   if (isTopic) {
     pack.generatedBy = model;
     pack.aiOnly      = true;
+    pack.challenges  = shuffleArray(pack.challenges || []);
     return pack;
   }
 
@@ -348,6 +351,7 @@ async function tryGenerateAndRepair(model, text, gameMode, onProgress, isTopic =
   if (audit.valid) {
     pack.generatedBy = model;
     pack.aiOnly = true;
+    pack.challenges = shuffleArray(pack.challenges || []);
 
     return pack;
   }

@@ -189,6 +189,10 @@ Question design standards:
 - PREFER application ("When would you use X?")
 - PREFER conceptual understanding ("Why does X happen?")
 - Distractors = plausible errors students actually make
+- Make ALL options similar in length and specificity
+- Avoid pattern giveaways (no "all/none of above", no obvious outliers)
+- Balance answer positions (don't always make A or D correct)
+- Vary question stems and formats for engagement
 
 Mix cognitive levels:
 - 2 remember/understand (foundational)

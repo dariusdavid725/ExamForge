@@ -72,13 +72,14 @@ Seed: ${seed}
 
 Generate exactly 8 challenges using Bloom's Taxonomy progression:
 
-Cognitive levels (mix across challenges):
+Cognitive levels (mix across challenges, NOT rigid progression):
 - Remember (1-2): recall facts, terms, concepts
 - Understand (2-3): explain ideas, compare, classify
 - Apply (2-3): use concepts in new situations, solve problems
 - Analyze (1-2): break down, identify patterns, cause-effect
+- IMPORTANT: Don't put all easy first then all hard. Mix difficulty throughout.
 
-Challenge distribution:
+Challenge distribution (EXACTLY 8 total):
 - 2 multiple_choice (focus on misconceptions, not trivial recall)
 - 1 true_false (test deep understanding, not surface facts)
 - 1 fill_blank (key terms in meaningful context)
@@ -88,11 +89,19 @@ Challenge distribution:
 - 1 multiple_select (integration, multiple correct principles)
 
 Quality rules (research-based):
-- Distractors reflect REAL student misconceptions
+- Distractors reflect REAL student misconceptions (not obviously wrong)
+- All options should be plausible at first glance
+- Avoid pattern giveaways:
+  * Don't make correct answer much longer/shorter than others
+  * Don't use "all of the above" or "none of the above"
+  * Don't make correct answer the only one with specific details
+  * Don't use absolute words ("always", "never", "only") in wrong answers only
+  * Balance correct answer positions (A, B, C, D equally likely)
 - Questions require understanding, not just recognition
 - Include "why" in explanations (elaborative interrogation)
 - Use concrete examples from document
 - Avoid trick questions; test genuine understanding
+- VARY question formats and styles (don't be predictable or formulaic)
 
 Field guidelines (aim for clarity, not arbitrary limits):
 - prompt: clear, self-contained question (aim 60-200 chars)
@@ -208,13 +217,14 @@ Seed: ${seed}
 
 Generate exactly 8 challenges using Bloom's Taxonomy progression:
 
-Cognitive levels (mix across challenges):
+Cognitive levels (mix across challenges, NOT rigid progression):
 - Remember (1-2): recall facts, terms, concepts
 - Understand (2-3): explain ideas, compare, classify
 - Apply (2-3): use concepts in new situations, solve problems
 - Analyze (1-2): break down, identify patterns, cause-effect
+- IMPORTANT: Don't put all easy first then all hard. Mix difficulty throughout.
 
-Challenge distribution:
+Challenge distribution (EXACTLY 8 total):
 - 2 multiple_choice (focus on misconceptions, not trivial recall)
 - 1 true_false (test deep understanding, not surface facts)
 - 1 fill_blank (key terms in meaningful context)
@@ -224,11 +234,19 @@ Challenge distribution:
 - 1 multiple_select (integration, multiple correct principles)
 
 Quality rules (research-based):
-- Distractors reflect REAL student misconceptions
+- Distractors reflect REAL student misconceptions (not obviously wrong)
+- All options should be plausible at first glance
+- Avoid pattern giveaways:
+  * Don't make correct answer much longer/shorter than others
+  * Don't use "all of the above" or "none of the above"
+  * Don't make correct answer the only one with specific details
+  * Don't use absolute words ("always", "never", "only") in wrong answers only
+  * Balance correct answer positions (A, B, C, D equally likely)
 - Questions require understanding, not just recognition
 - Include "why" in explanations (elaborative interrogation)
 - Use concrete examples from the topic
 - Avoid trick questions; test genuine understanding
+- VARY question formats and styles (don't be predictable or formulaic)
 
 Field guidelines (aim for clarity, not arbitrary limits):
 - prompt: clear, self-contained question (aim 60-200 chars)

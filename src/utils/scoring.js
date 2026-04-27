@@ -2,6 +2,9 @@ import {
   answersEquivalent,
   normalizeAnswer
 } from "./textUtils.js";
+import OpenAI from "openai";
+
+const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY, timeout: 15000 });
 
 function normalizeSet(values) {
   return new Set(
@@ -21,7 +24,46 @@ function exactSetEquals(a, b) {
   return true;
 }
 
-export function evaluateAnswer(challenge, selectedAnswer) {
+async function aiSemanticVerification(correctAnswer, userAnswer, prompt, acceptedAnswers = []) {
+  try {
+    const allCorrectVariants = [correctAnswer, ...acceptedAnswers].filter(Boolean);
+    
+    const completion = await client.chat.completions.create({
+      model: "gpt-4o-mini",
+      max_tokens: 100,
+      temperature: 0,
+      messages: [
+        {
+          role: "system",
+          content: "You are a fair quiz grader. Return ONLY valid JSON with {\"correct\": true/false}. Accept minor spelling errors, synonyms, and semantically equivalent answers."
+        },
+        {
+          role: "user",
+          content: `Question: ${prompt}
+
+Correct answer(s): ${allCorrectVariants.join(", ")}
+User answer: ${userAnswer}
+
+Is the user's answer semantically correct? Consider:
+- Minor typos/spelling mistakes (e.g. "photosynthesis" vs "fotosintesis")
+- Synonyms (e.g. "fast" vs "quick")
+- Equivalent phrasing (e.g. "10" vs "ten")
+
+Return ONLY: {"correct": true} or {"correct": false}`
+        }
+      ]
+    });
+
+    const raw = completion.choices[0].message.content;
+    const result = JSON.parse(raw.replace(/```json|```/g, "").trim());
+    return result.correct === true;
+  } catch (err) {
+    console.error("AI semantic verification failed:", err);
+    return false; // Conservative: if AI fails, mark as incorrect
+  }
+}
+
+export async function evaluateAnswer(challenge, selectedAnswer) {
   if (!challenge) {
     return {
       correct: false,
@@ -50,12 +92,29 @@ export function evaluateAnswer(challenge, selectedAnswer) {
       ...(challenge.acceptedAnswers || [])
     ];
 
-    const ok = accepted.some(answer => answersEquivalent(answer, selectedAnswer));
+    // Fast path: exact string matching
+    const exactMatch = accepted.some(answer => answersEquivalent(answer, selectedAnswer));
+    
+    if (exactMatch) {
+      return {
+        correct: true,
+        partial: false,
+        ratio: 1
+      };
+    }
+
+    // Slow path: AI semantic verification (only if exact match failed)
+    const aiVerified = await aiSemanticVerification(
+      challenge.correctAnswer,
+      selectedAnswer,
+      challenge.prompt,
+      challenge.acceptedAnswers || []
+    );
 
     return {
-      correct: ok,
+      correct: aiVerified,
       partial: false,
-      ratio: ok ? 1 : 0
+      ratio: aiVerified ? 1 : 0
     };
   }
 
@@ -172,8 +231,9 @@ export function evaluateAnswer(challenge, selectedAnswer) {
   };
 }
 
-export function isAnswerCorrect(challenge, selectedAnswer) {
-  return evaluateAnswer(challenge, selectedAnswer).correct;
+export async function isAnswerCorrect(challenge, selectedAnswer) {
+  const result = await evaluateAnswer(challenge, selectedAnswer);
+  return result.correct;
 }
 
 export function getCorrectAnswerDisplay(challenge) {

@@ -448,7 +448,7 @@ router.post("/:code/submit", async (req, res) => {
       });
     }
 
-    const evaluation = evaluateAnswer(challenge, selectedAnswer);
+    const evaluation = await evaluateAnswer(challenge, selectedAnswer);
     const points = calculatePoints(timeLeft, evaluation.ratio);
 
     const newAnswer = {
