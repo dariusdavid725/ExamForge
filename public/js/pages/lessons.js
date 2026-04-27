@@ -868,10 +868,18 @@ async function renderLearningPathsGrid() {
                 <div class="progress-fill" style="width:${progress}%;background:var(--blue);"></div>
               </div>
             </div>
-            <button class="btn btn-secondary" onclick="window.location.href='/lessons#path-${encodeURIComponent(sourceName)}'" 
-              style="padding:8px 16px;font-size:12px;">
-              ${completed === total ? 'Review' : 'Continue'} →
-            </button>
+            <div style="display:flex;gap:8px;">
+              <button class="btn btn-secondary view-path-btn" data-source="${escapeHTML(sourceName)}"
+                style="padding:8px 16px;font-size:12px;flex:1;">
+                ${completed === total ? 'Review' : 'Continue'} →
+              </button>
+              <button class="btn btn-secondary delete-path-btn" data-source="${escapeHTML(sourceName)}" 
+                data-units="${total}"
+                style="padding:8px 12px;font-size:12px;background:var(--red);" 
+                title="Delete this learning path">
+                🗑
+              </button>
+            </div>
           </div>
           <p class="muted" style="font-size:11px;margin:0;">
             ${total} learning units · ~${total * 15}-${total * 20} minutes total
@@ -894,15 +902,31 @@ async function renderLearningPathsGrid() {
         // Wait a moment for section to show
         await new Promise(resolve => setTimeout(resolve, 100));
         
-        // Now load and render the specific path
+        // Now load and render the SPECIFIC path for this source
         const pathContainer = el("learningPathContainer");
         if (pathContainer && currentUser) {
           pathContainer.innerHTML = '<div class="card" style="text-align:center;padding:32px;"><div class="spinner"></div></div>';
           
           try {
             const fullPathData = await getLearningPath(currentUser.id);
-            console.log('Loaded path data:', fullPathData);
-            renderLearningPath(pathContainer, fullPathData, currentUser.id);
+            console.log('Full path data:', fullPathData);
+            
+            // FILTER to only this source's units
+            const filteredPath = fullPathData.path.filter(p => 
+              p.learning_unit?.source_name === sourceName
+            );
+            
+            console.log('Filtered to source:', sourceName, 'Units:', filteredPath.length);
+            
+            const filteredData = {
+              ...fullPathData,
+              path: filteredPath,
+              totalUnits: filteredPath.length,
+              completedUnits: filteredPath.filter(p => p.status === 'completed').length,
+              currentUnit: filteredPath.find(p => p.status === 'in_progress') || filteredPath.find(p => p.status === 'available')
+            };
+            
+            renderLearningPath(pathContainer, filteredData, currentUser.id);
           } catch (error) {
             console.error('Error loading path:', error);
             pathContainer.innerHTML = `
@@ -914,6 +938,40 @@ async function renderLearningPathsGrid() {
               </div>
             `;
           }
+        }
+      });
+    });
+    
+    // Add delete buttons
+    container.querySelectorAll('.delete-path-btn').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        const sourceName = btn.dataset.source;
+        
+        if (!confirm(`Delete "${sourceName}" learning path?\n\nThis will remove all ${btn.dataset.units} units.`)) {
+          return;
+        }
+        
+        try {
+          // Delete all units for this source
+          const response = await fetch('/api/learning/delete-path', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              userId: currentUser.id,
+              sourceName: sourceName
+            })
+          });
+          
+          if (response.ok) {
+            showToast('Learning path deleted', 'success');
+            await renderLearningPathsGrid(); // Refresh
+          } else {
+            throw new Error('Delete failed');
+          }
+        } catch (error) {
+          console.error('Delete error:', error);
+          showToast('Failed to delete learning path', 'error');
         }
       });
     });

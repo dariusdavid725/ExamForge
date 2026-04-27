@@ -212,4 +212,55 @@ router.get("/next-review/:userId", async (req, res) => {
   }
 });
 
+/**
+ * POST /api/learning/delete-path
+ * Delete a learning path by source name
+ */
+router.post("/delete-path", async (req, res) => {
+  try {
+    const { userId, sourceName } = req.body;
+
+    if (!userId || !sourceName) {
+      return res.status(400).json({ error: "Missing userId or sourceName" });
+    }
+
+    // Find all units for this source
+    const { data: units } = await supabase
+      .from('learning_units')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('source_name', sourceName);
+
+    if (!units || units.length === 0) {
+      return res.status(404).json({ error: "Learning path not found" });
+    }
+
+    const unitIds = units.map(u => u.id);
+
+    // Delete user learning paths
+    await supabase
+      .from('user_learning_paths')
+      .delete()
+      .eq('user_id', userId)
+      .in('learning_unit_id', unitIds);
+
+    // Delete learning units
+    await supabase
+      .from('learning_units')
+      .delete()
+      .eq('user_id', userId)
+      .eq('source_name', sourceName);
+
+    res.json({
+      success: true,
+      deletedUnits: unitIds.length,
+      message: `Deleted ${unitIds.length} learning units`
+    });
+
+  } catch (error) {
+    console.error("Error deleting path:", error);
+    res.status(500).json({ error: "Failed to delete learning path" });
+  }
+});
+
 export default router;

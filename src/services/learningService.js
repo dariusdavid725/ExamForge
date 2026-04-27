@@ -32,7 +32,9 @@ STRUCTURE EACH UNIT WITH:
    - 🔍 Self-Check Questions
 
 2. **Visual Elements**:
-   - Use [FORMULA]LaTeX here[/FORMULA] for math (e.g., [FORMULA]E = mc^2[/FORMULA])
+   - Use [FORMULA]LaTeX here[/FORMULA] for math
+   - CRITICAL: In LaTeX formulas, ALWAYS use DOUBLE backslashes: \\frac, \\sqrt, \\int, etc.
+   - Examples: [FORMULA]\\frac{dy}{dx} = 3y[/FORMULA], [FORMULA]E = mc^2[/FORMULA], [FORMULA]\\int_0^\\infty e^{-x}dx[/FORMULA]
    - Use [HIGHLIGHT]text[/HIGHLIGHT] for important points
    - Use [EXAMPLE]...content...[/EXAMPLE] for examples
    - Use [TIP]...content...[/TIP] for pro tips
@@ -66,7 +68,12 @@ Return JSON:
   ]
 }
 
-IMPORTANT: Structure content with clear sections, use visual markers, make it interactive and memorable!`;
+IMPORTANT: 
+- Structure content with clear sections
+- Use visual markers
+- Make it interactive and memorable
+- For LaTeX: ALWAYS use DOUBLE backslashes (\\frac not \frac, \\sqrt not \sqrt)
+- Test formula: [FORMULA]\\frac{dy}{dx} = 3y[/FORMULA]`;
 
     const response = await client.chat.completions.create({
       model: "gpt-4o-mini",
