@@ -143,7 +143,7 @@ export async function renderDashboard(
               <div style="display:grid;gap:8px;">
                 <button id="dashCreateBtn" class="btn" type="button" style="padding:12px;font-size:13px;">⚡ Create Arena</button>
                 <button id="dashJoinBtn"   class="btn btn-secondary" type="button" style="padding:12px;font-size:13px;">Join Arena</button>
-                <a href="/lessons"         class="btn btn-secondary" style="padding:12px;font-size:13px;text-align:center;display:block;">📚 My Lessons</a>
+                <a href="/lessons#my-lessons" class="btn btn-secondary" style="padding:12px;font-size:13px;text-align:center;display:block;">📚 My Lessons</a>
               <button id="dashHistoryBtn" class="btn btn-secondary" type="button" style="padding:12px;font-size:13px;">📊 History</button>
               ${isAdmin ? `<a href="/admin" class="btn btn-secondary" style="padding:12px;font-size:13px;text-align:center;display:block;">🛠 Admin</a>` : ""}
               </div>

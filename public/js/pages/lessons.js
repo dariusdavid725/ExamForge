@@ -16,6 +16,11 @@ import {
   closeProcessingModal
 } from "../features/learningPath.js";
 
+// Expose globally for unit modal callbacks
+window.getLearningPath = getLearningPath;
+window.renderLearningPath = renderLearningPath;
+window.showToast = showToast;
+
 // ─── Page state ────────────────────────────────────────────────────────────────
 
 let lesson          = null;
@@ -113,8 +118,15 @@ async function init() {
   setupButtons();
   updateQuizBtnForPlan();
 
+  // Check URL hash for navigation
+  const hash = window.location.hash;
+  
   cachedLessons = await getLessonsFromStorage(currentUser.id);
-  if (cachedLessons.length > 0) {
+  
+  // If coming from dashboard My Lessons link, always show My Lessons
+  if (hash === '#my-lessons' || document.referrer.includes('/dashboard')) {
+    showMyLessons();
+  } else if (cachedLessons.length > 0) {
     showMyLessons();
   } else {
     showSection("uploadSection");

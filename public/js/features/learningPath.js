@@ -312,11 +312,29 @@ function openLearningUnit(pathItem, userId) {
   const markCompleteBtn = modal.querySelector('#markCompleteBtn');
   if (markCompleteBtn) {
     markCompleteBtn.addEventListener('click', async () => {
+      markCompleteBtn.disabled = true;
+      markCompleteBtn.textContent = 'Saving...';
+      
       const result = await updateUnitProgress(userId, unit.id, 100, true);
       if (result.success) {
+        // Don't reload - just close and show success
         modal.remove();
-        // Refresh the learning path
-        window.location.reload();
+        
+        // Show success toast
+        if (window.showToast) {
+          window.showToast('Unit completed! 🎉', 'success');
+        }
+        
+        // Refresh ONLY the learning path container if it exists
+        const pathContainer = document.getElementById('learningPathContainer');
+        if (pathContainer && window.getLearningPath && window.renderLearningPath) {
+          const pathData = await window.getLearningPath(userId);
+          window.renderLearningPath(pathContainer, pathData, userId);
+        }
+      } else {
+        markCompleteBtn.disabled = false;
+        markCompleteBtn.textContent = '✅ Mark Complete';
+        alert('Failed to save progress. Please try again.');
       }
     });
   }
@@ -325,9 +343,22 @@ function openLearningUnit(pathItem, userId) {
   const reviewBtn = modal.querySelector('#reviewUnitBtn');
   if (reviewBtn) {
     reviewBtn.addEventListener('click', async () => {
+      reviewBtn.disabled = true;
+      reviewBtn.textContent = 'Resetting...';
+      
       await updateUnitProgress(userId, unit.id, 0, false);
       modal.remove();
-      window.location.reload();
+      
+      if (window.showToast) {
+        window.showToast('Ready to review again!', 'info');
+      }
+      
+      // Refresh the path
+      const pathContainer = document.getElementById('learningPathContainer');
+      if (pathContainer && window.getLearningPath && window.renderLearningPath) {
+        const pathData = await window.getLearningPath(userId);
+        window.renderLearningPath(pathContainer, pathData, userId);
+      }
     });
   }
 }
@@ -347,24 +378,51 @@ function renderEnhancedContent(content) {
   let html = escapeHTML(content);
 
   // Replace [FORMULA]...[/FORMULA] with LaTeX rendering
-  // Use $ delimiters - DON'T escape HTML first to preserve backslashes!
-  const formulaPattern = /\[FORMULA\](.*?)\[\/FORMULA\]/g;
-  const originalContent = content; // Keep original before escapeHTML
+  // Extract formulas BEFORE escaping to preserve backslashes
+  const formulaPattern = /\[FORMULA\](.*?)\[\/FORMULA\]/gs;
+  const originalContent = content;
   
-  // Extract formulas before escaping
   const formulas = [];
   let match;
-  while ((match = formulaPattern.exec(originalContent)) !== null) {
-    formulas.push(match[1].trim());
+  const tempContent = originalContent.slice();
+  while ((match = formulaPattern.exec(tempContent)) !== null) {
+    let formula = match[1].trim();
+    
+    // FIX for OLD paths: Add missing backslashes for common LaTeX commands
+    formula = formula.replace(/([^\\])frac/g, '$1\\frac'); // Add \ before frac
+    formula = formula.replace(/^frac/g, '\\frac'); // At start
+    formula = formula.replace(/([^\\])sqrt/g, '$1\\sqrt');
+    formula = formula.replace(/^sqrt/g, '\\sqrt');
+    formula = formula.replace(/([^\\])int/g, '$1\\int');
+    formula = formula.replace(/^int/g, '\\int');
+    formula = formula.replace(/([^\\])sum/g, '$1\\sum');
+    formula = formula.replace(/^sum/g, '\\sum');
+    formula = formula.replace(/([^\\])prod/g, '$1\\prod');
+    formula = formula.replace(/^prod/g, '\\prod');
+    formula = formula.replace(/([^\\])lim/g, '$1\\lim');
+    formula = formula.replace(/^lim/g, '\\lim');
+    formula = formula.replace(/([^\\])infty/g, '$1\\infty');
+    formula = formula.replace(/^infty/g, '\\infty');
+    formula = formula.replace(/([^\\])alpha/g, '$1\\alpha');
+    formula = formula.replace(/([^\\])beta/g, '$1\\beta');
+    formula = formula.replace(/([^\\])gamma/g, '$1\\gamma');
+    formula = formula.replace(/([^\\])theta/g, '$1\\theta');
+    formula = formula.replace(/([^\\])pi/g, '$1\\pi');
+    
+    formulas.push({ original: match[0], fixed: formula });
   }
   
-  // Now escape and replace with placeholders
-  html = escapeHTML(content);
+  // Now escape HTML BUT keep formula placeholders
+  html = originalContent;
+  formulas.forEach((f, i) => {
+    html = html.replace(f.original, `__FORMULA_${i}__`);
+  });
   
-  // Replace formula placeholders with actual LaTeX
-  formulas.forEach((formula, index) => {
-    const placeholder = escapeHTML(`[FORMULA]${formula}[/FORMULA]`);
-    html = html.replace(placeholder, `<span class="formula-inline">$${formula}$</span>`);
+  html = escapeHTML(html);
+  
+  // Replace placeholders with LaTeX
+  formulas.forEach((f, i) => {
+    html = html.replace(`__FORMULA_${i}__`, `<span class="formula-inline">$${f.fixed}$</span>`);
   });
 
   // Replace [HIGHLIGHT]...[/HIGHLIGHT]
