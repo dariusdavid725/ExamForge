@@ -121,10 +121,14 @@ async function init() {
   cachedLessons = await getLessonsFromStorage(currentUser.id);
   
   // If coming from dashboard My Lessons link, always show My Lessons
-  if (hash === '#my-lessons' || document.referrer.includes('/dashboard')) {
-    showMyLessons();
+  console.log('Init: hash =', hash, ', referrer =', document.referrer);
+  
+  if (hash === '#my-lessons' || hash === '#my-lessons-paths' || document.referrer.includes('/dashboard')) {
+    const activeTab = hash === '#my-lessons-paths' ? 'paths' : 'lessons';
+    console.log('Showing My Lessons with tab:', activeTab);
+    showMyLessons(activeTab);
   } else if (cachedLessons.length > 0) {
-    showMyLessons();
+    showMyLessons('lessons');
   } else {
     showSection("uploadSection");
   }
