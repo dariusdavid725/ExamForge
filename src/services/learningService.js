@@ -74,21 +74,27 @@ ${languageInstructions[detectedLanguage] || languageInstructions['English']}
 
 GOAL: Create study notes like the best student in class - organized, visual, interactive, memorable.
 
-CRITICAL REQUIREMENTS:
-- Create MULTIPLE units (minimum 3-5 units, more if material is extensive)
-- Each unit should be 15-20 minutes of study time
-- Split at natural concept boundaries
-- DO NOT put everything in one giant unit - break it down into digestible chunks!
+CRITICAL REQUIREMENTS FOR COMPREHENSIVE UNITS:
+- Create 3-6 SUBSTANTIAL units (fewer units, but each MUCH more detailed!)
+- Each unit MUST be 15-25 minutes of study time
+- Each unit MUST contain AT LEAST 500-800 words of rich content
+- NEVER create units shorter than 400 words - they must be complete lessons!
+- Split at natural concept boundaries, but keep each unit comprehensive
+- Each unit = ONE complete chapter that teaches a concept thoroughly
 
 STRUCTURE EACH UNIT WITH:
 
-1. **Clear Sections** with emojis:
-   - 📝 Overview (2-3 sentences what we'll learn)
-   - 🎯 Key Concepts (bullet points)
-   - 📚 Detailed Explanation (main content)
-   - 💡 Pro Tips & Insights
-   - ⚠️ Common Mistakes to Avoid
-   - 🔍 Self-Check Questions
+1. **Clear Sections** with emojis (EACH SECTION MUST BE SUBSTANTIAL):
+   - 📝 Overview (3-4 paragraphs explaining context, importance, and what we'll learn)
+   - 🎯 Key Concepts (5-7 bullet points with detailed explanations for each)
+   - 📚 Detailed Explanation (MAIN CONTENT - 3-5 paragraphs minimum!)
+     * Explain WHY, not just WHAT
+     * Include multiple concrete examples (at least 2-3)
+     * Break down complex ideas step-by-step
+     * Use analogies and real-world applications
+   - 💡 Pro Tips & Insights (2-3 practical tips with explanations)
+   - ⚠️ Common Mistakes to Avoid (2-3 mistakes with explanations why they're wrong)
+   - 🔍 Self-Check Questions (3-4 questions with brief answer hints)
 
 2. **Visual Elements**:
    - Use [FORMULA]LaTeX here[/FORMULA] for math
@@ -107,12 +113,22 @@ STRUCTURE EACH UNIT WITH:
    - Add "✏️ Try: ..." for practice exercises
    - Add analogies and real-world connections
 
-4. **Unit Guidelines**:
-   - Each unit: ONE main topic or concept cluster
-   - 15-20 minutes study time per unit
+4. **Unit Content Guidelines** (CRITICAL - READ CAREFULLY):
+   - Each unit: ONE main topic or concept cluster, explained THOROUGHLY
+   - 15-25 minutes study time per unit (500-800 words minimum!)
+   - Write like you're teaching a friend: clear, detailed, with lots of examples
+   - NEVER just list facts - explain the reasoning and intuition behind concepts
+   - Include at least 2-3 worked examples per unit
+   - Add practical applications and use cases
    - Self-contained but connected to previous units
-   - Use simple language, avoid jargon (or explain it)
+   - Use simple language, but BE COMPREHENSIVE - don't skip important details
    - Build progressively (easier concepts first)
+   
+   **QUALITY CHECK**: If a unit can be read in under 3 minutes, it's TOO SHORT - add more:
+   - More examples (at least 2-3 per concept)
+   - More detailed explanations (WHY things work, not just WHAT they are)
+   - More context (real-world applications, historical background if relevant)
+   - More practice questions and exercises
 
 MATERIAL TO SPLIT INTO MULTIPLE UNITS:
 ${text.substring(0, 25000)}
@@ -142,16 +158,30 @@ Return JSON with units (allConcepts is OPTIONAL):
 
 NOTE: allConcepts array is OPTIONAL. If you cannot extract key concepts just return empty array.
 
-IMPORTANT: 
-- CREATE MULTIPLE UNITS (3-5 minimum, more if needed)
-- Structure content with clear sections
-- Use visual markers
-- Make it interactive and memorable
-- For LaTeX: Write commands WITHOUT backslashes (frac not \\frac, sqrt not \\sqrt)
-- Backslashes will be added automatically during rendering
-- Test formula: [FORMULA]frac{dy}{dx} = 3y[/FORMULA]
-- Another test: [FORMULA]int_0^infty e^{-x}dx = 1[/FORMULA]
-- CRITICAL: Write ALL text content in ${detectedLanguage} (detected from source material)
+CRITICAL FINAL CHECKS BEFORE RETURNING JSON:
+- Did I create 3-6 comprehensive units? ✓
+- Is EACH unit at least 500-800 words (3-5 paragraphs minimum)? ✓
+- Does EACH unit have multiple examples and detailed explanations? ✓
+- Did I include all required sections (Overview, Key Concepts, Detailed Explanation, Tips, Mistakes, Questions)? ✓
+- Are formulas written WITHOUT backslashes (frac not \\frac)? ✓
+- Is ALL content in ${detectedLanguage}? ✓
+
+EXAMPLE OF GOOD UNIT LENGTH (aim for this level of detail):
+"📝 **Overview**
+
+In this unit, we'll explore binary search trees (BST), one of the most fundamental data structures in computer science. Unlike simple arrays or linked lists, BSTs provide an elegant way to maintain sorted data while enabling fast search, insertion, and deletion operations. Understanding BSTs is crucial because they form the foundation for more advanced structures like AVL trees, Red-Black trees, and database indexes.
+
+The key insight behind BSTs is using the binary tree property combined with an ordering rule: for every node, all values in the left subtree are smaller, and all values in the right subtree are larger. This simple rule enables remarkably efficient algorithms.
+
+🎯 **Key Concepts**
+
+- **Binary Search Tree Property**: For any node N, all values in N's left subtree are less than N's value, and all values in N's right subtree are greater than N's value. This recursive property must hold for every node in the tree.
+
+- **Search Operation**: Finding a value takes O(log n) time in a balanced tree because we can eliminate half the remaining nodes at each step, similar to binary search in a sorted array.
+
+[... continues with 3-4 more paragraphs of detailed content, examples, tips, etc. ...]"
+
+Remember: Quality > Quantity. Better to have 4 amazing units than 10 shallow ones!
 - TRY to return allConcepts array with key concepts (OPTIONAL - return empty array if unsure)`;
 
     const response = await client.chat.completions.create({
