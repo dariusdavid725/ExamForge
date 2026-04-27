@@ -988,12 +988,13 @@ blockquote {
 }
 
 .dash-avatar-sm {
-  width: 30px;
-  height: 30px;
-  border-radius: 8px;
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
   border: 2px solid var(--text);
   display: grid;
   place-items: center;
+  font-size: 12px;
   font-size: 13px;
   font-weight: 900;
   color: white;
@@ -1042,8 +1043,8 @@ blockquote {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  padding: 12px;
+  gap: 10px;
+  padding: 10px;
   border: 3px solid var(--text);
   border-radius: 12px;
   background: var(--paper-2);

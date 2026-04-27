@@ -174,7 +174,7 @@ export async function renderDashboard(
               style="padding:3px 8px;font-size:10px;">Manage</button>
           </div>
           <div style="display:grid;gap:5px;">
-            ${renderFriendsLb(friendProfiles, user.id, 3)}
+            ${renderFriendsLb(friendProfiles, user.id)}
           </div>
         </div>
 
@@ -336,15 +336,15 @@ export async function renderHistoryPage(container, user) {
 function renderSessionRow(session, actionText = "Details", extraLine = "") {
   return `
     <button class="dash-session-row" data-session-id="${session.id}" type="button"
-      style="padding:9px 12px;">
+      style="padding:8px 10px;">
       <div style="text-align:left;min-width:0;">
-        <strong style="font-size:13px;">${escapeHTML(session.title || "Quiz")}</strong>
-        <p class="muted" style="font-size:11px;margin-top:2px;">
+        <strong style="font-size:12px;">${escapeHTML(session.title || "Quiz")}</strong>
+        <p class="muted" style="font-size:10px;margin-top:2px;">
           ${escapeHTML(session.category || "Quiz")} · ${session.player_count || 0} players · ${formatDate(session.played_at)}
         </p>
-        ${extraLine ? `<p class="muted" style="font-size:11px;margin-top:1px;">${escapeHTML(extraLine)}</p>` : ""}
+        ${extraLine ? `<p class="muted" style="font-size:10px;margin-top:1px;">${escapeHTML(extraLine)}</p>` : ""}
       </div>
-      <span style="font-weight:900;flex-shrink:0;font-size:15px;">${escapeHTML(actionText)}</span>
+      <span style="font-weight:900;flex-shrink:0;font-size:13px;">${escapeHTML(actionText)}</span>
     </button>
   `;
 }
@@ -453,31 +453,31 @@ function renderFriendsLb(profiles, currentUserId, limit = null) {
         : `background:${color};`;
 
       return `
-        <div class="dash-session-row${premium ? " premium-friend" : ""}" style="cursor:default;">
-          <div class="row" style="gap:10px;min-width:0;">
-            <span class="rank" style="min-width:18px;">${index + 1}</span>
+        <div class="dash-session-row${premium ? " premium-friend" : ""}" style="cursor:default;padding:8px 10px;">
+          <div class="row" style="gap:8px;min-width:0;">
+            <span class="rank" style="min-width:16px;font-size:12px;">${index + 1}</span>
 
             <div style="position:relative;flex-shrink:0;">
-              ${premium ? `<span style="position:absolute;top:-11px;left:50%;transform:translateX(-50%);
-                font-size:12px;line-height:1;z-index:1;">👑</span>` : ""}
+              ${premium ? `<span style="position:absolute;top:-9px;left:50%;transform:translateX(-50%);
+                font-size:11px;line-height:1;z-index:1;">👑</span>` : ""}
               <div class="dash-avatar-sm" style="${avatarStyle}">
                 ${escapeHTML(letter)}
               </div>
             </div>
 
             <div style="min-width:0;">
-              <strong style="${premium ? "color:#8a6800;" : ""}">
+              <strong style="font-size:12px;${premium ? "color:#8a6800;" : ""}">
                 ${escapeHTML(profile.username || "Player")}${isMe ? " (you)" : ""}
-                ${premium ? `<span style="font-size:10px;font-weight:900;background:#c9a227;color:white;
-                  padding:1px 6px;border-radius:999px;margin-left:4px;vertical-align:middle;">PRO</span>` : ""}
+                ${premium ? `<span style="font-size:9px;font-weight:900;background:#c9a227;color:white;
+                  padding:1px 5px;border-radius:999px;margin-left:3px;vertical-align:middle;">PRO</span>` : ""}
               </strong>
-              <p class="muted" style="font-size:12px;margin-top:1px;">
+              <p class="muted" style="font-size:10px;margin-top:1px;">
                 ${profile.total_quizzes || 0} quizzes · ${streak > 0 ? streak + " 🔥" : "0 streak"}
               </p>
             </div>
           </div>
 
-          <strong style="${premium ? "color:#8a6800;" : ""}">${rating}</strong>
+          <strong style="font-size:14px;${premium ? "color:#8a6800;" : ""}">${rating}</strong>
         </div>
       `;
     })
