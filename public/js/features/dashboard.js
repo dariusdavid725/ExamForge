@@ -79,26 +79,23 @@ export async function renderDashboard(
   container.innerHTML = `
     <div class="dash-layout">
 
-      <!-- ── PROFILE CARD (full-width, horizontal) ── -->
-      <div class="card dash-profile-card">
-        <div class="dash-profile-horizontal">
-          
-          <!-- Left: Avatar + Name -->
-          <div style="display:flex;align-items:center;gap:12px;min-width:0;">
+      <!-- ── LEFT COLUMN (340px): Profile + Actions + Stats + Plan ── -->
+      <div class="dash-col">
+        
+        <!-- Profile -->
+        <div class="card dash-profile-card">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
             <div style="position:relative;flex-shrink:0;">
-              ${isPremium ? `<span style="position:absolute;top:-12px;left:50%;transform:translateX(-50%);
-                font-size:16px;line-height:1;z-index:1;filter:drop-shadow(0 1px 2px rgba(0,0,0,.2));">👑</span>` : ""}
+              ${isPremium ? `<span style="position:absolute;top:-11px;left:50%;transform:translateX(-50%);
+                font-size:15px;line-height:1;z-index:1;filter:drop-shadow(0 1px 2px rgba(0,0,0,.2));">👑</span>` : ""}
               <div class="dash-avatar" style="background:${avatarColor};">${escapeHTML(avatarLetter)}</div>
             </div>
-            <div style="min-width:0;">
-              <h2 style="font-size:17px;letter-spacing:-.03em;line-height:1.2;margin:0;">${escapeHTML(profile?.username || "Player")}</h2>
+            <div style="min-width:0;flex:1;">
+              <h2 style="font-size:16px;letter-spacing:-.03em;line-height:1.2;margin:0;">${escapeHTML(profile?.username || "Player")}</h2>
               <p class="muted" style="font-size:10px;margin:2px 0 0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHTML(user.email || "")}</p>
-              ${isPremium ? `<span style="display:inline-block;margin-top:3px;background:#c9a227;color:white;
-                font-size:9px;font-weight:900;padding:2px 7px;border-radius:999px;border:2px solid var(--text);">⭐ PREMIUM</span>` : ""}
             </div>
           </div>
 
-          <!-- Center: Stats -->
           <div class="dash-stats-row" style="margin:0;">
             <div class="dash-stat">
               <div class="dash-stat-val">${streak > 0 ? streak + " 🔥" : streak}</div>
@@ -118,83 +115,66 @@ export async function renderDashboard(
             </div>
           </div>
 
-          <!-- Right: Logout -->
           <button id="logoutBtn" class="btn btn-secondary" type="button"
-            style="padding:6px 16px;font-size:11px;white-space:nowrap;">
+            style="margin-top:10px;padding:7px;font-size:11px;width:100%;">
             Logout
           </button>
         </div>
+
+        <!-- Quick Start -->
+        <div class="card">
+          <div class="eyebrow" style="font-size:10px;margin-bottom:10px;">Quick start</div>
+          <div style="display:grid;gap:7px;">
+            <button id="dashCreateBtn" class="btn" type="button" style="padding:10px;font-size:13px;">⚡ Create Arena</button>
+            <button id="dashJoinBtn"   class="btn btn-secondary" type="button" style="padding:10px;font-size:13px;">Join Arena</button>
+            <a href="/lessons"         class="btn btn-secondary" style="padding:10px;font-size:13px;text-align:center;display:block;">📚 My Lessons</a>
+            <button id="dashHistoryBtn" class="btn btn-secondary" type="button" style="padding:10px;font-size:13px;">📊 My History</button>
+            ${isAdmin ? `<a href="/admin" class="btn btn-secondary" style="padding:10px;font-size:13px;text-align:center;display:block;">🛠 Admin Panel</a>` : ""}
+          </div>
+        </div>
+
+        <!-- Stats -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+          <div class="flat-card" style="padding:10px;text-align:center;">
+            <div style="font-size:9px;font-weight:700;color:var(--muted);margin-bottom:4px;letter-spacing:0.05em;">ACCURACY</div>
+            <div style="font-size:22px;font-weight:900;line-height:1;color:${overallAccuracy >= 80 ? 'var(--green)' : overallAccuracy >= 60 ? 'var(--blue)' : 'var(--muted)'};">${overallAccuracy || 0}%</div>
+          </div>
+          <div class="flat-card" style="padding:10px;text-align:center;">
+            <div style="font-size:9px;font-weight:700;color:var(--muted);margin-bottom:4px;letter-spacing:0.05em;">THIS WEEK</div>
+            <div style="font-size:22px;font-weight:900;line-height:1;color:var(--blue);">${thisWeekQuizzes || 0}</div>
+          </div>
+        </div>
+
+        <!-- Plan card (minimal) — filled async -->
+        <div class="card" id="planCard" style="display:none;">
+          <p class="muted" style="font-size:10px;">Loading...</p>
+        </div>
+
       </div>
 
-      <!-- ── 3 COLUMN GRID ── -->
-      <div class="dash-grid-3">
+      <!-- ── RIGHT COLUMN (fluid): Friends + Requests ── -->
+      <div class="dash-col">
         
-        <!-- COLUMN 1: Quick Actions + Stats -->
-        <div class="dash-col">
-          <div class="card">
-            <div class="eyebrow" style="font-size:10px;margin-bottom:10px;">Quick start</div>
-            <div style="display:grid;gap:7px;">
-              <button id="dashCreateBtn" class="btn" type="button" style="padding:10px;font-size:13px;">⚡ Create Arena</button>
-              <button id="dashJoinBtn"   class="btn btn-secondary" type="button" style="padding:10px;font-size:13px;">Join Arena</button>
-              <a href="/lessons"         class="btn btn-secondary" style="padding:10px;font-size:13px;text-align:center;display:block;">📚 My Lessons</a>
-              <button id="dashHistoryBtn" class="btn btn-secondary" type="button" style="padding:10px;font-size:13px;">My History</button>
-              ${isAdmin ? `<a href="/admin" class="btn btn-secondary" style="padding:10px;font-size:13px;text-align:center;display:block;">🛠 Admin Panel</a>` : ""}
-            </div>
+        <!-- Friends Leaderboard -->
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+            <div class="eyebrow" style="font-size:10px;">Friends leaderboard</div>
+            <button id="addFriendBtn" class="btn btn-secondary" type="button"
+              style="padding:4px 10px;font-size:10px;">Manage</button>
           </div>
-
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;">
-            <div class="flat-card" style="padding:8px;text-align:center;">
-              <div style="font-size:9px;font-weight:700;color:var(--muted);margin-bottom:3px;letter-spacing:0.05em;">ACCURACY</div>
-              <div style="font-size:20px;font-weight:900;line-height:1;color:${overallAccuracy >= 80 ? 'var(--green)' : overallAccuracy >= 60 ? 'var(--blue)' : 'var(--muted)'};">${overallAccuracy || 0}%</div>
-            </div>
-            <div class="flat-card" style="padding:8px;text-align:center;">
-              <div style="font-size:9px;font-weight:700;color:var(--muted);margin-bottom:3px;letter-spacing:0.05em;">THIS WEEK</div>
-              <div style="font-size:20px;font-weight:900;line-height:1;color:var(--blue);">${thisWeekQuizzes || 0}</div>
-            </div>
+          <div style="display:grid;gap:6px;">
+            ${renderFriendsLb(friendProfiles, user.id)}
           </div>
         </div>
 
-        <!-- COLUMN 2: Recent Quizzes -->
-        <div class="dash-col">
-          <div class="card">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-              <div class="eyebrow" style="font-size:10px;">Recent quizzes</div>
-              <button id="dashHistoryBtn2" class="btn btn-secondary" type="button"
-                style="padding:3px 8px;font-size:10px;">See all</button>
-            </div>
-            <div style="display:grid;gap:5px;">
-              ${sessions.length > 0
-                ? sessions.map(s => renderSessionRow(s, "→")).join("")
-                : `<p class="muted" style="font-size:11px;margin:3px 0;">No quizzes yet. Create your first arena!</p>`}
-            </div>
-          </div>
-
-          <div id="pendingRequestsCard" class="card" style="display:none;">
-            <div class="eyebrow" style="font-size:10px;margin-bottom:6px;">Friend requests</div>
-            <div id="pendingRequestsList" style="display:grid;gap:5px;"></div>
-          </div>
-        </div>
-
-        <!-- COLUMN 3: Friends + Plan -->
-        <div class="dash-col">
-          <div class="card">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-              <div class="eyebrow" style="font-size:10px;">Friends leaderboard</div>
-              <button id="addFriendBtn" class="btn btn-secondary" type="button"
-                style="padding:3px 8px;font-size:10px;">Manage</button>
-            </div>
-            <div style="display:grid;gap:5px;">
-              ${renderFriendsLb(friendProfiles, user.id)}
-            </div>
-          </div>
-
-          <!-- Plan card — filled async by renderPlanCard() -->
-          <div class="card" id="planCard" style="min-height:50px;">
-            <p class="muted" style="font-size:11px;">Loading plan...</p>
-          </div>
+        <!-- Friend Requests -->
+        <div id="pendingRequestsCard" class="card" style="display:none;">
+          <div class="eyebrow" style="font-size:10px;margin-bottom:8px;">Friend requests</div>
+          <div id="pendingRequestsList" style="display:grid;gap:6px;"></div>
         </div>
 
       </div>
+
     </div>
   `;
 
@@ -206,7 +186,6 @@ export async function renderDashboard(
   container.querySelector("#dashCreateBtn")?.addEventListener("click", onCreateArena);
   container.querySelector("#dashJoinBtn")?.addEventListener("click", onJoinArena);
   container.querySelector("#dashHistoryBtn")?.addEventListener("click", onHistory);
-  container.querySelector("#dashHistoryBtn2")?.addEventListener("click", onHistory);
   container.querySelector("#addFriendBtn")?.addEventListener("click", () => showFriendManagerModal(user.id));
 
   container.querySelectorAll("[data-session-id]").forEach(button => {
@@ -230,19 +209,20 @@ async function renderPlanCard(container, userId) {
     if (!res.ok) { card.style.display = "none"; return; }
     const data = await res.json();
 
+    card.style.display = "block";
+
     if (data.plan === "premium") {
       card.style.borderColor   = "#c9a227";
-      card.style.boxShadow     = "5px 5px 0 #c9a227";
+      card.style.boxShadow     = "4px 4px 0 #c9a227";
       card.style.background    = "linear-gradient(135deg,#fffdf4,#fff8dc)";
       card.innerHTML = `
-        <div class="eyebrow" style="font-size:10px;background:#c9a227;margin-bottom:10px;">⭐ Premium</div>
-        <p style="font-size:13px;color:var(--muted);margin:0 0 10px;">
-          Lectii si arene nelimitate, quiz-uri si rapoarte AI.
-        </p>
-        <button id="manageSubBtn" class="btn btn-secondary" type="button"
-          style="width:100%;padding:8px;font-size:13px;">
-          Gestioneaza abonamentul
-        </button>`;
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <span style="font-size:11px;font-weight:900;color:#8a6800;">⭐ PREMIUM</span>
+          <button id="manageSubBtn" class="btn btn-secondary" type="button"
+            style="padding:5px 10px;font-size:10px;">
+            Manage
+          </button>
+        </div>`;
 
       card.querySelector("#manageSubBtn")?.addEventListener("click", async () => {
         try {
@@ -258,33 +238,14 @@ async function renderPlanCard(container, userId) {
     } else {
       const lu = data.weeklyLessonsUsed || 0;
       const qu = data.weeklyQuizzesUsed || 0;
-      const lColor = lu >= 3 ? "var(--red)" : "var(--blue)";
-      const qColor = qu >= 3 ? "var(--red)" : "var(--blue)";
 
       card.innerHTML = `
-        <div class="eyebrow" style="font-size:10px;background:var(--paper-2);color:var(--text);margin-bottom:10px;">Free plan</div>
-
-        <div style="display:grid;gap:8px;margin-bottom:12px;">
-          <div>
-            <div style="display:flex;justify-content:space-between;font-size:12px;font-weight:700;margin-bottom:3px;">
-              <span>Lectii</span><span style="color:${lColor};">${lu}/3</span>
-            </div>
-            <div class="progress-track">
-              <div class="progress-fill" style="width:${Math.min(100,(lu/3)*100)}%;background:${lColor};"></div>
-            </div>
-          </div>
-          <div>
-            <div style="display:flex;justify-content:space-between;font-size:12px;font-weight:700;margin-bottom:3px;">
-              <span>Arene create</span><span style="color:${qColor};">${qu}/3</span>
-            </div>
-            <div class="progress-track">
-              <div class="progress-fill" style="width:${Math.min(100,(qu/3)*100)}%;background:${qColor};"></div>
-            </div>
-          </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+          <span style="font-size:10px;font-weight:800;color:var(--muted);">FREE PLAN</span>
+          <span style="font-size:10px;font-weight:800;color:var(--muted);">${lu}/3 lessons · ${qu}/3 arenas</span>
         </div>
-
-        <a href="/pricing" class="btn" style="display:block;text-align:center;padding:9px;font-size:13px;">
-          Upgrade — €5/luna
+        <a href="/pricing" class="btn" style="display:block;text-align:center;padding:8px;font-size:12px;">
+          Upgrade to Premium
         </a>`;
     }
   } catch { card.style.display = "none"; }

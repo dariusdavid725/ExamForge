@@ -963,13 +963,7 @@ blockquote {
 
 .dash-layout {
   display: grid;
-  grid-template-columns: 1fr;
-  gap: 12px;
-}
-
-.dash-grid-3 {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: 340px 1fr;
   gap: 12px;
   align-items: start;
 }
@@ -977,7 +971,7 @@ blockquote {
 .dash-col {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
 }
 
 .dash-col .card {
@@ -986,14 +980,6 @@ blockquote {
 
 .dash-profile-card { 
   position: relative;
-}
-
-.dash-profile-horizontal {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  flex-wrap: wrap;
 }
 
 .dash-avatar {
@@ -1152,7 +1138,7 @@ blockquote {
   .flat-card { padding: 14px; border-radius: 12px; }
   .dash-col .card { padding: 14px 15px; }
   
-  .dash-grid-3 {
+  .dash-layout {
     grid-template-columns: 1fr;
   }
 
