@@ -884,16 +884,36 @@ async function renderLearningPathsGrid() {
     
     // Add event listeners for Continue buttons
     container.querySelectorAll('.view-path-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
+      btn.addEventListener('click', async () => {
         const sourceName = btn.dataset.source;
-        // Find first unit that's not completed
-        const firstIncomplete = pathData.path.find(p => 
-          p.learning_unit?.source_name === sourceName && 
-          p.status !== 'completed'
-        );
+        console.log('Continue clicked for:', sourceName);
         
-        if (firstIncomplete || pathData.path.length > 0) {
-          showSection("learningPathSection");
+        // Navigate to learning path section
+        showSection("learningPathSection");
+        
+        // Wait a moment for section to show
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        // Now load and render the specific path
+        const pathContainer = el("learningPathContainer");
+        if (pathContainer && currentUser) {
+          pathContainer.innerHTML = '<div class="card" style="text-align:center;padding:32px;"><div class="spinner"></div></div>';
+          
+          try {
+            const fullPathData = await getLearningPath(currentUser.id);
+            console.log('Loaded path data:', fullPathData);
+            renderLearningPath(pathContainer, fullPathData, currentUser.id);
+          } catch (error) {
+            console.error('Error loading path:', error);
+            pathContainer.innerHTML = `
+              <div class="card" style="text-align:center;padding:32px;">
+                <p class="muted">Failed to load learning path</p>
+                <button onclick="window.location.reload()" class="btn btn-secondary" style="margin-top:12px;">
+                  Refresh
+                </button>
+              </div>
+            `;
+          }
         }
       });
     });
