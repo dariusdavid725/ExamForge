@@ -16,6 +16,7 @@ import stripeRoutes      from "./src/routes/stripeRoutes.js";
 import adminRoutes       from "./src/routes/adminRoutes.js";
 import progressRoutes    from "./src/routes/progressRoutes.js";
 import learningRoutes    from "./src/routes/learningRoutes.js";
+import highlightsRoutes  from "./src/routes/highlightsRoutes.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const pub       = p => path.join(__dirname, "public", "pages", p);
@@ -57,6 +58,7 @@ app.use("/api", userLessonRoutes);
 app.use("/api", adminRoutes);
 app.use("/api/progress", progressRoutes);
 app.use("/api/learning", learningRoutes);
+app.use("/api/highlights", highlightsRoutes);
 
 if (!process.env.VERCEL) {
   const port = process.env.PORT || 3000;

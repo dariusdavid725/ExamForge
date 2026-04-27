@@ -1,4 +1,5 @@
 import { getSupabase } from "../shared/supabaseClient.js";
+import { initHighlighting, clearAllHighlights } from "./highlighting.js";
 
 /**
  * Process document into smart learning path
@@ -283,19 +284,22 @@ function openLearningUnit(pathItem, userId) {
 
       <!-- Footer Actions - Academic Style -->
       <div style="padding:28px 48px;background:var(--paper-2);border-top:4px solid var(--text);
-        display:flex;justify-content:space-between;align-items:center;gap:20px;">
-        <div style="flex:1;">
+        display:flex;justify-content:space-between;align-items:center;gap:20px;flex-wrap:wrap;">
+        <div style="flex:1;min-width:200px;">
           ${pathItem.status === 'completed' ? `
             <button id="reviewUnitBtn" class="btn btn-secondary" style="padding:14px 24px;font-size:14px;font-weight:700;">
               🔄 Review This Unit
             </button>
           ` : `
             <p style="margin:0;font-size:13px;color:var(--muted);line-height:1.5;">
-              💡 Complete this unit to unlock the next one in your learning path
+              💡 Complete this unit to unlock the next one
             </p>
           `}
+          <p style="margin:8px 0 0;font-size:12px;color:var(--muted);">
+            💡 Tip: Select text to highlight it
+          </p>
         </div>
-        <div style="display:flex;gap:12px;">
+        <div style="display:flex;gap:12px;align-items:center;">
           ${pathItem.status !== 'completed' ? `
             <button id="markCompleteBtn" class="btn" style="padding:16px 32px;font-size:16px;font-weight:900;">
               ✅ Mark Complete
@@ -358,6 +362,14 @@ function openLearningUnit(pathItem, userId) {
   
   // Render after DOM is ready
   setTimeout(renderLatex, 300);
+  
+  // Initialize highlighting after a brief delay for DOM to be ready
+  setTimeout(() => {
+    const contentDiv = document.getElementById('unitContent');
+    if (contentDiv) {
+      initHighlighting(unit.id, userId, contentDiv);
+    }
+  }, 500);
 
   // Close modal
   modal.querySelector('#closeUnitModal').addEventListener('click', () => {
