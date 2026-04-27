@@ -162,9 +162,9 @@ export function renderLearningPath(container, pathData, userId) {
     const finishBtn = container.querySelector('#finishPathBtn');
     if (finishBtn) {
       finishBtn.addEventListener('click', () => {
-        console.log('Finish button clicked - navigating to lessons.html');
-        // Just navigate to lessons page
-        window.location.href = 'lessons.html';
+        console.log('Finish button clicked - navigating to lessons page');
+        // Use clean URL (app.js has route /lessons -> lessons.html)
+        window.location.href = '/lessons';
       });
     }
 
@@ -194,14 +194,15 @@ export function renderLearningPath(container, pathData, userId) {
           console.log('Content length:', combinedContent.length);
           console.log('User ID:', userId);
           
-          const response = await fetch('/api/quiz/generate', {
+          // Use the correct API endpoint for quiz generation
+          const response = await fetch('/api/generate', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              userId,
               documentText: combinedContent,
-              documentName: `Quiz: ${sourceName}`,
-              questionCount: Math.min(15, totalUnits * 3)
+              topic: null,
+              gameMode: 'arena_mix',
+              documentName: `Quiz: ${sourceName}`
             })
           });
           
