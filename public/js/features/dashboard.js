@@ -70,6 +70,7 @@ export async function renderDashboard(
   const totalQuizzes = progressStats?.totalQuizzes || profile?.total_quizzes || 0;
   const totalPoints  = profile?.total_points  || 0;
   const overallAccuracy = progressStats?.overallAccuracy || 0;
+  const thisWeekQuizzes = progressStats?.dailyProgress?.reduce((sum, day) => sum + (day.quizzes_completed || 0), 0) || 0;
   const avatarLetter = (profile?.username || user.email || "U")[0].toUpperCase();
   const avatarColor  = profile?.avatar_color  || "#4f46e5";
   const isPremium    = (profile?.plan || "free") === "premium";
@@ -110,8 +111,8 @@ export async function renderDashboard(
               <div class="dash-stat-label">Quizuri</div>
             </div>
             <div class="dash-stat">
-              <div class="dash-stat-val" style="color: ${overallAccuracy >= 80 ? 'var(--green)' : overallAccuracy >= 60 ? 'var(--blue)' : 'var(--muted)'};">${overallAccuracy}%</div>
-              <div class="dash-stat-label">Accuracy</div>
+              <div class="dash-stat-val">${totalPoints}</div>
+              <div class="dash-stat-label">Puncte</div>
             </div>
           </div>
 
@@ -141,6 +142,23 @@ export async function renderDashboard(
             ${isAdmin ? `<a href="/admin" class="btn btn-secondary" style="padding:10px;font-size:13px;text-align:center;grid-column:1 / -1;">🛠 Admin Panel</a>` : ""}
           </div>
         </div>
+
+        ${totalQuizzes > 0 || overallAccuracy > 0 ? `
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+          ${overallAccuracy > 0 ? `
+            <div class="flat-card" style="padding:10px;text-align:center;">
+              <div style="font-size:10px;font-weight:700;color:var(--muted);margin-bottom:4px;">ACCURACY</div>
+              <div style="font-size:24px;font-weight:900;color:${overallAccuracy >= 80 ? 'var(--green)' : overallAccuracy >= 60 ? 'var(--blue)' : 'var(--orange)'};">${overallAccuracy}%</div>
+            </div>
+          ` : ''}
+          ${thisWeekQuizzes > 0 ? `
+            <div class="flat-card" style="padding:10px;text-align:center;">
+              <div style="font-size:10px;font-weight:700;color:var(--muted);margin-bottom:4px;">THIS WEEK</div>
+              <div style="font-size:24px;font-weight:900;color:var(--blue);">${thisWeekQuizzes}</div>
+            </div>
+          ` : ''}
+        </div>
+        ` : ''}
 
         <div class="card">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
