@@ -1,6 +1,10 @@
-import { getSupabase } from "./supabaseServer.js";
+import { createClient } from "@supabase/supabase-js";
 
-const supabase = getSupabase();
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_KEY,
+  { auth: { autoRefreshToken: false, persistSession: false } }
+);
 
 /**
  * Update user's daily progress and streak
@@ -45,22 +49,25 @@ export async function trackUserProgress(userId, activity) {
     // 2. Update streak
     await updateStreak(userId, today);
 
-    // 3. Update profile totals
-    await supabase.rpc("increment_profile_stats", {
-      p_user_id: userId,
-      p_quizzes: activity.quizCompleted ? 1 : 0,
-      p_questions: activity.questionsAnswered || 0,
-      p_correct: activity.correctAnswers || 0
-    }).catch(() => {
-      // Fallback if RPC doesn't exist
-      supabase.from("profiles")
-        .update({
-          total_quizzes_completed: supabase.sql`total_quizzes_completed + ${activity.quizCompleted ? 1 : 0}`,
-          total_questions_answered: supabase.sql`total_questions_answered + ${activity.questionsAnswered || 0}`,
-          total_correct_answers: supabase.sql`total_correct_answers + ${activity.correctAnswers || 0}`
-        })
-        .eq("id", userId);
-    });
+    // 3. Update profile totals (using raw SQL for increment)
+    if (activity.quizCompleted || activity.questionsAnswered || activity.correctAnswers) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("total_quizzes_completed, total_questions_answered, total_correct_answers")
+        .eq("id", userId)
+        .single();
+
+      if (profile) {
+        await supabase
+          .from("profiles")
+          .update({
+            total_quizzes_completed: (profile.total_quizzes_completed || 0) + (activity.quizCompleted ? 1 : 0),
+            total_questions_answered: (profile.total_questions_answered || 0) + (activity.questionsAnswered || 0),
+            total_correct_answers: (profile.total_correct_answers || 0) + (activity.correctAnswers || 0)
+          })
+          .eq("id", userId);
+      }
+    }
 
   } catch (error) {
     console.error("Error tracking user progress:", error);
