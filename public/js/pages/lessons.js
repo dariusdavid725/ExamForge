@@ -180,10 +180,38 @@ function updateQuizBtnForPlan() {
 // MY LESSONS VIEW
 // ══════════════════════════════════════════════════════════════════════════════
 
-async function showMyLessons() {
-  await renderMyLessons();
+async function showMyLessons(activeTab = 'lessons') {
+  console.log('showMyLessons called with tab:', activeTab);
   showSection("myLessonsSection");
+  
+  // Activate the correct tab
+  if (activeTab === 'paths') {
+    el("myLessonsTab")?.classList.remove("auth-tab-active");
+    el("learningPathsTab")?.classList.add("auth-tab-active");
+    
+    const quickPanel = el("quickLessonsPanel");
+    const pathsPanel = el("learningPathsPanel");
+    
+    if (quickPanel) quickPanel.style.display = "none";
+    if (pathsPanel) pathsPanel.style.display = "block";
+    
+    await renderLearningPathsGrid();
+  } else {
+    el("myLessonsTab")?.classList.add("auth-tab-active");
+    el("learningPathsTab")?.classList.remove("auth-tab-active");
+    
+    const quickPanel = el("quickLessonsPanel");
+    const pathsPanel = el("learningPathsPanel");
+    
+    if (quickPanel) quickPanel.style.display = "block";
+    if (pathsPanel) pathsPanel.style.display = "none";
+    
+    await renderMyLessons();
+  }
 }
+
+// Make it available globally for learningPath.js
+window.showMyLessons = showMyLessons;
 
 async function renderMyLessons() {
   cachedLessons = await getLessonsFromStorage(currentUser?.id);
