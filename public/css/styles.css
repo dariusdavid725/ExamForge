@@ -961,6 +961,19 @@ blockquote {
 
 @media (max-width: 860px) { .dash-layout { grid-template-columns: 1fr; } }
 
+.dash-layout {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+
+.dash-grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  align-items: start;
+}
+
 .dash-col {
   display: flex;
   flex-direction: column;
@@ -971,12 +984,22 @@ blockquote {
   padding: 12px 14px;
 }
 
-.dash-profile-card { position: relative; }
+.dash-profile-card { 
+  position: relative;
+}
+
+.dash-profile-horizontal {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
 
 .dash-avatar {
-  width: 48px;
-  height: 48px;
-  border-radius: 12px;
+  width: 44px;
+  height: 44px;
+  border-radius: 11px;
   border: 3px solid var(--text);
   box-shadow: 4px 4px 0 var(--text);
   display: grid;
@@ -1004,7 +1027,7 @@ blockquote {
 .dash-stats-row {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 8px;
+  gap: 6px;
 }
 
 .dash-stat {
@@ -1017,16 +1040,16 @@ blockquote {
 }
 
 .dash-stat-val {
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 900;
   line-height: 1;
 }
 
 .dash-stat-label {
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 800;
   color: var(--muted);
-  margin-top: 4px;
+  margin-top: 3px;
 }
 
 /* Premium gold row in friends leaderboard */
@@ -1128,6 +1151,10 @@ blockquote {
   }
   .flat-card { padding: 14px; border-radius: 12px; }
   .dash-col .card { padding: 14px 15px; }
+  
+  .dash-grid-3 {
+    grid-template-columns: 1fr;
+  }
 
   /* ── Buttons ── */
   .btn {
