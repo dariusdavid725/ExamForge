@@ -35,22 +35,53 @@ async function init() {
 
   el("createArenaBtn")?.addEventListener("click", createArena);
   
-  // Check if we have quiz content from learning path
-  const quizContent = sessionStorage.getItem('quizContent');
-  const quizSource = sessionStorage.getItem('quizSource');
-  
-  if (quizContent) {
-    console.log('Found quiz content from learning path, auto-creating arena...');
-    showToast(`Creating quiz from: ${quizSource || 'Learning Path'}`, 'info');
+  // Check if we have a preloaded file from learning path
+  const hash = window.location.hash;
+  if (hash === '#quiz-from-path') {
+    const preloadedFileData = sessionStorage.getItem('preloadedFile');
+    const preloadedFileName = sessionStorage.getItem('preloadedFileName');
+    const preloadedFileType = sessionStorage.getItem('preloadedFileType');
     
-    // Clear sessionStorage
-    sessionStorage.removeItem('quizContent');
-    sessionStorage.removeItem('quizSource');
-    
-    // Auto-create arena with this content
-    setTimeout(() => {
-      createArenaFromContent(quizContent, quizSource || 'Learning Path');
-    }, 1000);
+    if (preloadedFileData && preloadedFileName) {
+      console.log('Found preloaded file from learning path:', preloadedFileName);
+      
+      // Convert base64 back to File
+      fetch(preloadedFileData)
+        .then(res => res.blob())
+        .then(blob => {
+          const file = new File([blob], preloadedFileName, { type: preloadedFileType || 'text/plain' });
+          
+          // Set the file in the upload input
+          const dataTransfer = new DataTransfer();
+          dataTransfer.items.add(file);
+          const fileInput = el('documentUpload');
+          if (fileInput) {
+            fileInput.files = dataTransfer.files;
+            
+            // Update UI to show file is loaded
+            const fileLabel = document.querySelector('label[for="documentUpload"]');
+            if (fileLabel) {
+              fileLabel.innerHTML = `
+                <div style="text-align:center;">
+                  <div style="font-size:48px;margin-bottom:12px;">📄</div>
+                  <div style="font-weight:700;margin-bottom:4px;">${preloadedFileName}</div>
+                  <div style="font-size:13px;color:var(--muted);">File loaded from learning path - ready to create quiz!</div>
+                </div>
+              `;
+            }
+            
+            showToast('File loaded! Choose your game mode and create arena.', 'success');
+          }
+          
+          // Clear sessionStorage
+          sessionStorage.removeItem('preloadedFile');
+          sessionStorage.removeItem('preloadedFileName');
+          sessionStorage.removeItem('preloadedFileType');
+          
+          // Remove hash
+          window.history.replaceState(null, null, '/create');
+        });
+    }
   }
 }
 
