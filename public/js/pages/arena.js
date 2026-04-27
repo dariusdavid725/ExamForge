@@ -15,6 +15,7 @@ import {
   renderPodium,
   renderRecoveryLesson
 } from "../components/renderer.js";
+import { showQuizInsights } from "../components/quizInsights.js";
 import * as api from "../shared/api.js";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -526,6 +527,42 @@ async function showLeaderboard() {
       documentName: state.documentName, documentText: state.documentText,
       leaderboardData: data
     });
+  }
+
+  // Show insights modal for current player
+  if (state.currentUser && state.currentPlayerId) {
+    const currentPlayer = data.leaderboard?.find(p => p.id === state.currentPlayerId);
+    if (currentPlayer) {
+      const correctConcepts = [];
+      const weakConcepts = [];
+      
+      if (currentPlayer.answers) {
+        currentPlayer.answers.forEach(answer => {
+          if (answer.isCorrect && answer.concept) {
+            correctConcepts.push(answer.concept);
+          } else if (!answer.isCorrect && answer.concept) {
+            weakConcepts.push(answer.concept);
+          }
+        });
+      }
+
+      const timeSpent = state.startedAt ? Math.floor((Date.now() - state.startedAt) / 1000) : null;
+
+      // Delay to let confetti animation play
+      setTimeout(async () => {
+        await showQuizInsights({
+          score: currentPlayer.correct || 0,
+          total: currentPlayer.totalAnswered || 0,
+          percentage: currentPlayer.totalAnswered > 0 
+            ? Math.round((currentPlayer.correct / currentPlayer.totalAnswered) * 100) 
+            : 0,
+          correctConcepts: [...new Set(correctConcepts)],
+          weakConcepts: [...new Set(weakConcepts)],
+          timeSpent,
+          userId: state.currentUser.id
+        });
+      }, 2000);
+    }
   }
 }
 

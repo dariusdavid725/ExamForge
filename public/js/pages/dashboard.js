@@ -44,6 +44,7 @@ async function showDashboard() {
       onHistory:     showHistory
     });
 
+    await renderProgressStats(container, currentUser);
     await renderActivationMetrics(container, currentUser);
 
     await renderRoomInvitesCard(container, currentUser, async invite => {
@@ -71,6 +72,86 @@ async function showDashboard() {
   } catch (err) {
     console.error("Dashboard error:", err);
     document.getElementById("dashboardContent").innerHTML = `<div class="card"><p class="muted">Could not load dashboard.</p></div>`;
+  }
+}
+
+async function renderProgressStats(container, user) {
+  if (!user) return;
+
+  const card = document.createElement("div");
+  card.className = "card";
+  card.style.marginBottom = "14px";
+  card.innerHTML = `
+    <div class="eyebrow">Your Progress</div>
+    <h3 style="margin:10px 0 14px;">Learning Statistics</h3>
+    <div class="loading-container" style="padding: 40px 20px;">
+      <div class="spinner"></div>
+      <div class="loading-text">Loading your stats...</div>
+    </div>
+  `;
+  container.prepend(card);
+
+  try {
+    const res = await fetch(`/api/progress/stats?userId=${user.id}&days=7`);
+    if (!res.ok) throw new Error("Could not load stats");
+    
+    const stats = await res.json();
+
+    const { currentStreak, longestStreak, totalQuizzes, totalQuestions, totalCorrect, overallAccuracy, dailyProgress } = stats;
+
+    // Calculate this week's activity
+    const thisWeekQuizzes = dailyProgress.reduce((sum, day) => sum + (day.quizzes_completed || 0), 0);
+    const thisWeekQuestions = dailyProgress.reduce((sum, day) => sum + (day.total_questions_answered || 0), 0);
+
+    card.innerHTML = `
+      <div class="eyebrow">Your Progress</div>
+      <h3 style="margin:10px 0 20px;">Learning Statistics</h3>
+      
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 20px;">
+        ${currentStreak > 0 ? `
+          <div class="stat-card">
+            <div class="stat-label">🔥 Current Streak</div>
+            <div class="stat-value" style="color: var(--orange);">${currentStreak}</div>
+            <div class="stat-change neutral">${currentStreak === 1 ? 'day' : 'days'}</div>
+          </div>
+        ` : ''}
+        
+        <div class="stat-card">
+          <div class="stat-label">Accuracy</div>
+          <div class="stat-value" style="color: ${overallAccuracy >= 80 ? 'var(--green)' : overallAccuracy >= 60 ? 'var(--blue)' : 'var(--orange)'};">${overallAccuracy}%</div>
+          <div class="stat-change neutral">Overall</div>
+        </div>
+        
+        <div class="stat-card">
+          <div class="stat-label">Total Quizzes</div>
+          <div class="stat-value">${totalQuizzes}</div>
+          <div class="stat-change positive">+${thisWeekQuizzes} this week</div>
+        </div>
+        
+        <div class="stat-card">
+          <div class="stat-label">Questions Answered</div>
+          <div class="stat-value">${totalQuestions}</div>
+          <div class="stat-change positive">+${thisWeekQuestions} this week</div>
+        </div>
+      </div>
+
+      ${longestStreak > 1 ? `
+        <div class="info-state" style="margin-bottom: 0;">
+          <div class="state-icon">🏆</div>
+          <div class="state-content">
+            <div class="state-title">Personal Best</div>
+            <p class="state-message">Your longest streak is ${longestStreak} days! ${currentStreak === longestStreak ? "You're on fire! 🔥" : `Keep going to beat it!`}</p>
+          </div>
+        </div>
+      ` : ''}
+    `;
+  } catch (err) {
+    console.error("Progress stats error:", err);
+    card.innerHTML = `
+      <div class="eyebrow">Your Progress</div>
+      <h3 style="margin:10px 0 8px;">Learning Statistics</h3>
+      <p class="muted" style="margin:0;">Complete your first quiz to start tracking progress!</p>
+    `;
   }
 }
 
