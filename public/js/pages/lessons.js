@@ -800,7 +800,7 @@ async function handleSmartProcess() {
 
   } catch (error) {
     console.error("Smart processing error:", error);
-    closeProcessingModal();
+    hideLoading();
     showToast("Failed to create learning path. Please try again.", "error");
   }
 }
