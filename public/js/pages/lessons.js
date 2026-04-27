@@ -7,6 +7,14 @@ import {
   renderChallenge,
   renderResultPhase
 } from "../components/renderer.js";
+import {
+  processIntoLearningPath,
+  getLearningPath,
+  renderLearningPath,
+  showProcessingModal,
+  updateProcessingStep,
+  closeProcessingModal
+} from "../features/learningPath.js";
 
 // ─── Page state ────────────────────────────────────────────────────────────────
 
@@ -33,12 +41,13 @@ function escapeHTML(v) {
 }
 
 function showSection(id) {
-  ["myLessonsSection", "uploadSection", "lessonSection", "quizSection", "reportSection"].forEach(s =>
+  ["myLessonsSection", "uploadSection", "lessonSection", "quizSection", "reportSection", "learningPathSection"].forEach(s =>
     el(s)?.classList.toggle("hidden", s !== id)
   );
   window.scrollTo({ top: 0, behavior: "smooth" });
   if (id === "uploadSection") updateUsageBanner();
   if (id === "lessonSection") updateQuizBtnForPlan();
+  if (id === "learningPathSection") loadLearningPath();
 }
 
 function showUpgradeModal(message) {
@@ -299,10 +308,12 @@ function switchLessonSource(source) {
 
 function setupButtons() {
   el("generateLessonBtn")?.addEventListener("click",          generateLesson);
+  el("smartProcessBtn")?.addEventListener("click",            handleSmartProcess);
   el("newLessonFromGridBtn")?.addEventListener("click",       () => showSection("uploadSection"));
   el("backToMyLessonsBtn")?.addEventListener("click",         showMyLessons);
   el("backToMyLessonsFromLesson")?.addEventListener("click",  showMyLessons);
   el("backToMyLessonsFromReport")?.addEventListener("click",  showMyLessons);
+  el("backToMyLessonsFromPath")?.addEventListener("click",    showMyLessons);
   el("makeQuizBtn")?.addEventListener("click",                generateQuiz);
   el("backToLessonBtn")?.addEventListener("click",            () => showSection("lessonSection"));
   el("submitAnswerBtn")?.addEventListener("click",            submitLessonAnswer);
@@ -654,6 +665,70 @@ function renderReport(report) {
                    display:grid;place-items:center;flex-shrink:0;font-size:12px;font-weight:900;">${i + 1}</span>
       <span style="line-height:1.7;">${escapeHTML(step)}</span>
     </li>`).join("");
+}
+
+// ─── Learning Path ─────────────────────────────────────────────────────────────
+
+async function handleSmartProcess() {
+  if (!documentText || documentText.length < 100) {
+    showToast("Please upload or select a document first", "error");
+    return;
+  }
+
+  // Check plan limits
+  if (userPlan === "free" && weeklyUsage.lessons >= 3) {
+    showUpgradeModal("You've reached the free plan limit of 3 lessons per week. Upgrade to Premium for unlimited lessons and Smart Learning Paths!");
+    return;
+  }
+
+  try {
+    const modal = showProcessingModal();
+    
+    updateProcessingStep("Analyzing content structure...");
+    
+    const result = await processIntoLearningPath(
+      currentUser.id,
+      el("lessonFileName")?.textContent || "Document",
+      documentText
+    );
+
+    updateProcessingStep(`Created ${result.units.length} learning units`);
+    updateProcessingStep(`Extracted ${result.conceptsCount} key concepts`);
+    updateProcessingStep(`Mapped ${result.dependenciesCount} concept relationships`);
+
+    closeProcessingModal();
+    
+    showToast(`🎉 Smart Learning Path created with ${result.units.length} units!`, "success");
+    
+    // Navigate to learning path section
+    showSection("learningPathSection");
+
+  } catch (error) {
+    console.error("Smart processing error:", error);
+    closeProcessingModal();
+    showToast("Failed to create learning path. Please try again.", "error");
+  }
+}
+
+async function loadLearningPath() {
+  if (!currentUser) return;
+
+  const container = el("learningPathContainer");
+  if (!container) return;
+
+  container.innerHTML = '<div class="card" style="text-align:center;padding:32px;"><div class="spinner"></div></div>';
+
+  try {
+    const pathData = await getLearningPath(currentUser.id);
+    renderLearningPath(container, pathData, currentUser.id);
+  } catch (error) {
+    console.error("Error loading learning path:", error);
+    container.innerHTML = `
+      <div class="card" style="text-align:center;padding:32px;">
+        <p class="muted">Failed to load learning path. Please try again.</p>
+      </div>
+    `;
+  }
 }
 
 init();

@@ -1,0 +1,330 @@
+import { getSupabase } from "../shared/supabaseClient.js";
+
+/**
+ * Process document into smart learning path
+ */
+export async function processIntoLearningPath(userId, documentName, documentText) {
+  try {
+    const response = await fetch("/api/learning/process-material", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        userId,
+        documentName,
+        documentText,
+        sourceType: 'document'
+      })
+    });
+
+    if (!response.ok) throw new Error("Processing failed");
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error("Error processing into learning path:", error);
+    throw error;
+  }
+}
+
+/**
+ * Get user's learning path
+ */
+export async function getLearningPath(userId, sourceType = null) {
+  try {
+    const url = sourceType
+      ? `/api/learning/path/${userId}?sourceType=${sourceType}`
+      : `/api/learning/path/${userId}`;
+
+    const response = await fetch(url);
+    if (!response.ok) throw new Error("Failed to fetch learning path");
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error("Error getting learning path:", error);
+    return { path: [], totalUnits: 0, completedUnits: 0 };
+  }
+}
+
+/**
+ * Update learning unit progress
+ */
+export async function updateUnitProgress(userId, unitId, progressPercentage, completed = false) {
+  try {
+    const response = await fetch("/api/learning/progress", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        userId,
+        unitId,
+        progressPercentage,
+        completed
+      })
+    });
+
+    if (!response.ok) throw new Error("Failed to update progress");
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error("Error updating progress:", error);
+    return { success: false };
+  }
+}
+
+/**
+ * Render learning path UI
+ */
+export function renderLearningPath(container, pathData, userId) {
+  const { path, totalUnits, completedUnits, currentUnit } = pathData;
+
+  if (!path || path.length === 0) {
+    container.innerHTML = `
+      <div class="card" style="text-align:center;padding:40px 20px;">
+        <p class="muted" style="font-size:14px;margin-bottom:16px;">
+          📚 No learning path yet. Process a document to create your personalized learning path!
+        </p>
+      </div>
+    `;
+    return;
+  }
+
+  const progressPercentage = totalUnits > 0 ? Math.round((completedUnits / totalUnits) * 100) : 0;
+
+  container.innerHTML = `
+    <div class="card" style="margin-bottom:16px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <h3 style="font-size:18px;margin:0;">📖 Your Learning Path</h3>
+        <span style="font-size:13px;font-weight:700;color:var(--blue);">
+          ${completedUnits}/${totalUnits} units completed
+        </span>
+      </div>
+      
+      <!-- Progress bar -->
+      <div class="progress-track" style="margin-bottom:8px;">
+        <div class="progress-fill" style="width:${progressPercentage}%;background:var(--blue);"></div>
+      </div>
+      <p class="muted" style="font-size:11px;margin:0;">
+        ${progressPercentage}% complete
+      </p>
+    </div>
+
+    <div id="learningUnitsContainer" style="display:grid;gap:12px;">
+      ${path.map(pathItem => renderLearningUnit(pathItem, userId)).join('')}
+    </div>
+  `;
+
+  // Add event listeners
+  path.forEach(pathItem => {
+    const unitEl = container.querySelector(`[data-unit-id="${pathItem.learning_unit_id}"]`);
+    if (unitEl && pathItem.status !== 'locked') {
+      unitEl.addEventListener('click', () => openLearningUnit(pathItem, userId));
+    }
+  });
+}
+
+/**
+ * Render individual learning unit card
+ */
+function renderLearningUnit(pathItem, userId) {
+  const unit = pathItem.learning_unit;
+  const isLocked = pathItem.status === 'locked';
+  const isCompleted = pathItem.status === 'completed';
+  const isInProgress = pathItem.status === 'in_progress';
+  const isAvailable = pathItem.status === 'available';
+
+  const statusIcon = isCompleted ? '✅' : isInProgress ? '📝' : isAvailable ? '🔓' : '🔒';
+  const statusText = isCompleted ? 'Completed' : isInProgress ? 'In Progress' : isAvailable ? 'Start' : 'Locked';
+  const statusColor = isCompleted ? 'var(--green)' : isInProgress ? 'var(--blue)' : isAvailable ? 'var(--text)' : 'var(--muted)';
+
+  return `
+    <button class="card" 
+      data-unit-id="${pathItem.learning_unit_id}"
+      style="text-align:left;cursor:${isLocked ? 'not-allowed' : 'pointer'};opacity:${isLocked ? '0.6' : '1'};
+        ${isLocked ? '' : 'transition: transform 0.2s;'}
+        ${isLocked ? '' : 'hover:transform: translateX(4px);'}">
+      
+      <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:8px;">
+        <div style="flex:1;min-width:0;">
+          <h4 style="font-size:15px;margin:0 0 4px;line-height:1.3;">
+            ${statusIcon} ${escapeHTML(unit.title)}
+          </h4>
+          <p class="muted" style="font-size:11px;margin:0;">
+            ⏱ ${unit.estimated_time_minutes} min · 
+            Difficulty: ${'⭐'.repeat(unit.difficulty_level)}
+          </p>
+        </div>
+        
+        <div style="text-align:right;flex-shrink:0;margin-left:12px;">
+          <span style="font-size:11px;font-weight:700;color:${statusColor};">
+            ${statusText}
+          </span>
+          ${!isLocked && !isCompleted ? `
+            <div style="margin-top:4px;">
+              <div class="progress-track" style="width:60px;height:6px;">
+                <div class="progress-fill" style="width:${pathItem.progress_percentage}%;background:var(--blue);"></div>
+              </div>
+            </div>
+          ` : ''}
+        </div>
+      </div>
+
+      ${unit.concepts && JSON.parse(unit.concepts).length > 0 ? `
+        <div style="margin-top:8px;">
+          <p class="muted" style="font-size:10px;margin:0 0 4px;">Key concepts:</p>
+          <div style="display:flex;flex-wrap:wrap;gap:4px;">
+            ${JSON.parse(unit.concepts).slice(0, 5).map(concept => `
+              <span style="font-size:9px;padding:2px 6px;background:var(--paper-2);
+                border:2px solid var(--text);border-radius:4px;font-weight:700;">
+                ${escapeHTML(concept)}
+              </span>
+            `).join('')}
+            ${JSON.parse(unit.concepts).length > 5 ? `
+              <span style="font-size:9px;color:var(--muted);">+${JSON.parse(unit.concepts).length - 5} more</span>
+            ` : ''}
+          </div>
+        </div>
+      ` : ''}
+    </button>
+  `;
+}
+
+/**
+ * Open learning unit in modal for study
+ */
+function openLearningUnit(pathItem, userId) {
+  const unit = pathItem.learning_unit;
+
+  const modal = document.createElement('div');
+  modal.style.cssText = `
+    position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;
+    display:flex;align-items:center;justify-content:center;padding:20px;
+    animation: fadeIn 0.2s ease;`;
+
+  modal.innerHTML = `
+    <div class="card" style="max-width:800px;width:100%;max-height:90vh;overflow-y:auto;position:relative;">
+      <button id="closeUnitModal" style="position:absolute;top:12px;right:12px;
+        background:var(--paper-2);border:2px solid var(--text);border-radius:8px;
+        width:32px;height:32px;cursor:pointer;font-size:18px;font-weight:900;">
+        ×
+      </button>
+
+      <h2 style="font-size:20px;margin:0 40px 12px 0;">${escapeHTML(unit.title)}</h2>
+      
+      <div style="display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap;">
+        <span style="font-size:12px;padding:4px 8px;background:var(--paper-2);
+          border:2px solid var(--text);border-radius:6px;font-weight:700;">
+          ⏱ ${unit.estimated_time_minutes} minutes
+        </span>
+        <span style="font-size:12px;padding:4px 8px;background:var(--paper-2);
+          border:2px solid var(--text);border-radius:6px;font-weight:700;">
+          ${'⭐'.repeat(unit.difficulty_level)} Difficulty
+        </span>
+      </div>
+
+      <div class="progress-track" style="margin-bottom:16px;">
+        <div class="progress-fill" id="unitProgressBar" 
+          style="width:${pathItem.progress_percentage}%;background:var(--blue);"></div>
+      </div>
+
+      <div style="padding:16px;background:var(--paper-2);border:3px solid var(--text);
+        border-radius:10px;margin-bottom:16px;line-height:1.6;">
+        ${escapeHTML(unit.content).split('\n').map(p => p ? `<p style="margin:0 0 12px;">${p}</p>` : '').join('')}
+      </div>
+
+      <div style="display:flex;gap:10px;justify-content:flex-end;">
+        ${pathItem.status !== 'completed' ? `
+          <button id="markCompleteBtn" class="btn" style="padding:10px 20px;">
+            ✅ Mark as Complete
+          </button>
+        ` : `
+          <button id="reviewUnitBtn" class="btn btn-secondary" style="padding:10px 20px;">
+            🔄 Review Again
+          </button>
+        `}
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+
+  // Close modal
+  modal.querySelector('#closeUnitModal').addEventListener('click', () => {
+    modal.remove();
+  });
+
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) modal.remove();
+  });
+
+  // Mark complete
+  const markCompleteBtn = modal.querySelector('#markCompleteBtn');
+  if (markCompleteBtn) {
+    markCompleteBtn.addEventListener('click', async () => {
+      const result = await updateUnitProgress(userId, unit.id, 100, true);
+      if (result.success) {
+        modal.remove();
+        // Refresh the learning path
+        window.location.reload();
+      }
+    });
+  }
+
+  // Review (reset progress to in_progress)
+  const reviewBtn = modal.querySelector('#reviewUnitBtn');
+  if (reviewBtn) {
+    reviewBtn.addEventListener('click', async () => {
+      await updateUnitProgress(userId, unit.id, 0, false);
+      modal.remove();
+      window.location.reload();
+    });
+  }
+}
+
+function escapeHTML(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+/**
+ * Show processing modal with progress
+ */
+export function showProcessingModal() {
+  const modal = document.createElement('div');
+  modal.id = 'processingModal';
+  modal.style.cssText = `
+    position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:9999;
+    display:flex;align-items:center;justify-content:center;`;
+
+  modal.innerHTML = `
+    <div class="card" style="max-width:400px;text-align:center;padding:32px;">
+      <div class="spinner" style="margin:0 auto 20px;"></div>
+      <h3 style="font-size:18px;margin:0 0 12px;">🧠 AI Processing Material...</h3>
+      <p class="muted" style="font-size:13px;margin:0;">
+        Creating your personalized learning path
+      </p>
+      <div id="processingSteps" style="margin-top:20px;text-align:left;">
+        <p style="font-size:12px;margin:6px 0;">⏳ Analyzing content structure...</p>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+  return modal;
+}
+
+export function updateProcessingStep(message) {
+  const steps = document.querySelector('#processingSteps');
+  if (steps) {
+    const p = document.createElement('p');
+    p.style.cssText = 'font-size:12px;margin:6px 0;';
+    p.innerHTML = `✓ ${message}`;
+    steps.appendChild(p);
+  }
+}
+
+export function closeProcessingModal() {
+  const modal = document.querySelector('#processingModal');
+  if (modal) modal.remove();
+}
