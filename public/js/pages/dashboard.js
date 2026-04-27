@@ -43,7 +43,7 @@ async function showDashboard() {
       onHistory:     showHistory
     });
 
-    await renderActivationMetrics(container);
+    await renderActivationMetrics(container, currentUser);
 
     await renderRoomInvitesCard(container, currentUser, async invite => {
       const name = userProfile?.username || currentUser?.email?.split("@")[0] || "Player";
@@ -73,9 +73,13 @@ async function showDashboard() {
   }
 }
 
-async function renderActivationMetrics(container) {
+async function renderActivationMetrics(container, user) {
+  const email = String(user?.email || "").trim().toLowerCase();
+  if (email !== "dariusdavid26@yahoo.com") return;
+
   const card = document.createElement("div");
   card.className = "card";
+  card.style.marginBottom = "14px";
   card.innerHTML = `
     <div class="eyebrow">Activation Funnel</div>
     <h3 style="margin:10px 0 14px;">Demo conversion (last 7 days)</h3>
@@ -84,7 +88,7 @@ async function renderActivationMetrics(container) {
   container.prepend(card);
 
   try {
-    const response = await fetch("/api/events/stats");
+    const response = await fetch(`/api/events/stats?email=${encodeURIComponent(email)}`);
     const data = await response.json();
     if (!response.ok) throw new Error(data.error || "Could not load metrics.");
 

@@ -2,6 +2,9 @@ import express from "express";
 import { createClient } from "@supabase/supabase-js";
 
 const router = express.Router();
+const ADMIN_EVENT_EMAILS = new Set([
+  "dariusdavid26@yahoo.com"
+]);
 const supabaseAdmin = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_SERVICE_KEY
@@ -43,8 +46,13 @@ router.post("/events", (req, res) => {
   return res.status(202).json({ ok: true });
 });
 
-router.get("/events/stats", async (_req, res) => {
+router.get("/events/stats", async (req, res) => {
   try {
+    const email = String(req.query.email || "").trim().toLowerCase();
+    if (!ADMIN_EVENT_EMAILS.has(email)) {
+      return res.status(403).json({ error: "Forbidden." });
+    }
+
     const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
     const eventNames = [
       "activation_demo_start_clicked",
