@@ -194,16 +194,15 @@ export function renderLearningPath(container, pathData, userId) {
           console.log('Content length:', combinedContent.length);
           console.log('User ID:', userId);
           
-          // Use the correct API endpoint for quiz generation
-          const response = await fetch('/api/generate', {
+          // Use the correct API endpoint - /api/generate-quiz expects event-stream
+          // We need to handle SSE (Server-Sent Events) response
+          const formData = new FormData();
+          formData.append('documentText', combinedContent);
+          formData.append('gameMode', 'arena_mix');
+          
+          const response = await fetch('/api/generate-quiz', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              documentText: combinedContent,
-              topic: null,
-              gameMode: 'arena_mix',
-              documentName: `Quiz: ${sourceName}`
-            })
+            body: formData
           });
           
           console.log('Response status:', response.status);
