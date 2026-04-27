@@ -53,7 +53,7 @@ export async function renderDashboard(
 ) {
   const sb = await getSupabase();
 
-  const sessions = await getSessionsForUser(sb, user.id, 3);
+  const sessions = await getSessionsForUser(sb, user.id, 2);  // Show 2 instead of 3
   const friendProfiles = await getFriendProfiles(sb, user.id);
 
   // Fetch fresh progress stats
@@ -97,7 +97,7 @@ export async function renderDashboard(
             </div>
           </div>
 
-          <div class="dash-stats-row" style="margin-top:12px;">
+          <div class="dash-stats-row" style="margin-top:10px;">
             <div class="dash-stat">
               <div class="dash-stat-val">${streak > 0 ? streak + " 🔥" : streak}</div>
               <div class="dash-stat-label">Streak</div>
@@ -117,14 +117,14 @@ export async function renderDashboard(
           </div>
 
           <button id="logoutBtn" class="btn btn-secondary" type="button"
-            style="margin-top:12px;padding:8px 16px;font-size:13px;width:100%;">
+            style="margin-top:10px;padding:6px 14px;font-size:12px;width:100%;">
             Logout
           </button>
         </div>
 
         <!-- Plan card — filled async by renderPlanCard() -->
-        <div class="card" id="planCard" style="min-height:60px;">
-          <p class="muted" style="font-size:13px;">Loading plan...</p>
+        <div class="card" id="planCard" style="min-height:50px;">
+          <p class="muted" style="font-size:12px;">Loading plan...</p>
         </div>
 
       </div>
@@ -155,32 +155,32 @@ export async function renderDashboard(
         </div>
 
         <div class="card">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
             <div class="eyebrow" style="font-size:10px;">Recent quizzes</div>
             <button id="dashHistoryBtn2" class="btn btn-secondary" type="button"
-              style="padding:4px 10px;font-size:11px;">See all</button>
+              style="padding:3px 8px;font-size:10px;">See all</button>
           </div>
-          <div style="display:grid;gap:6px;">
+          <div style="display:grid;gap:5px;">
             ${sessions.length > 0
               ? sessions.map(s => renderSessionRow(s, "→")).join("")
-              : `<p class="muted" style="font-size:13px;margin:4px 0;">No quizzes yet. Create your first arena!</p>`}
+              : `<p class="muted" style="font-size:12px;margin:3px 0;">No quizzes yet. Create your first arena!</p>`}
           </div>
         </div>
 
         <div class="card">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
             <div class="eyebrow" style="font-size:10px;">Friends leaderboard</div>
             <button id="addFriendBtn" class="btn btn-secondary" type="button"
-              style="padding:4px 10px;font-size:11px;">Manage</button>
+              style="padding:3px 8px;font-size:10px;">Manage</button>
           </div>
-          <div style="display:grid;gap:6px;">
-            ${renderFriendsLb(friendProfiles, user.id)}
+          <div style="display:grid;gap:5px;">
+            ${renderFriendsLb(friendProfiles, user.id, 3)}
           </div>
         </div>
 
         <div id="pendingRequestsCard" class="card" style="display:none;">
-          <div class="eyebrow" style="font-size:10px;margin-bottom:10px;">Friend requests</div>
-          <div id="pendingRequestsList" style="display:grid;gap:8px;"></div>
+          <div class="eyebrow" style="font-size:10px;margin-bottom:6px;">Friend requests</div>
+          <div id="pendingRequestsList" style="display:grid;gap:5px;"></div>
         </div>
 
       </div>
@@ -425,10 +425,10 @@ async function getFriendProfiles(sb, userId) {
 
 // ─── Friends ──────────────────────────────────────────────────────────────────
 
-function renderFriendsLb(profiles, currentUserId) {
+function renderFriendsLb(profiles, currentUserId, limit = null) {
   if (!profiles.length) {
     return `
-      <p class="muted">Add friends to see the leaderboard!</p>
+      <p class="muted" style="font-size:12px;margin:3px 0;">Add friends to see the leaderboard!</p>
     `;
   }
 
@@ -436,7 +436,9 @@ function renderFriendsLb(profiles, currentUserId) {
     (b.total_points || 0) - (a.total_points || 0)
   );
 
-  return sorted
+  const displayProfiles = limit ? sorted.slice(0, limit) : sorted;
+
+  return displayProfiles
     .map((profile, index) => {
       const rating = profile.total_points || 0;
 

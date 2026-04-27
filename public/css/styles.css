@@ -36,7 +36,7 @@ body {
 }
 
 header {
-  padding: 22px 0;
+  padding: 16px 0;
   border-bottom: 4px solid var(--text);
   background: var(--paper);
   position: sticky;
@@ -84,7 +84,7 @@ header {
 }
 
 main {
-  padding: 54px 0 80px;
+  padding: 24px 0 40px;
 }
 
 .screen {
@@ -964,19 +964,19 @@ blockquote {
 .dash-col {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
 }
 
 .dash-col .card {
-  padding: 14px 16px;
+  padding: 12px 14px;
 }
 
 .dash-profile-card { position: relative; }
 
 .dash-avatar {
-  width: 52px;
-  height: 52px;
-  border-radius: 14px;
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
   border: 3px solid var(--text);
   box-shadow: 4px 4px 0 var(--text);
   display: grid;
@@ -1016,13 +1016,13 @@ blockquote {
 }
 
 .dash-stat-val {
-  font-size: 22px;
+  font-size: 20px;
   font-weight: 900;
   line-height: 1;
 }
 
 .dash-stat-label {
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 800;
   color: var(--muted);
   margin-top: 4px;
