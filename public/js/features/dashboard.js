@@ -143,22 +143,16 @@ export async function renderDashboard(
           </div>
         </div>
 
-        ${totalQuizzes > 0 || overallAccuracy > 0 ? `
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-          ${overallAccuracy > 0 ? `
-            <div class="flat-card" style="padding:10px;text-align:center;">
-              <div style="font-size:10px;font-weight:700;color:var(--muted);margin-bottom:4px;">ACCURACY</div>
-              <div style="font-size:24px;font-weight:900;color:${overallAccuracy >= 80 ? 'var(--green)' : overallAccuracy >= 60 ? 'var(--blue)' : 'var(--orange)'};">${overallAccuracy}%</div>
-            </div>
-          ` : ''}
-          ${thisWeekQuizzes > 0 ? `
-            <div class="flat-card" style="padding:10px;text-align:center;">
-              <div style="font-size:10px;font-weight:700;color:var(--muted);margin-bottom:4px;">THIS WEEK</div>
-              <div style="font-size:24px;font-weight:900;color:var(--blue);">${thisWeekQuizzes}</div>
-            </div>
-          ` : ''}
+          <div class="flat-card" style="padding:8px;text-align:center;">
+            <div style="font-size:9px;font-weight:700;color:var(--muted);margin-bottom:3px;letter-spacing:0.05em;">ACCURACY</div>
+            <div style="font-size:22px;font-weight:900;line-height:1;color:${overallAccuracy >= 80 ? 'var(--green)' : overallAccuracy >= 60 ? 'var(--blue)' : 'var(--muted)'};">${overallAccuracy || 0}%</div>
+          </div>
+          <div class="flat-card" style="padding:8px;text-align:center;">
+            <div style="font-size:9px;font-weight:700;color:var(--muted);margin-bottom:3px;letter-spacing:0.05em;">THIS WEEK</div>
+            <div style="font-size:22px;font-weight:900;line-height:1;color:var(--blue);">${thisWeekQuizzes || 0}</div>
+          </div>
         </div>
-        ` : ''}
 
         <div class="card">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">

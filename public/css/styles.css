@@ -109,7 +109,7 @@ main {
 
 .card {
   border-radius: 18px;
-  padding: 28px;
+  padding: 20px;
 }
 
 .flat-card {
@@ -964,11 +964,11 @@ blockquote {
 .dash-col {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
 }
 
 .dash-col .card {
-  padding: 18px 20px;
+  padding: 14px 16px;
 }
 
 .dash-profile-card { position: relative; }
