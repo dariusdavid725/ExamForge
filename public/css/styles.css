@@ -226,6 +226,8 @@ p {
   text-transform: uppercase;
   letter-spacing: 0.03em;
   font-family: inherit;
+  text-decoration: none;
+  display: inline-block;
 }
 
 .btn:hover {

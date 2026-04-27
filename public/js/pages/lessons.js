@@ -670,15 +670,69 @@ function renderReport(report) {
 // ─── Learning Path ─────────────────────────────────────────────────────────────
 
 async function handleSmartProcess() {
-  if (!documentText || documentText.length < 100) {
-    showToast("Please upload or select a document first", "error");
-    return;
-  }
+  const statusEl = el("lessonUploadStatus");
+  statusEl.textContent = "";
 
   // Check plan limits
+  await loadPlanStatus();
   if (userPlan === "free" && weeklyUsage.lessons >= 3) {
     showUpgradeModal("You've reached the free plan limit of 3 lessons per week. Upgrade to Premium for unlimited lessons and Smart Learning Paths!");
     return;
+  }
+
+  // Get document text from file or topic
+  let textToProcess = documentText;
+  let docName = "Document";
+
+  if (!textToProcess || textToProcess.length < 100) {
+    // Try to extract from current upload/topic
+    if (lessonSource === "topic") {
+      const topic = el("lessonTopicInput")?.value.trim();
+      if (!topic) {
+        statusEl.textContent = "Write a topic first.";
+        showToast("Write a topic first.", "info");
+        return;
+      }
+      // For topic, we need to generate text first
+      showToast("Please generate lesson first, then use Smart Learning Path.", "info");
+      return;
+    } else {
+      const file = el("lessonFileInput").files[0];
+      if (!file) {
+        statusEl.textContent = "Choose a file first.";
+        showToast("Choose a file first.", "info");
+        return;
+      }
+
+      // Extract text from file
+      try {
+        const modal = showProcessingModal();
+        updateProcessingStep("Reading document...");
+
+        const form = new FormData();
+        form.append("document", file);
+        if (currentUser?.id) form.append("userId", currentUser.id);
+
+        const res = await fetch("/api/lessons/generate", { method: "POST", body: form });
+        const data = await res.json();
+
+        if (!res.ok) {
+          throw new Error(data.error || "Could not read document.");
+        }
+
+        textToProcess = data.documentText;
+        docName = file.name;
+        documentText = textToProcess; // Cache it
+
+        closeProcessingModal();
+
+      } catch (error) {
+        console.error("Error reading document:", error);
+        closeProcessingModal();
+        showToast("Failed to read document. Please try again.", "error");
+        return;
+      }
+    }
   }
 
   try {
@@ -688,13 +742,16 @@ async function handleSmartProcess() {
     
     const result = await processIntoLearningPath(
       currentUser.id,
-      el("lessonFileName")?.textContent || "Document",
-      documentText
+      docName,
+      textToProcess
     );
 
     updateProcessingStep(`Created ${result.units.length} learning units`);
     updateProcessingStep(`Extracted ${result.conceptsCount} key concepts`);
     updateProcessingStep(`Mapped ${result.dependenciesCount} concept relationships`);
+
+    weeklyUsage.lessons = Math.min(3, weeklyUsage.lessons + 1);
+    updateUsageBanner();
 
     closeProcessingModal();
     

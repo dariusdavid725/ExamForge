@@ -253,17 +253,47 @@ async function renderPlanCard(container, userId) {
     } else {
       const lu = data.weeklyLessonsUsed || 0;
       const qu = data.weeklyQuizzesUsed || 0;
-      const lColor = lu >= 3 ? "var(--red)" : "var(--blue)";
-      const qColor = qu >= 3 ? "var(--red)" : "var(--blue)";
+      const lColor = lu >= 3 ? "var(--red)" : lu >= 2 ? "var(--orange)" : "var(--blue)";
+      const qColor = qu >= 3 ? "var(--red)" : qu >= 2 ? "var(--orange)" : "var(--blue)";
 
       card.innerHTML = `
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-          <span style="font-size:10px;font-weight:800;color:var(--muted);">FREE PLAN</span>
-          <span style="font-size:10px;font-weight:700;color:var(--muted);">${lu}/3 · ${qu}/3</span>
+        <div class="eyebrow" style="font-size:9px;background:var(--paper-2);color:var(--text);margin-bottom:10px;">FREE PLAN</div>
+        
+        <p class="muted" style="font-size:10px;margin-bottom:10px;line-height:1.5;">
+          Your weekly usage refreshes every Monday
+        </p>
+
+        <div style="display:grid;gap:10px;margin-bottom:12px;">
+          <div>
+            <div style="display:flex;justify-content:space-between;font-size:11px;font-weight:700;margin-bottom:4px;">
+              <span>📚 Lessons</span>
+              <span style="color:${lColor};">${lu}/3</span>
+            </div>
+            <div class="progress-track" style="height:6px;">
+              <div class="progress-fill" style="width:${Math.min(100,(lu/3)*100)}%;background:${lColor};"></div>
+            </div>
+            ${lu >= 3 ? `<p class="muted" style="font-size:9px;margin-top:3px;color:var(--red);">Limit reached this week</p>` : ''}
+          </div>
+          
+          <div>
+            <div style="display:flex;justify-content:space-between;font-size:11px;font-weight:700;margin-bottom:4px;">
+              <span>⚡ Arenas</span>
+              <span style="color:${qColor};">${qu}/3</span>
+            </div>
+            <div class="progress-track" style="height:6px;">
+              <div class="progress-fill" style="width:${Math.min(100,(qu/3)*100)}%;background:${qColor};"></div>
+            </div>
+            ${qu >= 3 ? `<p class="muted" style="font-size:9px;margin-top:3px;color:var(--red);">Limit reached this week</p>` : ''}
+          </div>
         </div>
-        <a href="/pricing" class="btn" style="display:block;text-align:center;padding:8px;font-size:12px;">
-          ⭐ Upgrade to Premium
-        </a>`;
+
+        <a href="/pricing" class="btn" style="display:block;text-align:center;padding:8px;font-size:11px;">
+          ⭐ Upgrade to Premium — €5/mo
+        </a>
+        
+        <p class="muted" style="font-size:8px;margin-top:8px;text-align:center;line-height:1.4;">
+          Premium: Unlimited lessons, arenas & AI features
+        </p>`;
     }
   } catch { card.style.display = "none"; }
 }
