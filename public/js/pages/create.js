@@ -34,6 +34,90 @@ async function init() {
   setupSourceTabs();
 
   el("createArenaBtn")?.addEventListener("click", createArena);
+  
+  // Check if we have quiz content from learning path
+  const quizContent = sessionStorage.getItem('quizContent');
+  const quizSource = sessionStorage.getItem('quizSource');
+  
+  if (quizContent) {
+    console.log('Found quiz content from learning path, auto-creating arena...');
+    showToast(`Creating quiz from: ${quizSource || 'Learning Path'}`, 'info');
+    
+    // Clear sessionStorage
+    sessionStorage.removeItem('quizContent');
+    sessionStorage.removeItem('quizSource');
+    
+    // Auto-create arena with this content
+    setTimeout(() => {
+      createArenaFromContent(quizContent, quizSource || 'Learning Path');
+    }, 1000);
+  }
+}
+
+// Create arena from pre-provided content (e.g., from learning path)
+async function createArenaFromContent(documentText, documentName) {
+  try {
+    showLoadingOverlay('Creating your quiz arena...', [
+      { text: 'Analyzing content...', duration: 2000 },
+      { text: 'Generating questions...', duration: 4000 },
+      { text: 'Creating arena...', duration: 2000 }
+    ]);
+    
+    const formData = new FormData();
+    formData.append('documentText', documentText);
+    formData.append('gameMode', selectedGameMode);
+    
+    const response = await fetch('/api/generate-quiz', {
+      method: 'POST',
+      body: formData
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to create arena');
+    }
+    
+    // Handle SSE response
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let sessionData = null;
+    
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      
+      const chunk = decoder.decode(value);
+      const lines = chunk.split('\n');
+      
+      for (const line of lines) {
+        if (line.startsWith('data: ')) {
+          try {
+            const data = JSON.parse(line.slice(6));
+            if (data.sessionId) {
+              sessionData = data;
+            }
+          } catch (e) {
+            console.log('Non-JSON line:', line);
+          }
+        }
+      }
+    }
+    
+    hideLoadingOverlay();
+    
+    if (sessionData && sessionData.sessionId) {
+      showToast('Arena created! Redirecting...', 'success');
+      setTimeout(() => {
+        window.location.href = `/arena?session=${sessionData.sessionId}`;
+      }, 800);
+    } else {
+      throw new Error('No session ID received');
+    }
+    
+  } catch (error) {
+    console.error('Error creating arena:', error);
+    hideLoadingOverlay();
+    showToast(error.message || 'Failed to create arena. Please try again.', 'error');
+  }
 }
 
 // ─── Source tabs ──────────────────────────────────────────────────────────────
