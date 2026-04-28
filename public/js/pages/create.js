@@ -100,9 +100,8 @@ async function init() {
     console.log('- has quizSourceName:', !!quizSourceName);
   }
 }
-      try {
-        // Convert base64 back to File
-        fetch(preloadedFileData)
+
+// ─── Create arena from pre-provided content ───────────────────────────────────
           .then(res => {
             console.log('Fetch response received');
             return res.blob();
@@ -179,18 +178,7 @@ async function init() {
       }
     };
     
-    // Start loading with a small delay to ensure DOM is ready
-    setTimeout(loadPreloadedFile, 100);
-    
-  } else {
-    console.log('No preloaded file detected or wrong hash');
-    console.log('- hash matches:', hash === '#quiz-from-path');
-    console.log('- has preloadedFileData:', !!preloadedFileData);
-    console.log('- has preloadedFileName:', !!preloadedFileName);
-  }
-}
-
-// Create arena from pre-provided content (e.g., from learning path)
+// ─── Create arena from pre-provided content ───────────────────────────────────
 async function createArenaFromContent(documentText, documentName) {
   try {
     showLoadingOverlay('Creating your quiz arena...', [
