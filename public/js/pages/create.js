@@ -100,9 +100,6 @@ async function init() {
     console.log('- has quizSourceName:', !!quizSourceName);
   }
 }
-
-// Old file-based loading code removed - now using documentText directly
-const oldLoadPreloadedFile = () => {
       try {
         // Convert base64 back to File
         fetch(preloadedFileData)
