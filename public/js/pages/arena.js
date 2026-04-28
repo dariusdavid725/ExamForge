@@ -303,9 +303,36 @@ function mountArenaActionButtons(context) {
 
   const wrapper = document.createElement("div");
   wrapper.id = "efArenaActions";
-  Object.assign(wrapper.style, { position: "fixed", right: "22px", bottom: "90px", zIndex: "110",
-    display: "flex", gap: "10px", alignItems: "center", flexWrap: "wrap", justifyContent: "flex-end",
-    maxWidth: "calc(100vw - 44px)" });
+  const isLobby = context === "lobby";
+  if (isLobby) {
+    Object.assign(wrapper.style, {
+      position: "fixed",
+      left: "18px",
+      right: "auto",
+      bottom: "88px",
+      zIndex: "110",
+      display: "flex",
+      gap: "8px",
+      alignItems: "center",
+      flexWrap: "wrap",
+      justifyContent: "flex-start",
+      maxWidth: "min(420px, calc(100vw - 36px))"
+    });
+  } else {
+    Object.assign(wrapper.style, {
+      position: "fixed",
+      right: "22px",
+      left: "auto",
+      bottom: "90px",
+      zIndex: "110",
+      display: "flex",
+      gap: "10px",
+      alignItems: "center",
+      flexWrap: "wrap",
+      justifyContent: "flex-end",
+      maxWidth: "calc(100vw - 44px)"
+    });
+  }
 
   if (state.isHost && context === "lobby" && state.currentUser) {
     const invBtn = document.createElement("button");
@@ -688,29 +715,31 @@ function buildReactionBar() {
         100% { opacity:0; transform:translateY(-70px) scale(0.9); }
       }
       .reaction-btn {
-        background: none;
-        border: 2px solid transparent;
+        background: rgba(255, 250, 240, 0.7);
+        border: 1px solid rgba(17, 17, 17, 0.35);
         border-radius: 999px;
-        padding: 6px 10px;
-        font-size: 20px;
+        padding: 3px 7px;
+        font-size: 15px;
         cursor: pointer;
-        transition: background .12s, transform .1s;
+        transition: background .12s, transform .1s, opacity .12s;
         line-height: 1;
+        opacity: 0.88;
       }
-      .reaction-btn:hover  { background: var(--paper-2, #f5f0e8); transform: scale(1.15); }
-      .reaction-btn:active { transform: scale(0.9); }
+      .reaction-btn:hover  { background: var(--paper-2, #f5f0e8); opacity: 1; transform: scale(1.08); }
+      .reaction-btn:active { transform: scale(0.95); }
       .reaction-bubble {
         background: var(--paper, #fffaf0);
-        border: 2px solid var(--text, #111);
+        border: 1px solid var(--text, #111);
         border-radius: 999px;
-        padding: 5px 14px;
-        font-size: 15px;
-        font-weight: 900;
+        padding: 4px 10px;
+        font-size: 13px;
+        font-weight: 800;
         display: flex;
         align-items: center;
-        gap: 7px;
+        gap: 6px;
         white-space: nowrap;
-        box-shadow: 3px 3px 0 var(--text, #111);
+        box-shadow: 2px 2px 0 var(--text, #111);
+        opacity: 0.92;
         animation: reactionFloat 2.8s ease-out forwards;
       }
     `;

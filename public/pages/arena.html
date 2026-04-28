@@ -210,20 +210,11 @@
     </div>
   </footer>
 
-  <!-- ── REACTION BAR (fixed, shown during lobby + challenge) ──────────────── -->
-  <div id="reactionBar" style="display:none;position:fixed;bottom:76px;left:50%;
-       transform:translateX(-50%);z-index:55;
-       background:var(--paper,#fffaf0);border:3px solid var(--text,#111);
-       border-radius:999px;padding:8px 14px;box-shadow:4px 4px 0 var(--text,#111);
-       display:none;align-items:center;gap:6px;flex-wrap:nowrap;">
-  </div>
+  <!-- ── REACTION BAR: compact dock, avoids center & QR column ───────────── -->
+  <div id="reactionBar" class="ef-reaction-bar" aria-label="Quick reactions"></div>
 
-  <!-- ── REACTION BUBBLES (float up on screen) ─────────────────────────────── -->
-  <div id="reactionBubbles" style="position:fixed;bottom:140px;left:50%;
-       transform:translateX(-50%);z-index:56;pointer-events:none;
-       display:flex;flex-direction:column-reverse;align-items:center;gap:6px;
-       min-width:200px;">
-  </div>
+  <!-- ── REACTION BUBBLES (float up near reaction dock) ───────────────────── -->
+  <div id="reactionBubbles" class="ef-reaction-bubbles"></div>
 
   <script type="module" src="/js/pages/arena.js"></script>
 </body>
