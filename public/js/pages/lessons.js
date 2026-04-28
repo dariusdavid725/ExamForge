@@ -402,47 +402,47 @@ function renderLessonCard(entry) {
             <span>${date}</span>
           </div>
         </div>
-        <span class="lesson-badge" style="background:${color};color:${score === null ? "#6a737d" : "white"};">
+        <span class="lesson-badge" style="background:${color};color:${score === null ? "var(--text)" : "white"};">
           ${escapeHTML(label)}
         </span>
       </div>
 
       ${hasPct ? `
-        <div style="margin-bottom:12px;">
-          <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:6px;">
-            <span style="color:#6a737d;">Quiz Score</span>
-            <span style="color:${color};font-weight:600;">${score}%</span>
+        <div style="margin-bottom:var(--space-3);">
+          <div style="display:flex;justify-content:space-between;font-size:var(--text-xs);margin-bottom:var(--space-2);font-weight:900;">
+            <span style="color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;">Quiz Score</span>
+            <span style="color:${color};">${score}%</span>
           </div>
-          <div style="height:6px;background:#e1e4e8;border-radius:3px;overflow:hidden;">
-            <div style="height:100%;width:${score}%;background:${color};transition:width 0.3s;"></div>
+          <div class="progress-track">
+            <div class="progress-fill" style="width:${score}%;background:${color};"></div>
           </div>
         </div>
       ` : ''}
 
       ${entry.reviewTopics?.length && score !== 100 && score !== null ? `
-        <div style="margin-bottom:12px;">
-          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:#6a737d;margin-bottom:6px;">
+        <div style="margin-bottom:var(--space-3);">
+          <div class="eyebrow" style="margin-bottom:var(--space-2);">
             Topics to Review
           </div>
-          <div style="display:flex;flex-wrap:wrap;gap:4px;">
+          <div style="display:flex;flex-wrap:wrap;gap:var(--space-2);">
             ${entry.reviewTopics.slice(0, 5).map(t => `
-              <span style="font-size:10px;background:#ffebe9;color:#d73a49;padding:3px 8px;border-radius:10px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:120px;" title="${escapeHTML(t)}">
+              <span class="pill" style="background:rgba(255,92,92,0.2);color:var(--red);border:2px solid var(--red);font-size:10px;padding:4px 8px;" title="${escapeHTML(t)}">
                 ${escapeHTML(t)}
               </span>
             `).join("")}
-            ${entry.reviewTopics.length > 5 ? `<span style="font-size:10px;color:#6a737d;">+${entry.reviewTopics.length - 5} more</span>` : ''}
+            ${entry.reviewTopics.length > 5 ? `<span style="font-size:var(--text-xs);color:var(--muted);font-weight:700;">+${entry.reviewTopics.length - 5} more</span>` : ''}
           </div>
         </div>
       ` : ''}
 
       <div class="lesson-actions">
-        <button class="btn${primary ? "" : " btn-secondary"}" data-open="${escapeHTML(entry.id)}">
+        <button class="btn${primary ? "" : " btn-secondary"} btn-sm" data-open="${escapeHTML(entry.id)}">
           ${escapeHTML(btnText)}
         </button>
-        <button class="btn btn-ghost" data-move="${escapeHTML(entry.id)}" title="Move to category">
+        <button class="btn btn-ghost btn-sm" data-move="${escapeHTML(entry.id)}">
           Move
         </button>
-        <button class="btn btn-ghost" data-delete="${escapeHTML(entry.id)}" title="Delete">
+        <button class="btn btn-ghost btn-sm" data-delete="${escapeHTML(entry.id)}">
           Delete
         </button>
       </div>
