@@ -261,6 +261,7 @@ async function renderMyLessons() {
 
   // Render with sidebar layout
   let html = `
+    <div class="lessons-wrapper">
     <div class="lessons-container">
       <!-- Sidebar -->
       <div class="lessons-sidebar">
@@ -300,7 +301,10 @@ async function renderMyLessons() {
       <!-- Main Content -->
       <div class="lessons-main">
         <div class="lessons-header">
-          <h1 class="lessons-title">All Lessons</h1>
+          <div>
+            <h1 class="lessons-title">All Lessons</h1>
+            <div class="lessons-subtitle" id="lessonsSubtitle">${cachedLessons.length} total</div>
+          </div>
           <div class="lessons-actions">
             <button id="newLessonFromGridBtn" class="btn">+ New Lesson</button>
           </div>
@@ -310,6 +314,7 @@ async function renderMyLessons() {
           ${renderLessonsForCategory('all', categories, grouped, uncategorized)}
         </div>
       </div>
+    </div>
     </div>
   `;
 

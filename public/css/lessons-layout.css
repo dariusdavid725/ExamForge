@@ -2,25 +2,31 @@
    LESSONS PAGE - Professional Workspace Layout
    ═══════════════════════════════════════════════════════════════════════════ */
 
+.lessons-wrapper {
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: var(--space-8) var(--space-6);
+}
+
 .lessons-container {
   display: grid;
   grid-template-columns: 260px 1fr;
-  gap: 0;
-  min-height: calc(100vh - 120px);
-  max-width: 1600px;
-  margin: 0 auto;
+  gap: var(--space-8);
+  min-height: calc(100vh - 200px);
 }
 
 /* ─── Sidebar ─── */
 
 .lessons-sidebar {
   position: sticky;
-  top: 80px;
-  height: calc(100vh - 120px);
+  top: 100px;
+  height: fit-content;
+  max-height: calc(100vh - 140px);
   overflow-y: auto;
-  background: var(--paper);
-  border-right: 1px solid var(--paper-2);
-  padding: var(--space-6) var(--space-4);
+  background: white;
+  border: 1px solid var(--paper-2);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
 }
 
 .sidebar-section {
@@ -105,24 +111,28 @@
 
 .lessons-main {
   min-width: 0;
-  padding: var(--space-8) var(--space-10);
-  background: var(--paper);
 }
 
 .lessons-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: var(--space-8);
-  padding-bottom: var(--space-6);
-  border-bottom: 1px solid var(--paper-2);
+  margin-bottom: var(--space-6);
 }
 
 .lessons-title {
-  font-size: var(--text-3xl);
+  font-size: var(--text-2xl);
   font-weight: 900;
   margin: 0;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.01em;
+  color: var(--text);
+}
+
+.lessons-subtitle {
+  font-size: var(--text-sm);
+  color: var(--muted);
+  margin-top: var(--space-1);
+  font-weight: 600;
 }
 
 .lessons-actions {
