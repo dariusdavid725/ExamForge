@@ -35,23 +35,21 @@ async function init() {
 
   el("createArenaBtn")?.addEventListener("click", createArena);
   
-  // Check if we have a preloaded file from learning path
+  // Check if we have quiz content from learning path
   console.log('=== CREATE PAGE INIT ===');
   console.log('Current hash:', window.location.hash);
-  console.log('Checking sessionStorage for preloaded file...');
+  console.log('Checking sessionStorage for quiz content...');
   
-  const preloadedFileData = sessionStorage.getItem('preloadedFile');
-  const preloadedFileName = sessionStorage.getItem('preloadedFileName');
-  const preloadedFileType = sessionStorage.getItem('preloadedFileType');
+  const quizDocumentText = sessionStorage.getItem('quizDocumentText');
+  const quizSourceName = sessionStorage.getItem('quizSourceName');
   
-  console.log('preloadedFileName:', preloadedFileName);
-  console.log('preloadedFileType:', preloadedFileType);
-  console.log('preloadedFileData exists:', !!preloadedFileData);
-  console.log('preloadedFileData length:', preloadedFileData?.length);
+  console.log('quizSourceName:', quizSourceName);
+  console.log('quizDocumentText exists:', !!quizDocumentText);
+  console.log('quizDocumentText length:', quizDocumentText?.length);
   
   const hash = window.location.hash;
   
-  if (hash === '#quiz-from-path' && preloadedFileData && preloadedFileName) {
+  if (hash === '#quiz-from-path' && quizDocumentText && quizSourceName) {
     console.log('✓ Found preloaded file from learning path:', preloadedFileName);
     console.log('Converting base64 to File...');
     
