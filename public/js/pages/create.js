@@ -50,11 +50,59 @@ async function init() {
   const hash = window.location.hash;
   
   if (hash === '#quiz-from-path' && quizDocumentText && quizSourceName) {
-    console.log('✓ Found preloaded file from learning path:', preloadedFileName);
-    console.log('Converting base64 to File...');
+    console.log('✓ Found quiz content from learning path:', quizSourceName);
+    console.log('Setting up UI for topic mode...');
     
-    // Wait for DOM to be fully loaded before accessing file input
-    const loadPreloadedFile = () => {
+    // Wait for DOM to be ready
+    setTimeout(() => {
+      // Switch to topic mode automatically
+      const topicTab = el('sourceTabTopic');
+      if (topicTab) {
+        topicTab.click();
+        console.log('✓ Switched to topic tab');
+      }
+      
+      // Fill in the topic textarea with our content
+      const topicInput = el('createTopicInput');
+      if (topicInput) {
+        topicInput.value = quizDocumentText;
+        console.log('✓ Content set in topic textarea');
+      }
+      
+      // Update UI to show it's from learning path
+      const uploadPanel = el('uploadPanel');
+      if (uploadPanel) {
+        const notice = document.createElement('div');
+        notice.style.cssText = 'padding:16px;background:#10b981;color:white;border-radius:12px;margin-bottom:16px;font-weight:700;text-align:center;';
+        notice.innerHTML = `✓ Quiz content loaded from: <strong>${quizSourceName}</strong>`;
+        uploadPanel.parentElement.insertBefore(notice, uploadPanel);
+        console.log('✓ Notice added');
+      }
+      
+      showToast(`✓ Content loaded from "${quizSourceName}"! Choose game mode and create arena.`, 'success');
+      console.log('✓ Toast shown');
+      
+      // Clear sessionStorage
+      sessionStorage.removeItem('quizDocumentText');
+      sessionStorage.removeItem('quizSourceName');
+      console.log('✓ SessionStorage cleared');
+      
+      // Remove hash
+      window.history.replaceState(null, null, '/create');
+      console.log('✓ Hash removed');
+      
+    }, 100);
+    
+  } else {
+    console.log('No quiz content detected or wrong hash');
+    console.log('- hash matches:', hash === '#quiz-from-path');
+    console.log('- has quizDocumentText:', !!quizDocumentText);
+    console.log('- has quizSourceName:', !!quizSourceName);
+  }
+}
+
+// Old file-based loading code removed - now using documentText directly
+const oldLoadPreloadedFile = () => {
       try {
         // Convert base64 back to File
         fetch(preloadedFileData)
