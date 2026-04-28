@@ -1140,24 +1140,8 @@ textarea.input {
 .h-full { height: 100%; }
 .rounded { border-radius: var(--radius-md); }
 .shadow { box-shadow: var(--shadow-md); }
-}
 
-.btn:hover {
-  transform: translate(-2px, -2px);
-  box-shadow: 7px 7px 0 var(--text);
-}
-
-.btn:active {
-  transform: translate(3px, 3px);
-  box-shadow: 1px 1px 0 var(--text);
-}
-
-.btn:disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
-  transform: none;
-  box-shadow: 5px 5px 0 var(--text);
-}
+/* Old button styles removed - see BUTTON SYSTEM section (line ~785) */
 
 .btn-secondary {
   background: var(--yellow);
