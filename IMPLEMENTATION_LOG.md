@@ -62,11 +62,48 @@
 
 ---
 
-### 🔄 Phase 2: Apply Design System to Pages (IN PROGRESS)
+### ✅ Phase 2: Apply Design System to Pages (COMPLETE)
 
-#### Next: Homepage Refresh
-- [ ] Replace auth form inputs with new `.input` system
-- [ ] Apply new button variants throughout
-- [ ] Update feature cards with new `.card` styles
-- [ ] Add empty states where needed
-- [ ] Replace hard-coded spacing with utilities
+#### 2.1 Login Page ✅ DONE (Commit 7d2ffbe)
+- [x] Form groups with labels and hints
+- [x] Error handling with `.form-error`
+- [x] Button loading states
+- [x] Password validation
+- [x] Autocomplete attributes
+
+#### 2.2 Create/Arena Page ✅ DONE (Commits d2362b4, bbd574b, 0df0ebf)
+- [x] Form groups for nickname and topic inputs
+- [x] Error helper functions
+- [x] Loading states on create button
+- [x] Better error messages
+
+#### 2.3 Dashboard ✅ DONE (Commit f7982cb)
+- [x] Empty state for no friends
+- [x] Empty state for no quiz history
+- [x] Actionable CTAs
+
+#### 2.4 Lessons Page ✅ DONE (Commits 5a70751, e30f1dd)
+- [x] Empty state for no lessons
+- [x] Empty state for no learning paths
+- [x] Skeleton loaders during path loading
+- [x] Better loading states
+
+---
+
+### 🎯 Phase 3: Polish & Cleanup (NEXT)
+
+#### 3.1 CSS Cleanup
+- [ ] Remove duplicate/old button styles
+- [ ] Remove duplicate card styles
+- [ ] Consolidate spacing values
+- [ ] Remove unused CSS
+
+#### 3.2 Remaining Pages
+- [ ] Join page
+- [ ] Pricing page
+- [ ] Admin page
+
+#### 3.3 Responsive Testing
+- [ ] Test all new components on mobile
+- [ ] Test keyboard navigation (focus states)
+- [ ] Test screen reader compatibility
