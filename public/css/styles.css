@@ -815,6 +815,282 @@ p {
 @keyframes btn-spin {
   to { transform: rotate(360deg); }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════ */
+/* INPUT SYSTEM — Forms that feel great to use                             */
+/* ═══════════════════════════════════════════════════════════════════════ */
+
+.input,
+input.input,
+textarea.input,
+select.input {
+  /* Base styles */
+  width: 100%;
+  padding: var(--space-3) var(--space-4);
+  
+  /* Typography */
+  font-family: inherit;
+  font-size: var(--text-base);
+  font-weight: 600;
+  
+  /* Colors */
+  background: white;
+  color: var(--text);
+  border: 3px solid var(--text);
+  border-radius: var(--radius-md);
+  
+  /* Interaction */
+  transition: all var(--transition-base);
+  outline: none;
+}
+
+.input::placeholder {
+  color: var(--muted);
+  opacity: 0.7;
+}
+
+/* ─── Input States ─── */
+
+.input:hover:not(:disabled):not(:focus) {
+  border-color: var(--blue);
+}
+
+.input:focus {
+  border-color: var(--blue);
+  box-shadow: var(--focus-ring);
+}
+
+.input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: var(--paper-2);
+}
+
+.input.input-error {
+  border-color: var(--red);
+}
+
+.input.input-error:focus {
+  box-shadow: var(--focus-ring-error);
+}
+
+.input.input-success {
+  border-color: var(--green);
+}
+
+/* ─── Textarea specific ─── */
+
+textarea.input {
+  resize: vertical;
+  min-height: 120px;
+  line-height: 1.5;
+}
+
+/* ─── Form Group ─── */
+
+.form-group {
+  margin-bottom: var(--space-5);
+}
+
+.form-label {
+  display: block;
+  margin-bottom: var(--space-2);
+  font-size: var(--text-sm);
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text);
+}
+
+.form-label.required::after {
+  content: '*';
+  color: var(--red);
+  margin-left: var(--space-1);
+}
+
+.form-hint {
+  display: block;
+  margin-top: var(--space-2);
+  font-size: var(--text-sm);
+  color: var(--muted);
+  line-height: 1.4;
+}
+
+.form-error {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  background: rgba(255, 92, 92, 0.1);
+  border-left: 3px solid var(--red);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-sm);
+  font-weight: 700;
+  color: var(--red);
+}
+
+.form-error::before {
+  content: '⚠️';
+  flex-shrink: 0;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════ */
+/* CARD SYSTEM — Consistent containers                                     */
+/* ═══════════════════════════════════════════════════════════════════════ */
+
+.card,
+.flat-card {
+  background: var(--paper);
+  border: 4px solid var(--text);
+  border-radius: var(--radius-xl);
+  padding: var(--space-5);
+  box-shadow: var(--shadow-lg);
+  transition: all var(--transition-base);
+}
+
+.flat-card {
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+}
+
+/* ─── Card Variants ─── */
+
+.card-interactive {
+  cursor: pointer;
+}
+
+.card-interactive:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: var(--shadow-xl);
+}
+
+.card-interactive:active {
+  transform: translate(1px, 1px);
+  box-shadow: var(--shadow-md);
+}
+
+/* ─── Card Sections ─── */
+
+.card-header {
+  margin-bottom: var(--space-4);
+  padding-bottom: var(--space-3);
+  border-bottom: 2px solid var(--paper-2);
+}
+
+.card-title {
+  font-size: var(--text-xl);
+  font-weight: 900;
+  margin: 0;
+}
+
+.card-description {
+  margin-top: var(--space-2);
+  color: var(--muted);
+  font-size: var(--text-sm);
+  line-height: 1.5;
+}
+
+.card-footer {
+  margin-top: var(--space-4);
+  padding-top: var(--space-3);
+  border-top: 2px solid var(--paper-2);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════ */
+/* SKELETON LOADERS — Better than spinners                                 */
+/* ═══════════════════════════════════════════════════════════════════════ */
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--paper-2) 0%,
+    var(--paper) 50%,
+    var(--paper-2) 100%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-pulse 1.5s ease-in-out infinite;
+  border-radius: var(--radius-sm);
+}
+
+@keyframes skeleton-pulse {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ─── Skeleton Variants ─── */
+
+.skeleton-text {
+  height: 1em;
+  margin-bottom: var(--space-2);
+}
+
+.skeleton-text:last-child {
+  width: 80%;
+}
+
+.skeleton-title {
+  height: 1.5em;
+  width: 60%;
+  margin-bottom: var(--space-3);
+}
+
+.skeleton-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-md);
+}
+
+.skeleton-card {
+  height: 120px;
+  width: 100%;
+  border-radius: var(--radius-lg);
+}
+
+.skeleton-button {
+  height: 44px;
+  width: 120px;
+  border-radius: var(--radius-md);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════ */
+/* EMPTY STATES — Helpful, encouraging, actionable                         */
+/* ═══════════════════════════════════════════════════════════════════════ */
+
+.empty-state {
+  text-align: center;
+  padding: var(--space-12) var(--space-6);
+}
+
+.empty-state-icon {
+  font-size: var(--text-5xl);
+  margin-bottom: var(--space-4);
+  opacity: 0.5;
+}
+
+.empty-state-title {
+  font-size: var(--text-2xl);
+  font-weight: 900;
+  margin: 0 0 var(--space-3);
+  color: var(--text);
+}
+
+.empty-state-description {
+  font-size: var(--text-base);
+  color: var(--muted);
+  margin: 0 0 var(--space-6);
+  max-width: 400px;
+  margin-left: auto;
+  margin-right: auto;
+  line-height: 1.6;
+}
+
+.empty-state-actions {
+  display: flex;
+  gap: var(--space-3);
+  justify-content: center;
+  flex-wrap: wrap;
+}
 }
 
 .btn:hover {
