@@ -1,5 +1,5 @@
 import express from "express";
-import { createClient } from "@supabase/supabase-js";
+import { createClient } from "@getSupabase()/getSupabase()-js";
 import {
   chunkMaterial,
   extractConceptsAndDependencies,
@@ -12,10 +12,13 @@ import {
 import { extractTextFromFile } from "../services/documentService.js";
 import { generateLessonTitle, suggestCategory } from "../services/titleGenerator.js";
 
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_KEY
-);
+function getSupabase() {
+  return createClient(
+    process.env.SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_KEY,
+    { auth: { autoRefreshToken: false, persistSession: false } }
+  );
+}
 
 const router = express.Router();
 
@@ -46,7 +49,7 @@ router.post("/process-material", async (req, res) => {
     const pathTitle = await generateLessonTitle({ sections: units }, documentText).catch(() => documentName);
     
     // Get user's categories for suggestion
-    const { data: categories } = await supabase
+    const { data: categories } = await getSupabase()
       .from('lesson_categories')
       .select('id, name')
       .eq('user_id', userId);
@@ -221,7 +224,7 @@ router.get("/next-review/:userId", async (req, res) => {
     const { userId } = req.params;
 
     // This uses existing progressService functionality
-    const { data: dueForReview } = await supabase
+    const { data: dueForReview } = await getSupabase()
       .from('concept_mastery')
       .select('*')
       .eq('user_id', userId)
@@ -256,7 +259,7 @@ router.post("/delete-path", async (req, res) => {
     console.log(`Deleting path for user ${userId}, source: ${sourceName}`);
 
     // Find all units for this source
-    const { data: units } = await supabase
+    const { data: units } = await getSupabase()
       .from('learning_units')
       .select('id')
       .eq('user_id', userId)
@@ -270,7 +273,7 @@ router.post("/delete-path", async (req, res) => {
     console.log(`Found ${unitIds.length} units to delete`);
 
     // Delete highlights first (foreign key)
-    const { error: highlightsError } = await supabase
+    const { error: highlightsError } = await getSupabase()
       .from('unit_highlights')
       .delete()
       .in('unit_id', unitIds);
@@ -278,7 +281,7 @@ router.post("/delete-path", async (req, res) => {
     if (highlightsError) console.error('Highlights delete error:', highlightsError);
 
     // Delete notes
-    const { error: notesError } = await supabase
+    const { error: notesError } = await getSupabase()
       .from('unit_notes')
       .delete()
       .in('unit_id', unitIds);
@@ -286,14 +289,14 @@ router.post("/delete-path", async (req, res) => {
     if (notesError) console.error('Notes delete error:', notesError);
 
     // Delete user learning paths
-    await supabase
+    await getSupabase()
       .from('user_learning_paths')
       .delete()
       .eq('user_id', userId)
       .in('learning_unit_id', unitIds);
 
     // Delete learning units
-    await supabase
+    await getSupabase()
       .from('learning_units')
       .delete()
       .eq('user_id', userId)

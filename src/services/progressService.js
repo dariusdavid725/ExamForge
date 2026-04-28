@@ -1,10 +1,12 @@
-import { createClient } from "@supabase/supabase-js";
+import { createClient } from "@getSupabase()/getSupabase()-js";
 
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_KEY,
-  { auth: { autoRefreshToken: false, persistSession: false } }
-);
+function getSupabase() {
+  return createClient(
+    process.env.SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_KEY,
+    { auth: { autoRefreshToken: false, persistSession: false } }
+  );
+}
 
 /**
  * Update user's daily progress and streak
@@ -16,7 +18,7 @@ export async function trackUserProgress(userId, activity) {
 
   try {
     // 1. Upsert daily progress
-    const { data: progressData } = await supabase
+    const { data: progressData } = await getSupabase()
       .from("user_progress")
       .select("*")
       .eq("user_id", userId)
@@ -42,7 +44,7 @@ export async function trackUserProgress(userId, activity) {
       updates.concepts_learned = Array.from(existingConcepts);
     }
 
-    await supabase
+    await getSupabase()
       .from("user_progress")
       .upsert(updates, { onConflict: "user_id,date" });
 
@@ -51,14 +53,14 @@ export async function trackUserProgress(userId, activity) {
 
     // 3. Update profile totals (using raw SQL for increment)
     if (activity.quizCompleted || activity.questionsAnswered || activity.correctAnswers) {
-      const { data: profile } = await supabase
+      const { data: profile } = await getSupabase()
         .from("profiles")
         .select("total_quizzes_completed, total_questions_answered, total_correct_answers")
         .eq("id", userId)
         .single();
 
       if (profile) {
-        await supabase
+        await getSupabase()
           .from("profiles")
           .update({
             total_quizzes_completed: (profile.total_quizzes_completed || 0) + (activity.quizCompleted ? 1 : 0),
@@ -79,7 +81,7 @@ export async function trackUserProgress(userId, activity) {
  */
 async function updateStreak(userId, today) {
   try {
-    const { data: profile } = await supabase
+    const { data: profile } = await getSupabase()
       .from("profiles")
       .select("last_activity_date, current_streak, longest_streak")
       .eq("id", userId)
@@ -107,7 +109,7 @@ async function updateStreak(userId, today) {
 
     const newLongest = Math.max(newStreak, profile.longest_streak || 0);
 
-    await supabase
+    await getSupabase()
       .from("profiles")
       .update({
         current_streak: newStreak,
@@ -128,7 +130,7 @@ export async function trackConceptMastery(userId, concept, isCorrect) {
   if (!userId || !concept) return;
 
   try {
-    const { data: existing } = await supabase
+    const { data: existing } = await getSupabase()
       .from("concept_mastery")
       .select("*")
       .eq("user_id", userId)
@@ -153,7 +155,7 @@ export async function trackConceptMastery(userId, concept, isCorrect) {
     const nextReview = new Date();
     nextReview.setDate(nextReview.getDate() + intervalDays);
 
-    await supabase
+    await getSupabase()
       .from("concept_mastery")
       .upsert({
         user_id: userId,
@@ -181,14 +183,14 @@ export async function getUserProgressStats(userId, days = 7) {
     startDate.setDate(startDate.getDate() - days);
     const startDateStr = startDate.toISOString().split("T")[0];
 
-    const { data: progress } = await supabase
+    const { data: progress } = await getSupabase()
       .from("user_progress")
       .select("*")
       .eq("user_id", userId)
       .gte("date", startDateStr)
       .order("date", { ascending: true });
 
-    const { data: profile } = await supabase
+    const { data: profile } = await getSupabase()
       .from("profiles")
       .select("current_streak, longest_streak, total_quizzes_completed, total_questions_answered, total_correct_answers")
       .eq("id", userId)
@@ -223,7 +225,7 @@ export async function getConceptsDueForReview(userId) {
   try {
     const now = new Date().toISOString();
 
-    const { data: concepts } = await supabase
+    const { data: concepts } = await getSupabase()
       .from("concept_mastery")
       .select("*")
       .eq("user_id", userId)

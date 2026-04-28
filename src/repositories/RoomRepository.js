@@ -1,15 +1,18 @@
 import { createClient } from "@supabase/supabase-js";
 import { normalizePlayer } from "../domain/Player.js";
 
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_KEY
-);
+function getSupabase() {
+  return createClient(
+    process.env.SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_KEY,
+    { auth: { autoRefreshToken: false, persistSession: false } }
+  );
+}
 
 export async function findByCode(code) {
   const upperCode = String(code || "").toUpperCase();
 
-  const { data: room } = await supabase
+  const { data: room } = await getSupabase()
     .from("rooms")
     .select("*")
     .eq("code", upperCode)
@@ -17,7 +20,7 @@ export async function findByCode(code) {
 
   if (!room) return null;
 
-  const { data: players } = await supabase
+  const { data: players } = await getSupabase()
     .from("players")
     .select("*")
     .eq("room_code", upperCode)
@@ -30,13 +33,13 @@ export async function findByCode(code) {
 }
 
 export async function insert(room) {
-  const { error } = await supabase.from("rooms").insert(room);
+  const { error } = await getSupabase().from("rooms").insert(room);
   if (error) throw new Error(`Failed to create room: ${error.message}`);
   return room;
 }
 
 export async function update(code, fields) {
-  const { error } = await supabase
+  const { error } = await getSupabase()
     .from("rooms")
     .update(fields)
     .eq("code", String(code).toUpperCase());
@@ -44,7 +47,7 @@ export async function update(code, fields) {
 }
 
 export async function codeExists(code) {
-  const { data } = await supabase
+  const { data } = await getSupabase()
     .from("rooms")
     .select("code")
     .eq("code", String(code).toUpperCase())

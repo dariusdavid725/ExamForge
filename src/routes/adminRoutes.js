@@ -2,10 +2,14 @@ import express from "express";
 import { createClient } from "@supabase/supabase-js";
 
 const router = express.Router();
-const supabaseAdmin = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_KEY
-);
+
+function getAdmin() {
+  return createClient(
+    process.env.SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_KEY,
+    { auth: { autoRefreshToken: false, persistSession: false } }
+  );
+}
 const ADMIN_BOOTSTRAP_EMAILS = new Set(
   String(process.env.ADMIN_EMAILS || "dariusdavid26@yahoo.com")
     .split(",")
@@ -20,7 +24,7 @@ async function getRequestUser(req) {
   const token = authHeader.slice("Bearer ".length).trim();
   if (!token) return null;
 
-  const { data, error } = await supabaseAdmin.auth.getUser(token);
+  const { data, error } = await getAdmin().auth.getUser(token);
   if (error || !data?.user) return null;
   return data.user;
 }
@@ -31,7 +35,7 @@ async function isAdminUser(user) {
   const email = String(user.email || "").toLowerCase();
   if (ADMIN_BOOTSTRAP_EMAILS.has(email)) return true;
 
-  const { data: profile } = await supabaseAdmin
+  const { data: profile } = await getAdmin()
     .from("profiles")
     .select("is_admin")
     .eq("id", user.id)
@@ -60,7 +64,7 @@ async function listUsersByEmail() {
   let page = 1;
 
   while (true) {
-    const { data, error } = await supabaseAdmin.auth.admin.listUsers({
+    const { data, error } = await getAdmin().auth.admin.listUsers({
       page,
       perPage: 200
     });
@@ -84,9 +88,9 @@ router.get("/admin/overview", requireAdmin, async (_req, res) => {
     const sevenDaysAgoIso = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
 
     const [{ count: usersCount }, { count: premiumCount }, { count: eventsCount }] = await Promise.all([
-      supabaseAdmin.from("profiles").select("id", { count: "exact", head: true }),
-      supabaseAdmin.from("profiles").select("id", { count: "exact", head: true }).eq("plan", "premium"),
-      supabaseAdmin.from("product_events").select("id", { count: "exact", head: true }).gte("created_at", sevenDaysAgoIso)
+      getAdmin().from("profiles").select("id", { count: "exact", head: true }),
+      getAdmin().from("profiles").select("id", { count: "exact", head: true }).eq("plan", "premium"),
+      getAdmin().from("product_events").select("id", { count: "exact", head: true }).gte("created_at", sevenDaysAgoIso)
     ]);
 
     return res.json({
@@ -101,7 +105,7 @@ router.get("/admin/overview", requireAdmin, async (_req, res) => {
 
 router.get("/admin/admins", requireAdmin, async (_req, res) => {
   try {
-    const { data: profiles, error } = await supabaseAdmin
+    const { data: profiles, error } = await getAdmin()
       .from("profiles")
       .select("id, username, is_admin")
       .eq("is_admin", true);
@@ -143,7 +147,7 @@ router.post("/admin/admins", requireAdmin, async (req, res) => {
     }
 
     if (!isAdmin) {
-      const { count } = await supabaseAdmin
+      const { count } = await getAdmin()
         .from("profiles")
         .select("id", { count: "exact", head: true })
         .eq("is_admin", true);
@@ -153,14 +157,14 @@ router.post("/admin/admins", requireAdmin, async (req, res) => {
       }
     }
 
-    const { error } = await supabaseAdmin
+    const { error } = await getAdmin()
       .from("profiles")
       .update({ is_admin: isAdmin })
       .eq("id", targetUser.id);
 
     if (error) return res.status(500).json({ error: "Could not update admin role." });
 
-    await supabaseAdmin.from("admin_audit_logs").insert({
+    await getAdmin().from("admin_audit_logs").insert({
       action: isAdmin ? "admin_granted" : "admin_revoked",
       actor_id: req.adminUser.id,
       target_email: email,
@@ -176,7 +180,7 @@ router.post("/admin/admins", requireAdmin, async (req, res) => {
 
 router.get("/admin/events/recent", requireAdmin, async (_req, res) => {
   try {
-    const { data, error } = await supabaseAdmin
+    const { data, error } = await getAdmin()
       .from("product_events")
       .select("id, name, source, created_at")
       .order("created_at", { ascending: false })
@@ -191,7 +195,7 @@ router.get("/admin/events/recent", requireAdmin, async (_req, res) => {
 
 router.get("/admin/audit-logs", requireAdmin, async (_req, res) => {
   try {
-    const { data: logs, error } = await supabaseAdmin
+    const { data: logs, error } = await getAdmin()
       .from("admin_audit_logs")
       .select("id, action, actor_id, target_email, created_at")
       .order("created_at", { ascending: false })

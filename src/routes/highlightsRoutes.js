@@ -1,10 +1,13 @@
 import express from "express";
-import { createClient } from "@supabase/supabase-js";
+import { createClient } from "@getSupabase()/getSupabase()-js";
 
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_KEY
-);
+function getSupabase() {
+  return createClient(
+    process.env.SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_KEY,
+    { auth: { autoRefreshToken: false, persistSession: false } }
+  );
+}
 
 const router = express.Router();
 
@@ -20,7 +23,7 @@ router.post("/create", async (req, res) => {
       return res.status(400).json({ error: "Missing required fields" });
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await getSupabase()
       .from("unit_highlights")
       .insert({
         user_id: userId,
@@ -50,7 +53,7 @@ router.get("/:unitId/:userId", async (req, res) => {
   try {
     const { unitId, userId } = req.params;
 
-    const { data, error } = await supabase
+    const { data, error } = await getSupabase()
       .from("unit_highlights")
       .select("*")
       .eq("unit_id", unitId)
@@ -74,7 +77,7 @@ router.delete("/:highlightId", async (req, res) => {
   try {
     const { highlightId } = req.params;
 
-    const { error } = await supabase
+    const { error } = await getSupabase()
       .from("unit_highlights")
       .delete()
       .eq("id", highlightId);
@@ -100,7 +103,7 @@ router.post("/note", async (req, res) => {
       return res.status(400).json({ error: "Missing required fields" });
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await getSupabase()
       .from("unit_notes")
       .insert({
         user_id: userId,
@@ -128,7 +131,7 @@ router.get("/notes/:unitId/:userId", async (req, res) => {
   try {
     const { unitId, userId } = req.params;
 
-    const { data, error } = await supabase
+    const { data, error } = await getSupabase()
       .from("unit_notes")
       .select("*")
       .eq("unit_id", unitId)
@@ -152,7 +155,7 @@ router.delete("/note/:noteId", async (req, res) => {
   try {
     const { noteId } = req.params;
 
-    const { error } = await supabase
+    const { error } = await getSupabase()
       .from("unit_notes")
       .delete()
       .eq("id", noteId);

@@ -1,13 +1,16 @@
 import { createClient } from "@supabase/supabase-js";
 import { normalizePlayer } from "../domain/Player.js";
 
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_KEY
-);
+function getSupabase() {
+  return createClient(
+    process.env.SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_KEY,
+    { auth: { autoRefreshToken: false, persistSession: false } }
+  );
+}
 
 export async function findById(playerId) {
-  const { data } = await supabase
+  const { data } = await getSupabase()
     .from("players")
     .select("*")
     .eq("id", playerId)
@@ -16,13 +19,13 @@ export async function findById(playerId) {
 }
 
 export async function insert(player) {
-  const { error } = await supabase.from("players").insert(player);
+  const { error } = await getSupabase().from("players").insert(player);
   if (error) throw new Error(`Failed to add player: ${error.message}`);
   return normalizePlayer(player);
 }
 
 export async function update(playerId, fields) {
-  const { error } = await supabase
+  const { error } = await getSupabase()
     .from("players")
     .update(fields)
     .eq("id", playerId);
@@ -30,7 +33,7 @@ export async function update(playerId, fields) {
 }
 
 export async function remove(playerId) {
-  const { error } = await supabase
+  const { error } = await getSupabase()
     .from("players")
     .delete()
     .eq("id", playerId);
@@ -38,7 +41,7 @@ export async function remove(playerId) {
 }
 
 export async function updateByRoomCode(roomCode, fields) {
-  const { error } = await supabase
+  const { error } = await getSupabase()
     .from("players")
     .update(fields)
     .eq("room_code", String(roomCode).toUpperCase());

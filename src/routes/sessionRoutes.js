@@ -3,10 +3,13 @@ import { createClient } from "@supabase/supabase-js";
 
 const router = express.Router();
 
-const supabaseAdmin = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_KEY
-);
+function getAdmin() {
+  return createClient(
+    process.env.SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_KEY,
+    { auth: { autoRefreshToken: false, persistSession: false } }
+  );
+}
 
 function getTodayDate() {
   return new Date().toISOString().split("T")[0];
@@ -27,7 +30,7 @@ function normalizeLeaderboard(leaderboardData) {
 async function updateStatsForPlayer(userId, addedPoints) {
   if (!userId) return;
 
-  const { data: profile, error: profileError } = await supabaseAdmin
+  const { data: profile, error: profileError } = await getAdmin()
     .from("profiles")
     .select("*")
     .eq("id", userId)
@@ -55,7 +58,7 @@ async function updateStatsForPlayer(userId, addedPoints) {
     streak = (profile.streak_count || 0) + 1;
   }
 
-  const { error } = await supabaseAdmin
+  const { error } = await getAdmin()
     .from("profiles")
     .update({
       streak_count: streak,
@@ -91,7 +94,7 @@ async function updateStatsForAllLoggedPlayers(results) {
 }
 
 async function getRoomStatus(roomCode) {
-  const { data } = await supabaseAdmin
+  const { data } = await getAdmin()
     .from("rooms")
     .select("status")
     .eq("code", roomCode)
@@ -101,7 +104,7 @@ async function getRoomStatus(roomCode) {
 }
 
 async function getPlayersById(roomCode) {
-  const { data: players, error } = await supabaseAdmin
+  const { data: players, error } = await getAdmin()
     .from("players")
     .select("id, user_id, abandoned, finished")
     .eq("room_code", roomCode);
@@ -167,7 +170,7 @@ router.post("/sessions/save", async (req, res) => {
       });
     }
 
-    const { data: existingSession } = await supabaseAdmin
+    const { data: existingSession } = await getAdmin()
       .from("game_sessions")
       .select("id")
       .eq("room_code", roomCode)
@@ -207,7 +210,7 @@ router.post("/sessions/save", async (req, res) => {
       });
     }
 
-    const { data: session, error: sessionError } = await supabaseAdmin
+    const { data: session, error: sessionError } = await getAdmin()
       .from("game_sessions")
       .insert({
         host_id: hostId,
@@ -228,7 +231,7 @@ router.post("/sessions/save", async (req, res) => {
     if (sessionError) {
       // Unique constraint violation — another player already saved this room's session.
       if (sessionError.code === "23505") {
-        const { data: existing } = await supabaseAdmin
+        const { data: existing } = await getAdmin()
           .from("game_sessions")
           .select("id")
           .eq("room_code", roomCode)
@@ -253,7 +256,7 @@ router.post("/sessions/save", async (req, res) => {
       answers: player.answers || []
     }));
 
-    const { error: resultsError } = await supabaseAdmin
+    const { error: resultsError } = await getAdmin()
       .from("game_results")
       .insert(results);
 

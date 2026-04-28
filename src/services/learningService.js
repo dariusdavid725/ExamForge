@@ -1,10 +1,13 @@
-import { createClient } from "@supabase/supabase-js";
+import { createClient } from "@getSupabase()/getSupabase()-js";
 import OpenAI from "openai";
 
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_KEY
-);
+function getSupabase() {
+  return createClient(
+    process.env.SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_KEY,
+    { auth: { autoRefreshToken: false, persistSession: false } }
+  );
+}
 
 const client = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -338,7 +341,7 @@ export async function storeLearningUnits(userId, units, sourceName, sourceType, 
       category_id: categoryId
     }));
 
-    const { data: insertedUnits, error: unitsError } = await supabase
+    const { data: insertedUnits, error: unitsError } = await getSupabase()
       .from('learning_units')
       .insert(unitsToInsert)
       .select();
@@ -355,7 +358,7 @@ export async function storeLearningUnits(userId, units, sourceName, sourceType, 
       progress_percentage: 0
     }));
 
-    const { error: pathsError } = await supabase
+    const { error: pathsError } = await getSupabase()
       .from('user_learning_paths')
       .insert(pathsToInsert);
 
@@ -383,7 +386,7 @@ export async function storeConceptsAndDependencies(conceptsData) {
       difficulty_level: c.difficultyLevel || 3
     }));
 
-    const { data: insertedConcepts, error: conceptsError } = await supabase
+    const { data: insertedConcepts, error: conceptsError } = await getSupabase()
       .from('concepts')
       .upsert(conceptsToUpsert, { onConflict: 'name', ignoreDuplicates: false })
       .select();
@@ -406,7 +409,7 @@ export async function storeConceptsAndDependencies(conceptsData) {
       }));
 
     if (dependenciesToInsert.length > 0) {
-      const { error: depsError } = await supabase
+      const { error: depsError } = await getSupabase()
         .from('concept_dependencies')
         .upsert(dependenciesToInsert, {
           onConflict: 'concept_id,prerequisite_id',
@@ -428,7 +431,7 @@ export async function storeConceptsAndDependencies(conceptsData) {
  */
 export async function getUserLearningPath(userId, sourceType = null) {
   try {
-    let query = supabase
+    let query = getSupabase()
       .from('user_learning_paths')
       .select(`
         *,
@@ -487,7 +490,7 @@ export async function updateLearningProgress(userId, unitId, progressPercentage,
       }
     }
 
-    const { error } = await supabase
+    const { error } = await getSupabase()
       .from('user_learning_paths')
       .update(updates)
       .eq('user_id', userId)
@@ -514,7 +517,7 @@ export async function updateLearningProgress(userId, unitId, progressPercentage,
 async function unlockNextUnit(userId, currentUnitId) {
   try {
     // Get current unit's sequence order
-    const { data: currentUnit } = await supabase
+    const { data: currentUnit } = await getSupabase()
       .from('learning_units')
       .select('sequence_order, source_type, source_name')
       .eq('id', currentUnitId)
@@ -528,7 +531,7 @@ async function unlockNextUnit(userId, currentUnitId) {
     console.log(`Unlocking next after unit ${currentUnitId}, sequence: ${currentUnit.sequence_order}`);
 
     // Find THE EXACT next unit (sequence_order + 1, not just greater)
-    const { data: nextUnit } = await supabase
+    const { data: nextUnit } = await getSupabase()
       .from('learning_units')
       .select('id, sequence_order')
       .eq('user_id', userId)
@@ -545,7 +548,7 @@ async function unlockNextUnit(userId, currentUnitId) {
     console.log(`Found next unit ${nextUnit.id}, unlocking...`);
 
     // Check current status
-    const { data: pathStatus } = await supabase
+    const { data: pathStatus } = await getSupabase()
       .from('user_learning_paths')
       .select('status')
       .eq('user_id', userId)
@@ -554,7 +557,7 @@ async function unlockNextUnit(userId, currentUnitId) {
 
     if (pathStatus && pathStatus.status === 'locked') {
       // Only unlock if currently locked
-      const { error: unlockError } = await supabase
+      const { error: unlockError } = await getSupabase()
         .from('user_learning_paths')
         .update({ status: 'available', updated_at: new Date().toISOString() })
         .eq('user_id', userId)
@@ -580,7 +583,7 @@ async function unlockNextUnit(userId, currentUnitId) {
 export async function getConceptMasteryWithPrerequisites(userId, conceptName) {
   try {
     // Get the concept
-    const { data: concept } = await supabase
+    const { data: concept } = await getSupabase()
       .from('concepts')
       .select('*')
       .eq('name', conceptName)
@@ -589,7 +592,7 @@ export async function getConceptMasteryWithPrerequisites(userId, conceptName) {
     if (!concept) return null;
 
     // Get user's mastery of this concept
-    const { data: mastery } = await supabase
+    const { data: mastery } = await getSupabase()
       .from('concept_mastery')
       .select('*')
       .eq('user_id', userId)
@@ -597,7 +600,7 @@ export async function getConceptMasteryWithPrerequisites(userId, conceptName) {
       .single();
 
     // Get prerequisites
-    const { data: prerequisites } = await supabase
+    const { data: prerequisites } = await getSupabase()
       .from('concept_dependencies')
       .select(`
         strength,
@@ -608,7 +611,7 @@ export async function getConceptMasteryWithPrerequisites(userId, conceptName) {
     // Check user's mastery of prerequisites
     const prerequisitesWithMastery = await Promise.all(
       (prerequisites || []).map(async (prereq) => {
-        const { data: prereqMastery } = await supabase
+        const { data: prereqMastery } = await getSupabase()
           .from('concept_mastery')
           .select('mastery_level')
           .eq('user_id', userId)

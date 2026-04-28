@@ -3,13 +3,16 @@ import { createClient } from "@supabase/supabase-js";
 
 const router = express.Router();
 
-const supabaseAdmin = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_KEY
-);
+function getAdmin() {
+  return createClient(
+    process.env.SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_KEY,
+    { auth: { autoRefreshToken: false, persistSession: false } }
+  );
+}
 
 async function getAcceptedFriendIds(userId) {
-  const { data, error } = await supabaseAdmin
+  const { data, error } = await getAdmin()
     .from("friendships")
     .select("requester_id, addressee_id, status")
     .or(`requester_id.eq.${userId},addressee_id.eq.${userId}`)
@@ -50,7 +53,7 @@ router.get("/friends/:userId", async (req, res) => {
       });
     }
 
-    const { data: profiles, error } = await supabaseAdmin
+    const { data: profiles, error } = await getAdmin()
       .from("profiles")
       .select("id, username, avatar_color, total_quizzes, streak_count, total_points")
       .in("id", friendIds);
@@ -91,7 +94,7 @@ router.post("/room-invites", async (req, res) => {
 
     const upperCode = String(roomCode).toUpperCase();
 
-    const { data: room } = await supabaseAdmin
+    const { data: room } = await getAdmin()
       .from("rooms")
       .select("code, status")
       .eq("code", upperCode)
@@ -109,7 +112,7 @@ router.post("/room-invites", async (req, res) => {
       });
     }
 
-    const { data: inviterPlayer } = await supabaseAdmin
+    const { data: inviterPlayer } = await getAdmin()
       .from("players")
       .select("id, user_id, room_code")
       .eq("room_code", upperCode)
@@ -130,7 +133,7 @@ router.post("/room-invites", async (req, res) => {
       });
     }
 
-    const { data: existingPlayer } = await supabaseAdmin
+    const { data: existingPlayer } = await getAdmin()
       .from("players")
       .select("id")
       .eq("room_code", upperCode)
@@ -143,7 +146,7 @@ router.post("/room-invites", async (req, res) => {
       });
     }
 
-    const { data: invite, error } = await supabaseAdmin
+    const { data: invite, error } = await getAdmin()
       .from("room_invites")
       .upsert(
         {
@@ -189,7 +192,7 @@ router.get("/room-invites/:userId", async (req, res) => {
       });
     }
 
-    const { data: invites, error } = await supabaseAdmin
+    const { data: invites, error } = await getAdmin()
       .from("room_invites")
       .select("id, room_code, inviter_id, invitee_id, status, created_at")
       .eq("invitee_id", userId)
@@ -216,7 +219,7 @@ router.get("/room-invites/:userId", async (req, res) => {
     let roomsByCode = new Map();
 
     if (inviterIds.length > 0) {
-      const { data: profiles } = await supabaseAdmin
+      const { data: profiles } = await getAdmin()
         .from("profiles")
         .select("id, username, avatar_color")
         .in("id", inviterIds);
@@ -225,7 +228,7 @@ router.get("/room-invites/:userId", async (req, res) => {
     }
 
     if (roomCodes.length > 0) {
-      const { data: rooms } = await supabaseAdmin
+      const { data: rooms } = await getAdmin()
         .from("rooms")
         .select("code, status, pack")
         .in("code", roomCodes);
@@ -271,7 +274,7 @@ router.post("/room-invites/:inviteId/respond", async (req, res) => {
       });
     }
 
-    const { data: invite, error } = await supabaseAdmin
+    const { data: invite, error } = await getAdmin()
       .from("room_invites")
       .update({
         status,
