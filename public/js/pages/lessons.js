@@ -227,13 +227,13 @@ async function renderMyLessons() {
   if (!cachedLessons.length) {
     grid.innerHTML = `
       <div class="lessons-empty">
-        <div class="empty-state-icon" style="font-size:64px;">📚</div>
+        <div class="empty-state-icon" style="font-size:64px;opacity:0.2;">▣</div>
         <h2 class="empty-state-title">No lessons yet</h2>
         <p class="empty-state-description">
           Create your first AI-powered lesson from any document or topic.
         </p>
         <div class="empty-state-actions mt-6">
-          <button id="firstLessonBtn" class="btn btn-lg">Create First Lesson</button>
+          <button id="firstLessonBtn" class="btn btn-lg">Create Lesson</button>
         </div>
       </div>`;
     el("firstLessonBtn")?.addEventListener("click", () => showSection("uploadSection"));
@@ -265,23 +265,26 @@ async function renderMyLessons() {
       <!-- Sidebar -->
       <div class="lessons-sidebar">
         <div class="sidebar-section">
-          <div class="sidebar-title">Categories</div>
+          <div class="sidebar-title">Workspace</div>
           <div id="categoryFilter">
             <div class="category-item active" data-category="all">
-              <span class="category-icon">📚</span>
+              <span class="category-icon">▣</span>
               <span class="category-name">All Lessons</span>
               <span class="category-count">${cachedLessons.length}</span>
             </div>
-            ${categories.map(cat => `
-              <div class="category-item" data-category="${cat.id}">
-                <span class="category-icon">${cat.icon}</span>
-                <span class="category-name">${escapeHTML(cat.name)}</span>
-                <span class="category-count">${categoryCounts[cat.id] || 0}</span>
-              </div>
-            `).join("")}
+            ${categories.map(cat => {
+              const icon = getCategoryIcon(cat.name);
+              return `
+                <div class="category-item" data-category="${cat.id}">
+                  <span class="category-icon">${icon}</span>
+                  <span class="category-name">${escapeHTML(cat.name)}</span>
+                  <span class="category-count">${categoryCounts[cat.id] || 0}</span>
+                </div>
+              `;
+            }).join("")}
             ${uncategorized.length > 0 ? `
               <div class="category-item" data-category="uncategorized">
-                <span class="category-icon">📂</span>
+                <span class="category-icon">○</span>
                 <span class="category-name">Uncategorized</span>
                 <span class="category-count">${uncategorized.length}</span>
               </div>
@@ -289,7 +292,7 @@ async function renderMyLessons() {
           </div>
           
           <button id="manageCategoriesBtn" class="btn btn-ghost btn-sm w-full mt-4">
-            ⚙️ Manage Categories
+            Manage
           </button>
         </div>
       </div>
@@ -365,7 +368,7 @@ function renderLessonsForCategory(categoryId, categories, grouped, uncategorized
   if (lessons.length === 0) {
     return `
       <div class="lessons-empty">
-        <div class="empty-state-icon">📭</div>
+        <div class="empty-state-icon" style="font-size:48px;opacity:0.3;">○</div>
         <h3 class="empty-state-title">No lessons in this category</h3>
         <p class="empty-state-description">Create a new lesson or move existing ones here.</p>
       </div>
@@ -373,6 +376,18 @@ function renderLessonsForCategory(categoryId, categories, grouped, uncategorized
   }
 
   return lessons.map(renderLessonCard).join("");
+}
+
+// Helper for professional category icons
+function getCategoryIcon(categoryName) {
+  const name = categoryName.toLowerCase();
+  if (name.includes('math') || name.includes('calculus') || name.includes('algebra')) return '∑';
+  if (name.includes('science') || name.includes('physics') || name.includes('chemistry')) return '⚛';
+  if (name.includes('history')) return '◷';
+  if (name.includes('language') || name.includes('english')) return '◈';
+  if (name.includes('code') || name.includes('programming')) return '{ }';
+  if (name.includes('art') || name.includes('design')) return '◐';
+  return '●';
 }
 
 function renderLessonCard(entry) {
@@ -439,10 +454,10 @@ function renderLessonCard(entry) {
           ${escapeHTML(btnText)}
         </button>
         <button class="btn btn-ghost btn-sm" data-move="${escapeHTML(entry.id)}" title="Move to category">
-          📁
+          Move
         </button>
         <button class="btn btn-ghost btn-sm" data-delete="${escapeHTML(entry.id)}" title="Delete">
-          🗑
+          Delete
         </button>
       </div>
     </div>`;
