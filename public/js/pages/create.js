@@ -36,52 +36,97 @@ async function init() {
   el("createArenaBtn")?.addEventListener("click", createArena);
   
   // Check if we have a preloaded file from learning path
+  console.log('=== CREATE PAGE INIT ===');
+  console.log('Current hash:', window.location.hash);
+  console.log('Checking sessionStorage for preloaded file...');
+  
+  const preloadedFileData = sessionStorage.getItem('preloadedFile');
+  const preloadedFileName = sessionStorage.getItem('preloadedFileName');
+  const preloadedFileType = sessionStorage.getItem('preloadedFileType');
+  
+  console.log('preloadedFileName:', preloadedFileName);
+  console.log('preloadedFileType:', preloadedFileType);
+  console.log('preloadedFileData exists:', !!preloadedFileData);
+  console.log('preloadedFileData length:', preloadedFileData?.length);
+  
   const hash = window.location.hash;
-  if (hash === '#quiz-from-path') {
-    const preloadedFileData = sessionStorage.getItem('preloadedFile');
-    const preloadedFileName = sessionStorage.getItem('preloadedFileName');
-    const preloadedFileType = sessionStorage.getItem('preloadedFileType');
+  
+  if (hash === '#quiz-from-path' && preloadedFileData && preloadedFileName) {
+    console.log('✓ Found preloaded file from learning path:', preloadedFileName);
+    console.log('Converting base64 to File...');
     
-    if (preloadedFileData && preloadedFileName) {
-      console.log('Found preloaded file from learning path:', preloadedFileName);
-      
+    try {
       // Convert base64 back to File
       fetch(preloadedFileData)
-        .then(res => res.blob())
+        .then(res => {
+          console.log('Fetch response received');
+          return res.blob();
+        })
         .then(blob => {
+          console.log('Blob created, size:', blob.size);
           const file = new File([blob], preloadedFileName, { type: preloadedFileType || 'text/plain' });
+          console.log('File created:', file.name, file.size, file.type);
           
           // Set the file in the upload input
           const dataTransfer = new DataTransfer();
           dataTransfer.items.add(file);
           const fileInput = el('documentUpload');
+          
+          console.log('File input element:', !!fileInput);
+          
           if (fileInput) {
             fileInput.files = dataTransfer.files;
+            console.log('✓ File set in input, files.length:', fileInput.files.length);
+            
+            // Trigger change event
+            const event = new Event('change', { bubbles: true });
+            fileInput.dispatchEvent(event);
+            console.log('✓ Change event dispatched');
             
             // Update UI to show file is loaded
             const fileLabel = document.querySelector('label[for="documentUpload"]');
+            console.log('File label element:', !!fileLabel);
+            
             if (fileLabel) {
               fileLabel.innerHTML = `
                 <div style="text-align:center;">
                   <div style="font-size:48px;margin-bottom:12px;">📄</div>
                   <div style="font-weight:700;margin-bottom:4px;">${preloadedFileName}</div>
-                  <div style="font-size:13px;color:var(--muted);">File loaded from learning path - ready to create quiz!</div>
+                  <div style="font-size:13px;color:var(--muted);">✓ File loaded from learning path - ready to create quiz!</div>
                 </div>
               `;
+              console.log('✓ UI updated');
             }
             
-            showToast('File loaded! Choose your game mode and create arena.', 'success');
+            showToast('✓ File loaded! Choose your game mode and create arena.', 'success');
+            console.log('✓ Toast shown');
+          } else {
+            console.error('❌ File input not found!');
           }
           
           // Clear sessionStorage
           sessionStorage.removeItem('preloadedFile');
           sessionStorage.removeItem('preloadedFileName');
           sessionStorage.removeItem('preloadedFileType');
+          console.log('✓ SessionStorage cleared');
           
           // Remove hash
           window.history.replaceState(null, null, '/create');
+          console.log('✓ Hash removed');
+        })
+        .catch(error => {
+          console.error('❌ Error converting file:', error);
+          showToast('Failed to load file. Please try again.', 'error');
         });
+    } catch (error) {
+      console.error('❌ Error in preload logic:', error);
+      showToast('Failed to load file. Please try again.', 'error');
     }
+  } else {
+    console.log('No preloaded file detected or wrong hash');
+    console.log('- hash matches:', hash === '#quiz-from-path');
+    console.log('- has preloadedFileData:', !!preloadedFileData);
+    console.log('- has preloadedFileName:', !!preloadedFileName);
   }
 }
 
