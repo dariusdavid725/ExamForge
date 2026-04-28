@@ -2,10 +2,15 @@ import express from "express";
 import { createClient } from "@supabase/supabase-js";
 
 const router = express.Router();
-const supabaseAdmin = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_KEY
-);
+
+function getAdmin() {
+  return createClient(
+    process.env.SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_KEY,
+    { auth: { autoRefreshToken: false, persistSession: false } }
+  );
+}
+
 const ADMIN_BOOTSTRAP_EMAILS = new Set(
   String(process.env.ADMIN_EMAILS || "dariusdavid26@yahoo.com")
     .split(",")
@@ -20,11 +25,11 @@ async function getAdminUserFromRequest(req) {
   const token = authHeader.slice("Bearer ".length).trim();
   if (!token) return null;
 
-  const { data, error } = await supabaseAdmin.auth.getUser(token);
+  const { data, error } = await getAdmin().auth.getUser(token);
   if (error || !data?.user) return null;
 
   const user = data.user;
-  const { data: profile } = await supabaseAdmin
+  const { data: profile } = await getAdmin()
     .from("profiles")
     .select("is_admin")
     .eq("id", user.id)
@@ -58,7 +63,7 @@ router.post("/events", (req, res) => {
     meta: typeof meta === "object" && meta ? meta : {}
   };
 
-  supabaseAdmin
+  getAdmin()
     .from("product_events")
     .insert(safePayload)
     .then(({ error }) => {
@@ -87,7 +92,7 @@ router.get("/events/stats", async (req, res) => {
       "activation_demo_completed"
     ];
 
-    const { data, error } = await supabaseAdmin
+    const { data, error } = await getAdmin()
       .from("product_events")
       .select("name")
       .in("name", eventNames)
