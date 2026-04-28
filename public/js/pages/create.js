@@ -304,19 +304,20 @@ async function createArenaFromFile() {
   const createBtn = el("createArenaBtn");
 
   if (!file) {
-    statusEl.textContent = "Choose a document first.";
+    showError("Please choose a document first.");
     showToast("Choose a document first.", "info");
     return;
   }
 
+  clearError();
   showLoadingOverlay({
     title:   "Forging your arena...",
     message: "Reading your document.",
     steps:   ["Reading document", "Extracting concepts", "Generating challenges", "Checking quality", "Opening lobby"]
   });
 
-  createBtn.disabled   = true;
-  statusEl.textContent = "Starting...";
+  createBtn.classList.add("btn-loading");
+  createBtn.disabled = true;
 
   try {
     const formData = new FormData();
@@ -324,17 +325,17 @@ async function createArenaFromFile() {
     formData.append("gameMode", selectedGameMode);
 
     const packData = await api.generatePack(formData, msg => {
-      statusEl.textContent = msg;
       updateLoadingOverlay(msg);
     });
 
     await _openRoom(packData, hostName, file.name, packData.documentText || "");
   } catch (err) {
     console.error(err);
-    statusEl.textContent = err.message || "Something went wrong.";
+    showError(err.message || "Failed to create arena. Please try again.");
     showToast(err.message || "Something went wrong.", "danger");
   } finally {
     hideLoadingOverlay();
+    createBtn.classList.remove("btn-loading");
     createBtn.disabled = false;
   }
 }
@@ -347,18 +348,20 @@ async function createArenaFromTopic() {
   const createBtn = el("createArenaBtn");
 
   if (!topic) {
+    showError("Please write a topic first.");
     showToast("Write a topic first.", "info");
     return;
   }
 
+  clearError();
   showLoadingOverlay({
     title:   "Forging your arena...",
     message: "Generating challenges from topic.",
     steps:   ["Researching topic", "Generating challenges", "Checking quality", "Opening lobby"]
   });
 
-  createBtn.disabled   = true;
-  statusEl.textContent = "Starting...";
+  createBtn.classList.add("btn-loading");
+  createBtn.disabled = true;
 
   try {
     const formData = new FormData();
