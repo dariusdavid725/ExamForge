@@ -27,21 +27,8 @@ router.get("/categories", async (req, res) => {
 
     if (error) throw error;
 
-    // No default categories - let users create their own
-    if (!data || data.length === 0) {
-      return res.json([]);
-    }
-
-      const { data: created, error: createError } = await getAdmin()
-        .from("lesson_categories")
-        .insert(defaultCategories)
-        .select();
-
-      if (createError) throw createError;
-      return res.json(created || []);
-    }
-
-    return res.json(data);
+    // Return empty array if no categories (users create their own)
+    return res.json(data || []);
   } catch (err) {
     console.error("Error fetching categories:", err);
     return res.status(500).json({ error: err.message });
