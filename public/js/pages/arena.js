@@ -295,61 +295,79 @@ async function submitCurrentAnswer() {
 
 // ─── Arena action buttons ─────────────────────────────────────────────────────
 
-function removeArenaActionButtons() { document.getElementById("efArenaActions")?.remove(); }
+function removeArenaActionButtons() {
+  document.getElementById("efArenaActions")?.remove();
+  const mount = document.getElementById("lobbyHostActionsMount");
+  if (mount) {
+    mount.innerHTML = "";
+    mount.hidden = true;
+  }
+}
 
 function mountArenaActionButtons(context) {
   removeArenaActionButtons();
   if (!state.currentRoomCode || !state.currentPlayerId) return;
 
-  const wrapper = document.createElement("div");
-  wrapper.id = "efArenaActions";
   const isLobby = context === "lobby";
+
   if (isLobby) {
-    Object.assign(wrapper.style, {
-      position: "fixed",
-      left: "18px",
-      right: "auto",
-      bottom: "88px",
-      zIndex: "110",
-      display: "flex",
-      gap: "8px",
-      alignItems: "center",
-      flexWrap: "wrap",
-      justifyContent: "flex-start",
-      maxWidth: "min(420px, calc(100vw - 36px))"
-    });
-  } else {
-    Object.assign(wrapper.style, {
-      position: "fixed",
-      right: "22px",
-      left: "auto",
-      bottom: "90px",
-      zIndex: "110",
-      display: "flex",
-      gap: "10px",
-      alignItems: "center",
-      flexWrap: "wrap",
-      justifyContent: "flex-end",
-      maxWidth: "calc(100vw - 44px)"
-    });
+    const mount = document.getElementById("lobbyHostActionsMount");
+    if (!mount) return;
+
+    const wrapper = document.createElement("div");
+    wrapper.className = "lobby-host-actions-row";
+
+    if (state.isHost && state.currentUser) {
+      const invBtn = document.createElement("button");
+      invBtn.type = "button";
+      invBtn.className = "btn btn-secondary";
+      invBtn.textContent = "Invite friends";
+      invBtn.addEventListener("click", () => showInviteFriendsModal({ roomCode: state.currentRoomCode, currentUser: state.currentUser }));
+      wrapper.appendChild(invBtn);
+    }
+
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = state.isHost ? "btn" : "btn btn-secondary";
+    if (state.isHost) {
+      btn.textContent = "Close arena";
+      btn.addEventListener("click", closeCurrentArena);
+    } else {
+      btn.textContent = "Leave lobby";
+      btn.addEventListener("click", leaveCurrentArena);
+    }
+    wrapper.appendChild(btn);
+
+    mount.appendChild(wrapper);
+    mount.hidden = false;
+    return;
   }
 
-  if (state.isHost && context === "lobby" && state.currentUser) {
-    const invBtn = document.createElement("button");
-    invBtn.type = "button"; invBtn.className = "btn btn-secondary"; invBtn.textContent = "Invite friends";
-    invBtn.addEventListener("click", () => showInviteFriendsModal({ roomCode: state.currentRoomCode, currentUser: state.currentUser }));
-    wrapper.appendChild(invBtn);
-  }
+  const wrapper = document.createElement("div");
+  wrapper.id = "efArenaActions";
+  Object.assign(wrapper.style, {
+    position: "fixed",
+    right: "22px",
+    left: "auto",
+    bottom: "90px",
+    zIndex: "110",
+    display: "flex",
+    gap: "10px",
+    alignItems: "center",
+    flexWrap: "wrap",
+    justifyContent: "flex-end",
+    maxWidth: "calc(100vw - 44px)"
+  });
 
   const btn = document.createElement("button");
   btn.type = "button";
   btn.className = state.isHost ? "btn" : "btn btn-secondary";
 
   if (state.isHost) {
-    btn.textContent = context === "lobby" ? "Close arena" : "Close quiz";
+    btn.textContent = "Close quiz";
     btn.addEventListener("click", closeCurrentArena);
   } else {
-    btn.textContent = context === "lobby" ? "Leave lobby" : "Abandon quiz";
+    btn.textContent = "Abandon quiz";
     btn.addEventListener("click", leaveCurrentArena);
   }
 
@@ -414,9 +432,9 @@ async function handleRoomClosed(message = "The arena has been closed.") {
 
 async function showLobby() {
   showSection("lobbyScreen");
-  buildReactionBar();
-  showReactionBar(true);
-  startReactionPolling();
+  stopReactionPolling();
+  showReactionBar(false);
+  document.getElementById("reactionBubbles")?.replaceChildren?.();
 
   document.getElementById("roomCodeText").textContent = state.currentRoomCode;
 
@@ -666,6 +684,9 @@ async function restoreSession() {
       else {
         document.getElementById("playerNameText").textContent = state.currentPlayerName || "Player";
         showSection("challengeScreen");
+        buildReactionBar();
+        showReactionBar(true);
+        startReactionPolling();
         mountArenaActionButtons("challenge");
         startSyncedLoop();
       }
