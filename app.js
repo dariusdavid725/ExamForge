@@ -39,6 +39,7 @@ app.get("/pricing",        (_req, res) => res.sendFile(pub("pricing.html")));
 app.get("/demo",           (_req, res) => res.sendFile(pub("demo.html")));
 app.get("/admin",          (_req, res) => res.sendFile(pub("admin.html")));
 app.get("/upgrade-success",(_req, res) => res.sendFile(pub("upgrade-success.html")));
+app.get("/design-system", (_req, res) => res.sendFile(pub("design-system.html")));
 
 // ─── Static assets with aggressive caching ────────────────────────────────────
 const oneWeek = 7 * 24 * 60 * 60 * 1000;
