@@ -87,8 +87,253 @@ main {
   padding: 24px 0 120px;
 }
 
+/* More vertical room on arena when lobby is visible (footer still clears content) */
+main.container.arena-main:has(#lobbyScreen:not(.hidden)) {
+  padding-top: 12px;
+  padding-bottom: 96px;
+}
+
 .screen {
   min-height: calc(100vh - 130px);
+}
+
+/* ═══ Arena lobby: fit in one viewport (no page scroll on desktop) ═══ */
+#lobbyScreen.lobby-fit-viewport {
+  --lobby-offset-top: 88px;
+  --lobby-offset-bottom: 104px;
+  min-height: 0;
+  height: calc(100svh - var(--lobby-offset-top) - var(--lobby-offset-bottom));
+  max-height: calc(100svh - var(--lobby-offset-top) - var(--lobby-offset-bottom));
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+}
+
+/* Override generic .screen min-height so lobby does not force page scroll */
+#lobbyScreen.lobby-fit-viewport.screen {
+  min-height: 0;
+}
+
+@supports (height: 100dvh) {
+  #lobbyScreen.lobby-fit-viewport {
+    height: calc(100dvh - var(--lobby-offset-top) - var(--lobby-offset-bottom));
+    max-height: calc(100dvh - var(--lobby-offset-top) - var(--lobby-offset-bottom));
+  }
+}
+
+#lobbyScreen.lobby-fit-viewport .lobby-grid {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1.08fr) minmax(0, 0.92fr);
+  gap: clamp(8px, 1.2vw, 16px) clamp(12px, 2vw, 22px);
+  align-items: stretch;
+}
+
+#lobbyScreen.lobby-fit-viewport .lobby-col {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(6px, 1vw, 12px);
+  min-height: 0;
+  min-width: 0;
+}
+
+#lobbyScreen.lobby-fit-viewport .lobby-card {
+  min-width: 0;
+  padding: clamp(12px, 1.5vw, 18px);
+}
+
+#lobbyScreen.lobby-fit-viewport .lobby-card--info {
+  flex: 0 1 auto;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+#lobbyScreen.lobby-fit-viewport .room-code {
+  font-size: clamp(26px, 4.5vw, 48px);
+  line-height: 0.9;
+  margin-top: 6px;
+  padding: 6px 12px;
+  border-radius: 14px;
+  border-width: 4px;
+  box-shadow: 6px 6px 0 var(--text);
+  flex-shrink: 0;
+}
+
+#lobbyScreen.lobby-fit-viewport .lobby-room-title {
+  margin: 8px 0 0;
+  font-size: clamp(15px, 1.9vw, 21px);
+  line-height: 1.15;
+  font-weight: 900;
+  letter-spacing: -0.03em;
+}
+
+#lobbyScreen.lobby-fit-viewport .lobby-room-summary {
+  margin: 4px 0 0;
+  font-size: 11px;
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+#lobbyScreen.lobby-fit-viewport .lobby-concepts {
+  margin-top: 6px;
+  flex: 0 1 auto;
+  min-height: 0;
+  flex-wrap: wrap;
+  gap: 5px;
+  max-height: 3.4rem;
+  overflow-y: auto;
+  align-content: flex-start;
+}
+
+#lobbyScreen.lobby-fit-viewport .lobby-concepts .pill {
+  font-size: 11px;
+  padding: 4px 8px;
+}
+
+#lobbyScreen.lobby-fit-viewport .lobby-card--actions {
+  flex: 0 0 auto;
+}
+
+#lobbyScreen.lobby-fit-viewport .lobby-action-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+
+#lobbyScreen.lobby-fit-viewport .lobby-action-row .btn {
+  flex: 1 1 130px;
+  min-height: 40px;
+  padding: 9px 12px;
+  font-size: 13px;
+}
+
+#lobbyScreen.lobby-fit-viewport .lobby-status {
+  margin-top: 6px;
+  font-size: 12px;
+  min-height: 18px;
+}
+
+#lobbyScreen.lobby-fit-viewport .lobby-card--players {
+  flex: 1 1 56%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+#lobbyScreen.lobby-fit-viewport .lobby-players-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  margin-bottom: 6px;
+}
+
+#lobbyScreen.lobby-fit-viewport .lobby-players-list {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  display: grid;
+  gap: 5px;
+  padding-right: 4px;
+  align-content: start;
+}
+
+#lobbyScreen.lobby-fit-viewport .lobby-card--qr {
+  flex: 1 1 44%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+#lobbyScreen.lobby-fit-viewport .lobby-qr-wrap {
+  margin-top: 6px;
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+  border-radius: 12px;
+  padding: 6px;
+}
+
+#lobbyScreen.lobby-fit-viewport #qrCanvas {
+  display: block;
+  max-width: 100%;
+  max-height: min(22vh, 118px);
+  width: auto;
+  height: auto;
+}
+
+#lobbyScreen.lobby-fit-viewport .lobby-join-link {
+  margin-top: 4px;
+  font-size: 9px;
+  line-height: 1.25;
+  word-break: break-all;
+  text-align: center;
+  flex-shrink: 0;
+  max-height: 2.5em;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+@media (max-width: 780px) {
+  #lobbyScreen.lobby-fit-viewport {
+    --lobby-offset-top: 84px;
+    --lobby-offset-bottom: 112px;
+    height: calc(100svh - var(--lobby-offset-top) - var(--lobby-offset-bottom));
+    max-height: calc(100svh - var(--lobby-offset-top) - var(--lobby-offset-bottom));
+    overflow: hidden;
+  }
+
+  @supports (height: 100dvh) {
+    #lobbyScreen.lobby-fit-viewport {
+      height: calc(100dvh - var(--lobby-offset-top) - var(--lobby-offset-bottom));
+      max-height: calc(100dvh - var(--lobby-offset-top) - var(--lobby-offset-bottom));
+    }
+  }
+
+  #lobbyScreen.lobby-fit-viewport .lobby-grid {
+    grid-template-columns: 1fr;
+    grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
+  }
+
+  #lobbyScreen.lobby-fit-viewport .lobby-col--left,
+  #lobbyScreen.lobby-fit-viewport .lobby-col--right {
+    min-height: 0;
+  }
+
+  #lobbyScreen.lobby-fit-viewport .room-code {
+    font-size: clamp(22px, 9vw, 40px);
+  }
+
+  #lobbyScreen.lobby-fit-viewport .lobby-card--players {
+    flex: 1 1 auto;
+    max-height: none;
+  }
+
+  #lobbyScreen.lobby-fit-viewport .lobby-card--qr {
+    flex: 0 1 auto;
+    max-height: none;
+  }
+
+  #lobbyScreen.lobby-fit-viewport #qrCanvas {
+    max-height: min(18vh, 100px);
+  }
 }
 
 .grid-2 {
