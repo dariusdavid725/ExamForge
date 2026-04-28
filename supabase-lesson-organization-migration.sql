@@ -18,8 +18,8 @@ CREATE TABLE IF NOT EXISTS lesson_categories (
   CONSTRAINT unique_category_per_user UNIQUE(user_id, name)
 );
 
-CREATE INDEX idx_lesson_categories_user ON lesson_categories(user_id);
-CREATE INDEX idx_lesson_categories_sort ON lesson_categories(user_id, sort_order);
+CREATE INDEX IF NOT EXISTS idx_lesson_categories_user ON lesson_categories(user_id);
+CREATE INDEX IF NOT EXISTS idx_lesson_categories_sort ON lesson_categories(user_id, sort_order);
 
 -- ─── 2. Extend user_lessons table ──────────────────────────────────────────────
 
