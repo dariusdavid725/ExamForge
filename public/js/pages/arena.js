@@ -442,7 +442,7 @@ async function showLobby() {
   document.getElementById("joinLinkText").textContent = link;
 
   if (typeof QRCode !== "undefined") {
-    QRCode.toCanvas(document.getElementById("qrCanvas"), link, { width: 152, margin: 1 });
+    QRCode.toCanvas(document.getElementById("qrCanvas"), link, { width: 180, margin: 1 });
   }
 
   document.getElementById("startArenaBtn")?.classList.toggle("hidden", !state.isHost);
