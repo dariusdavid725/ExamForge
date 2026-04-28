@@ -69,19 +69,25 @@
 
   <main class="container arena-main">
 
-    <!-- ── LOBBY (fits one viewport — no page scroll) ───────────────────────── -->
+    <!-- ── LOBBY: hero (code + full-width concepts) + bottom triad ─────────── -->
     <section id="lobbyScreen" class="screen hidden fade lobby-fit-viewport">
-      <div class="lobby-grid">
-        <!-- Left: Main info + actions -->
-        <div class="lobby-col lobby-col--left">
-          <div class="card lobby-card lobby-card--info">
-            <div class="eyebrow">Lobby</div>
-            <div class="room-code" id="roomCodeText"></div>
-            <h2 id="roomTitleText" class="lobby-room-title"></h2>
-            <p id="roomSummaryText" class="muted lobby-room-summary"></p>
-            <div id="conceptsList" class="row lobby-concepts"></div>
+      <div class="lobby-shell">
+        <div class="card lobby-card lobby-hero">
+          <div class="eyebrow lobby-hero-eyebrow">Lobby</div>
+          <div class="lobby-hero-grid">
+            <div class="lobby-hero-code">
+              <div class="room-code" id="roomCodeText"></div>
+            </div>
+            <div class="lobby-hero-meta">
+              <h2 id="roomTitleText" class="lobby-room-title"></h2>
+              <p id="roomSummaryText" class="muted lobby-room-summary"></p>
+              <p class="eyebrow lobby-concepts-label">Topics covered</p>
+              <div id="conceptsList" class="row lobby-concepts"></div>
+            </div>
           </div>
+        </div>
 
+        <div class="lobby-bottom">
           <div class="card lobby-card lobby-card--actions">
             <div class="eyebrow">Actions</div>
             <div class="lobby-action-row">
@@ -90,10 +96,7 @@
             </div>
             <p id="lobbyStatusText" class="status lobby-status"></p>
           </div>
-        </div>
 
-        <!-- Right: Players + QR -->
-        <div class="lobby-col lobby-col--right">
           <div class="card lobby-card lobby-card--players">
             <div class="lobby-players-head">
               <div class="eyebrow">Players</div>
