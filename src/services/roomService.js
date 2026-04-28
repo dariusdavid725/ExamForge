@@ -174,8 +174,15 @@ export async function closeRoom(roomCode, playerId) {
   const room = await RoomRepo.findByCode(roomCode);
   if (!room) throw new Error("Room not found.");
 
+  // Host is the first player who joined (players are sorted by created_at ASC)
   const host = room.players[0];
-  if (!host || host.id !== playerId) throw new Error("Only the host can close the arena.");
+  if (!host) throw new Error("No host found for this arena.");
+  
+  // Check if the requesting player is the host
+  if (host.id !== playerId) {
+    console.error(`Close denied: playerId ${playerId} is not host ${host.id}`);
+    throw new Error("Only the host can close the arena.");
+  }
 
   const now = Date.now();
   await RoomRepo.update(roomCode, { status: "closed", closed_by: host.userId || null, closed_at: now, ends_at: now });

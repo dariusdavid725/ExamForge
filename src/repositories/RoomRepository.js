@@ -20,7 +20,8 @@ export async function findByCode(code) {
   const { data: players } = await supabase
     .from("players")
     .select("*")
-    .eq("room_code", upperCode);
+    .eq("room_code", upperCode)
+    .order("created_at", { ascending: true });
 
   return {
     ...room,
