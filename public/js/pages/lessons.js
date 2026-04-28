@@ -452,22 +452,23 @@ function renderLessonCard(entry) {
       ` : ''}
 
       ${entry.reviewTopics?.length && score !== 100 && score !== null ? `
-        <div style="margin-bottom:var(--space-4);">
-          <div style="font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:0.05em;color:var(--muted);margin-bottom:var(--space-2);">
+        <div style="margin-bottom:20px;">
+          <div style="font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:0.1em;color:#6b7280;margin-bottom:8px;">
             Topics to Review
           </div>
-          <div style="display:flex;flex-wrap:wrap;gap:var(--space-2);">
-            ${entry.reviewTopics.map(t => `
-              <span class="pill" style="font-size:11px;background:rgba(255,92,92,0.1);color:var(--red);border-color:var(--red);">
+          <div style="display:flex;flex-wrap:wrap;gap:6px;">
+            ${entry.reviewTopics.slice(0, 5).map(t => `
+              <span style="font-size:11px;background:rgba(255,92,92,0.1);color:#dc2626;padding:4px 10px;border-radius:12px;font-weight:600;border:1px solid rgba(255,92,92,0.2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:150px;" title="${escapeHTML(t)}">
                 ${escapeHTML(t)}
               </span>
             `).join("")}
+            ${entry.reviewTopics.length > 5 ? `<span style="font-size:11px;color:#6b7280;">+${entry.reviewTopics.length - 5} more</span>` : ''}
           </div>
         </div>
       ` : ''}
 
       <div class="lesson-card-actions">
-        <button class="btn${primary ? "" : " btn-secondary"} btn-sm" data-open="${escapeHTML(entry.id)}" style="flex:1;">
+        <button class="btn${primary ? "" : " btn-secondary"} btn-sm" data-open="${escapeHTML(entry.id)}" style="flex:1;min-width:120px;">
           ${escapeHTML(btnText)}
         </button>
         <button class="btn btn-ghost btn-sm" data-move="${escapeHTML(entry.id)}" title="Move to category">
