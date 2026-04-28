@@ -64,15 +64,61 @@ export function updateTimerUI() {
   }
 }
 
+let lastPlayerCount = 0;
+
 export function renderPlayerList(players) {
   dom.playersList.innerHTML = "";
   dom.playerCountText.textContent = `${players.length} joined`;
+  
+  // Show notification when a new player joins
+  if (players.length > lastPlayerCount && lastPlayerCount > 0) {
+    const newPlayer = players[players.length - 1];
+    showPlayerJoinNotification(newPlayer.name);
+  }
+  lastPlayerCount = players.length;
+  
   players.forEach((player, i) => {
     const div = document.createElement("div");
-    div.className = "player-card";
-    div.innerHTML = `<div><strong>${i + 1}. ${escapeHTML(player.name)}</strong><p class="muted" style="font-size:13px;">${player.finished ? "Finished" : "Waiting"}</p></div><strong>${player.score}</strong>`;
+    div.className = "player-card-compact";
+    div.innerHTML = `
+      <div style="display:flex;align-items:center;gap:8px;flex:1;">
+        <div style="min-width:24px;height:24px;border-radius:50%;background:var(--blue);color:white;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:12px;">
+          ${i + 1}
+        </div>
+        <div style="flex:1;min-width:0;">
+          <strong style="display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHTML(player.name)}</strong>
+          <span class="muted" style="font-size:11px;">${player.finished ? "✓ Finished" : "⏳ Waiting"}</span>
+        </div>
+      </div>
+      <strong style="font-size:18px;color:var(--blue);">${player.score}</strong>
+    `;
     dom.playersList.appendChild(div);
   });
+}
+
+function showPlayerJoinNotification(playerName) {
+  // Create a beautiful notification
+  const notification = document.createElement("div");
+  notification.className = "player-join-notification";
+  notification.innerHTML = `
+    <div style="display:flex;align-items:center;gap:12px;">
+      <div style="font-size:24px;">👋</div>
+      <div>
+        <strong style="display:block;font-size:14px;">${escapeHTML(playerName)}</strong>
+        <span style="font-size:12px;color:var(--muted);">joined the arena</span>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(notification);
+  
+  // Animate in
+  setTimeout(() => notification.classList.add("show"), 10);
+  
+  // Remove after 3 seconds
+  setTimeout(() => {
+    notification.classList.remove("show");
+    setTimeout(() => notification.remove(), 300);
+  }, 3000);
 }
 
 export function renderConceptPills(concepts) {
