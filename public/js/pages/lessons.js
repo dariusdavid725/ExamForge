@@ -261,12 +261,14 @@ async function renderMyLessons() {
 
   // Render with sidebar layout
   let html = `
-    <div class="lessons-wrapper">
     <div class="lessons-container">
       <!-- Sidebar -->
       <div class="lessons-sidebar">
+        <div class="sidebar-header">
+          <div class="sidebar-logo">ExamForge</div>
+        </div>
         <div class="sidebar-section">
-          <div class="sidebar-title">Workspace</div>
+          <div class="sidebar-title">CATEGORIES</div>
           <div id="categoryFilter">
             <div class="category-item active" data-category="all">
               <span class="category-icon">▣</span>
@@ -300,21 +302,22 @@ async function renderMyLessons() {
 
       <!-- Main Content -->
       <div class="lessons-main">
-        <div class="lessons-header">
-          <div>
-            <h1 class="lessons-title">All Lessons</h1>
-            <div class="lessons-subtitle" id="lessonsSubtitle">${cachedLessons.length} total</div>
+        <div class="lessons-content-wrapper">
+          <div class="lessons-header">
+            <div class="lessons-header-left">
+              <h1 class="lessons-title">All Lessons</h1>
+              <div class="lessons-subtitle" id="lessonsSubtitle">${cachedLessons.length} ${cachedLessons.length === 1 ? 'lesson' : 'lessons'}</div>
+            </div>
+            <div class="lessons-actions">
+              <button id="newLessonFromGridBtn" class="btn">+ New Lesson</button>
+            </div>
           </div>
-          <div class="lessons-actions">
-            <button id="newLessonFromGridBtn" class="btn">+ New Lesson</button>
+          
+          <div class="lessons-grid" id="lessonsGridContent">
+            ${renderLessonsForCategory('all', categories, grouped, uncategorized)}
           </div>
-        </div>
-        
-        <div class="lessons-grid" id="lessonsGridContent">
-          ${renderLessonsForCategory('all', categories, grouped, uncategorized)}
         </div>
       </div>
-    </div>
     </div>
   `;
 
@@ -327,18 +330,28 @@ async function renderMyLessons() {
       document.querySelectorAll('.category-item').forEach(el => el.classList.remove('active'));
       item.classList.add('active');
 
-      // Update title
+      // Update title and subtitle
       const categoryId = item.dataset.category;
       const category = categories.find(c => c.id === categoryId);
       const titleEl = document.querySelector('.lessons-title');
+      const subtitleEl = document.querySelector('.lessons-subtitle');
+      
+      let title = 'All Lessons';
+      let count = cachedLessons.length;
       
       if (categoryId === 'all') {
-        titleEl.textContent = 'All Lessons';
+        title = 'All Lessons';
+        count = cachedLessons.length;
       } else if (categoryId === 'uncategorized') {
-        titleEl.textContent = 'Uncategorized';
+        title = 'Uncategorized';
+        count = uncategorized.length;
       } else if (category) {
-        titleEl.textContent = category.name;
+        title = category.name;
+        count = (grouped[categoryId] || []).length;
       }
+      
+      titleEl.textContent = title;
+      subtitleEl.textContent = `${count} lesson${count !== 1 ? 's' : ''}`;
 
       // Filter lessons
       const gridContent = document.getElementById('lessonsGridContent');
@@ -409,10 +422,9 @@ function renderLessonCard(entry) {
   return `
     <div class="lesson-card">
       <div class="lesson-card-header">
-        <div style="flex:1;min-width:0;">
+        <div class="lesson-card-header-left">
           <h3 class="lesson-card-title lesson-title" data-lesson-id="${entry.id}" title="Click to rename">
             ${escapeHTML(entry.displayTitle)}
-            <span class="rename-icon">✏️</span>
           </h3>
           <div class="lesson-card-meta">
             <span>${escapeHTML(entry.language)}</span>
@@ -420,9 +432,9 @@ function renderLessonCard(entry) {
             <span>${date}</span>
           </div>
         </div>
-        <span style="flex-shrink:0;padding:6px 12px;border-radius:999px;font-size:11px;font-weight:900;
-                     background:${color};color:${score === null ? "var(--text)" : "white"};
-                     border:2px solid ${color};text-transform:uppercase;letter-spacing:0.05em;">
+        <span style="flex-shrink:0;padding:8px 16px;border-radius:20px;font-size:11px;font-weight:700;
+                     background:${color};color:${score === null ? "#111827" : "white"};
+                     text-transform:uppercase;letter-spacing:0.1em;white-space:nowrap;">
           ${escapeHTML(label)}
         </span>
       </div>
