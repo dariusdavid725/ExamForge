@@ -874,9 +874,12 @@ async function handleSmartProcess() {
         showToast("Write a topic first.", "info");
         return;
       }
-      // For topic, we need to generate text first
-      showToast("Please generate lesson first, then use Smart Learning Path.", "info");
-      return;
+      
+      // For topics, create learning path directly from topic text
+      docName = `Learning: ${topic.substring(0, 50)}`;
+      textToProcess = topic;
+      
+      // Continue processing below (skip file extraction)
     } else {
       const file = el("lessonFileInput").files[0];
       if (!file) {
