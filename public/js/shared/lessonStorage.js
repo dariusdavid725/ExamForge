@@ -33,13 +33,33 @@ export async function deleteLessonFromStorage(id, userId) {
 function normalize(row) {
   return {
     id:            row.id,
-    title:         row.title          || "Lesson",
-    language:      row.language       || "Unknown",
+    title:         row.custom_title || row.auto_title || row.title || "Lesson",
+    displayTitle:  row.custom_title || row.auto_title || row.title || "Lesson",
+    customTitle:   row.custom_title || null,
+    autoTitle:     row.auto_title   || null,
+    language:      row.language     || "Unknown",
     createdAt:     row.created_at,
     lesson:        row.lesson,
     documentText:  row.document_text  || "",
     lastQuizScore: row.last_quiz_score ?? null,
     lastQuizDate:  row.last_quiz_date  ?? null,
-    reviewTopics:  row.review_topics   || []
+    reviewTopics:  row.review_topics   || [],
+    categoryId:    row.category_id  || null
   };
+}
+
+export async function renameLesson(id, userId, customTitle) {
+  await fetch(`/api/user-lessons/${id}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ userId, customTitle })
+  });
+}
+
+export async function moveLessonToCategory(id, userId, categoryId) {
+  await fetch(`/api/user-lessons/${id}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ userId, categoryId })
+  });
 }
