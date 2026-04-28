@@ -8,6 +8,7 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.104.1",
+    "compression": "^1.8.1",
     "dotenv": "latest",
     "express": "latest",
     "multer": "latest",

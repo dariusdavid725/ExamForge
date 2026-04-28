@@ -1,5 +1,6 @@
 import "dotenv/config";
 import express from "express";
+import compression from "compression";
 import path from "path";
 import { fileURLToPath } from "url";
 
@@ -23,6 +24,9 @@ const pub       = p => path.join(__dirname, "public", "pages", p);
 
 const app = express();
 
+// ─── Performance: Compression ─────────────────────────────────────────────────
+app.use(compression());
+
 // ─── Page routes (clean URLs) ─────────────────────────────────────────────────
 app.get("/",               (_req, res) => res.sendFile(pub("home.html")));
 app.get("/create",         (_req, res) => res.sendFile(pub("create.html")));
@@ -36,8 +40,28 @@ app.get("/demo",           (_req, res) => res.sendFile(pub("demo.html")));
 app.get("/admin",          (_req, res) => res.sendFile(pub("admin.html")));
 app.get("/upgrade-success",(_req, res) => res.sendFile(pub("upgrade-success.html")));
 
-// ─── Static assets (css, js, images) ─────────────────────────────────────────
-app.use(express.static(path.join(__dirname, "public")));
+// ─── Static assets with aggressive caching ────────────────────────────────────
+const oneWeek = 7 * 24 * 60 * 60 * 1000;
+app.use('/css', express.static(path.join(__dirname, 'public/css'), {
+  maxAge: oneWeek,
+  immutable: true,
+  setHeaders: (res) => {
+    res.set('Cache-Control', 'public, max-age=604800, immutable');
+  }
+}));
+
+app.use('/js', express.static(path.join(__dirname, 'public/js'), {
+  maxAge: oneWeek,
+  immutable: true,
+  setHeaders: (res) => {
+    res.set('Cache-Control', 'public, max-age=604800, immutable');
+  }
+}));
+
+// Other static files (images, etc.) with moderate caching
+app.use(express.static(path.join(__dirname, "public"), {
+  maxAge: '1d'
+}));
 
 // Stripe routes MUST be registered before express.json() so the webhook handler
 // can access the raw body for signature verification.
