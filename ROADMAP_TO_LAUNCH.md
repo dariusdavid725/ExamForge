@@ -1,420 +1,404 @@
 # 🗓️ ExamForge — 2-Month Roadmap to Launch
 
 **Launch Target:** ~End of June 2026 (8 weeks)  
-**Current Status:** Core features complete, ready for polish & growth prep
+**Strategy:** Frontend first → Features → Backend optimization → Launch
 
 ---
 
-## 📅 WEEK 1-2: Foundation & Polish (Mai 1-15)
+## 🎨 PHASE 1: Frontend Polish (Weeks 1-3)
 
-### Week 1: Technical Excellence
-**Goal:** Bulletproof stability & performance
+**Obiectiv:** Produsul arată PERFECT vizual, fără bugs UX
 
-- [ ] **Security hardening** (2h)
-  - Rate limiting all API routes
-  - Input sanitization everywhere
-  - SQL injection prevention audit
-  - XSS protection check
+### Week 1: UI Consistency & Details
+**Focus:** Fiecare pixel la locul lui
 
-- [ ] **Error handling** (3h)
-  - Sentry integration
-  - Custom error pages (404, 500, 403)
-  - User-friendly error messages
-  - API error standardization
+**Design system cleanup (2-3h):**
+- [ ] Audit toate spacing-urile (8px, 16px, 24px, 32px grid)
+- [ ] Consistență butoane (height, padding, border-radius)
+- [ ] Typography scale unificat (14px, 16px, 18px, 24px, 32px)
+- [ ] Color palette finalizat (primary, secondary, success, error)
 
-- [ ] **Performance optimization** (4h)
-  - Implement lazy CDN loading (already created utilities)
-  - Add image optimization
-  - Database query optimization
-  - Redis caching for API endpoints
+**Micro-interactions (3-4h):**
+- [ ] Hover states pe toate elementele interactive
+- [ ] Focus states pentru keyboard navigation
+- [ ] Button loading spinners (disable + spinner)
+- [ ] Toast notifications polish (success/error/info)
+- [ ] Smooth transitions (200-300ms) pe show/hide
 
-- [ ] **Testing infrastructure** (3h)
-  - Unit tests for critical functions
-  - E2E tests for main flows
-  - Load testing (100 concurrent users)
+**Empty states (2h):**
+- [ ] "No quizzes yet" → CTA "Create first quiz"
+- [ ] "No friends" → CTA "Invite friends"
+- [ ] "No learning paths" → CTA "Start learning"
+- [ ] "No history" → explanation + CTA
 
-**Deliverable:** Rock-solid technical foundation
+**Deliverable:** UI care arată ca un produs premium 💎
 
 ---
 
-### Week 2: UI/UX Polish
-**Goal:** Every pixel perfect
+### Week 2: Responsive & Mobile Perfect
+**Focus:** Funcționează perfect pe orice device
 
-- [ ] **Visual consistency** (4h)
-  - Audit all spacing/sizing
-  - Consistent button styles
-  - Unified color system
-  - Typography refinement
+**Mobile optimization (4-5h):**
+- [ ] Test pe iPhone SE (375px) - cel mai mic
+- [ ] Test pe iPad (768px, 1024px)
+- [ ] Touch targets minimum 44x44px
+- [ ] Thumb-friendly navigation
+- [ ] No horizontal scroll (overflow-x: hidden check)
 
-- [ ] **Micro-interactions** (3h)
-  - Button hover states
-  - Loading animations
-  - Success/error feedback
-  - Smooth transitions everywhere
+**Tablet layout (2h):**
+- [ ] Dashboard layout la 768-1024px
+- [ ] Arena/Lobby responsive grid
+- [ ] Forms stack properly
 
-- [ ] **Responsive perfection** (3h)
-  - Test all pages on 5+ devices
-  - Fix any layout issues
-  - Touch targets minimum 44px
-  - Horizontal scroll elimination
+**Desktop large screens (1h):**
+- [ ] Max-width constraints (nu se întinde la infinit pe 4K)
+- [ ] Content centered și readable
 
-- [ ] **Accessibility** (2h)
-  - Keyboard navigation complete
-  - ARIA labels where needed
-  - Color contrast WCAG AA compliant
-  - Screen reader testing
+**Cross-browser (2h):**
+- [ ] Chrome (principal)
+- [ ] Safari (iOS, macOS) - webkit fixes
+- [ ] Firefox - fallbacks
+- [ ] Edge - teste basic
 
-**Deliverable:** Beautiful, accessible, responsive UI
+**Deliverable:** Perfect pe orice device 📱💻
 
 ---
 
-## 📅 WEEK 3-4: Features & Content (Mai 16-31)
+### Week 3: Animations & Polish
+**Focus:** Wow factor
 
-### Week 3: Feature Enhancements
-**Goal:** Make product irresistible
+**Loading states (3h):**
+- [ ] Replace all spinners cu skeleton loaders
+- [ ] Dashboard: skeleton cards
+- [ ] Lessons: skeleton list
+- [ ] Arena: skeleton player cards
+- [ ] Progress bars animated (smooth fill)
 
-- [ ] **Onboarding experience** (4h)
-  - Welcome modal for new users
-  - Interactive tutorial (first quiz)
-  - Progress checklist
-  - Feature discovery tooltips
+**Page transitions (2h):**
+- [ ] Fade in pe page load
+- [ ] Smooth scroll behavior
+- [ ] Modal animations (scale + fade)
+- [ ] Slide transitions pentru multi-step forms
 
-- [ ] **Social features** (3h)
-  - Improved friend system
-  - Activity feed
-  - Share quiz results
-  - Leaderboards expansion
+**Success animations (2h):**
+- [ ] Confetti pe quiz complete (already have)
+- [ ] Checkmark animation pe task complete
+- [ ] Points gained animation (+10, +20)
+- [ ] Level up celebration
 
-- [ ] **Learning path improvements** (4h)
-  - Better AI content generation
-  - More interactive elements
-  - Progress tracking enhanced
-  - Spaced repetition system
+**Error handling polish (1h):**
+- [ ] Inline form errors (red + icon)
+- [ ] Helpful error messages (not technical)
+- [ ] Retry buttons unde e cazul
 
-- [ ] **Quiz variety** (3h)
-  - New question types
-  - Difficulty adaptation
-  - Topic recommendations
-  - Custom quiz templates
-
-**Deliverable:** Feature-complete product
+**Deliverable:** Produsul "se simte" premium ✨
 
 ---
 
-### Week 4: Content & SEO
-**Goal:** Discoverable & valuable
+## 🚀 PHASE 2: Features & Content (Weeks 4-5)
 
-- [ ] **Legal & policies** (2h)
-  - Privacy policy
-  - Terms of service
-  - Cookie policy
-  - GDPR compliance
+**Obiectiv:** Feature-complete, content-rich
 
-- [ ] **SEO foundation** (4h)
-  - Meta tags all pages
-  - Open Graph images
-  - Structured data (JSON-LD)
-  - Sitemap + robots.txt
+### Week 4: User Experience Features
+**Focus:** Facilități pentru useri
 
-- [ ] **Blog setup** (4h)
-  - 5 SEO-optimized articles:
-    1. "10 Study Techniques Backed by Science"
-    2. "How to Create Effective Flashcards"
-    3. "AI in Education: The Future of Learning"
-    4. "Group Study vs Solo: What Works Better?"
-    5. "Spaced Repetition: Learn Faster & Remember Longer"
+**Onboarding (3-4h):**
+- [ ] Welcome modal la first login
+- [ ] Feature tour (tooltips) - 5 key features
+- [ ] First quiz creation tutorial (step-by-step)
+- [ ] Progress checklist: ☐ Create quiz ☐ Invite friend ☐ Join arena
 
-- [ ] **Help center** (3h)
-  - FAQ page (20+ questions)
-  - How-to guides
-  - Video tutorials (screen recordings)
-  - Troubleshooting docs
+**Improved navigation (2h):**
+- [ ] Breadcrumbs unde e cazul
+- [ ] Back buttons consistente
+- [ ] "Recent" quick access (recent quizzes, paths)
+- [ ] Search functionality (lessons, quizzes)
 
-**Deliverable:** Content-rich, SEO-ready site
+**Social enhancements (3h):**
+- [ ] Friend activity feed
+- [ ] Recent games with friends
+- [ ] Quick invite buttons (most active friends)
+- [ ] Share quiz results (Twitter, copy link)
 
----
+**Quality of life (2h):**
+- [ ] Remember last settings (quiz difficulty, etc)
+- [ ] Keyboard shortcuts (? pentru help)
+- [ ] Dark mode persistence (localStorage)
+- [ ] Auto-save drafts
 
-## 📅 WEEK 5-6: Growth Preparation (Iunie 1-15)
-
-### Week 5: Email & Retention
-**Goal:** Keep users engaged
-
-- [ ] **Email system complete** (4h)
-  - Welcome sequence (3 emails)
-  - Weekly tips & tricks
-  - Re-engagement for inactive users
-  - Premium upgrade drip campaign
-
-- [ ] **Analytics deep dive** (3h)
-  - Event tracking (20+ events)
-  - Conversion funnels
-  - User behavior analysis
-  - A/B test infrastructure
-
-- [ ] **Referral system** (4h)
-  - Invite friends → get rewards
-  - Shareable quiz links
-  - Social media integration
-  - Viral loop optimization
-
-- [ ] **Gamification** (3h)
-  - Achievement system
-  - Badges & rewards
-  - Streak tracking
-  - Level progression
-
-**Deliverable:** Growth-ready platform
+**Deliverable:** Smooth user experience 🎯
 
 ---
 
-### Week 6: Beta Testing
-**Goal:** Real user feedback
+### Week 5: Content & SEO Foundation
+**Focus:** Discoverability
 
-- [ ] **Beta program setup** (2h)
-  - Recruit 20-30 beta testers
-  - Feedback form
-  - Bug reporting system
-  - Weekly check-ins
+**Legal pages (2h):**
+- [ ] Privacy Policy (use generator + customize)
+- [ ] Terms of Service
+- [ ] Cookie Policy (dacă ai cookies)
+- [ ] Footer links pe toate paginile
 
-- [ ] **User interviews** (6h)
-  - 10 user interviews (30min each)
-  - Identify pain points
-  - Feature requests
-  - Use case discovery
+**SEO basics (3h):**
+- [ ] Meta tags pe TOATE paginile:
+  ```html
+  <meta name="description" content="...">
+  <meta property="og:title" content="...">
+  <meta property="og:image" content="...">
+  ```
+- [ ] Create OG image (1200x630px)
+- [ ] Favicon complete (16, 32, 180, 192)
+- [ ] robots.txt + sitemap.xml
 
-- [ ] **Iteration based on feedback** (6h)
-  - Fix reported bugs
-  - Implement quick wins
-  - Adjust confusing UI
-  - Improve onboarding
+**Help center (4h):**
+- [ ] FAQ page (15-20 questions)
+- [ ] How to create quiz guide
+- [ ] How to join arena guide
+- [ ] How to use learning paths guide
+- [ ] Troubleshooting common issues
 
-- [ ] **Performance monitoring** (2h)
-  - Real user metrics
-  - Error rate tracking
-  - Load time analysis
-  - Bottleneck identification
+**First blog posts (4-5h):**
+Write 2-3 articles pentru SEO:
+1. "10 Study Techniques That Actually Work (Science-Backed)"
+2. "How to Create Effective Study Quizzes"
+3. "Gamification in Learning: Why Competition Helps Memory"
 
-**Deliverable:** User-validated product
-
----
-
-## 📅 WEEK 7: Marketing Prep (Iunie 16-22)
-
-### Marketing Assets
-**Goal:** Launch with momentum
-
-- [ ] **Landing page optimization** (4h)
-  - A/B test headlines
-  - Social proof section
-  - Demo video (2-3min)
-  - Clear CTA placement
-
-- [ ] **Social media setup** (3h)
-  - Twitter/X account
-  - Instagram (if visual content)
-  - LinkedIn company page
-  - Post scheduler + content calendar
-
-- [ ] **Launch strategy** (3h)
-  - Product Hunt preparation
-  - Reddit communities list
-  - Facebook groups research
-  - Launch day timeline
-
-- [ ] **Press kit** (2h)
-  - Founder story
-  - Product screenshots
-  - Logo variations
-  - Media contact info
-
-- [ ] **Pricing strategy final** (2h)
-  - Competitor analysis
-  - Price testing
-  - Annual discount optimization
-  - Launch promo planning
-
-**Deliverable:** Ready to launch marketing
+**Deliverable:** Content foundation pentru organic growth 📝
 
 ---
 
-## 📅 WEEK 8: Launch Week! (Iunie 23-30)
+## 🧪 PHASE 3: Beta Testing & Iteration (Week 6)
 
-### Pre-Launch (Monday-Wednesday)
-- [ ] Final testing (all flows)
-- [ ] Database backup
-- [ ] Monitoring setup
-- [ ] Support channels ready
-- [ ] Email beta testers (heads up)
+**Obiectiv:** Feedback real, quick fixes
 
-### Launch Day (Thursday)
-- [ ] **Morning:**
-  - Deploy final version
-  - Switch Stripe to live mode
-  - Final smoke tests
-  - Monitoring dashboard open
+### Week 6: Beta Program
+**Focus:** Real users, real feedback
 
-- [ ] **Launch:**
-  - Product Hunt submission
-  - Social media announcements
-  - Email list (if any)
-  - Reddit posts (5+ communities)
-  - Discord/Slack shares
+**Beta setup (1h):**
+- [ ] Recruit 20-30 beta testers (prieteni, facultate, Reddit)
+- [ ] Create feedback form (Google Forms / Typeform)
+- [ ] Setup Discord/Slack for beta communication
+- [ ] Onboarding instructions for beta testers
 
-- [ ] **Evening:**
-  - Monitor first users closely
-  - Fix any critical bugs
-  - Respond to feedback
-  - Celebrate! 🎉
+**Testing focus areas (give to beta testers):**
+- [ ] First-time user experience
+- [ ] Quiz creation flow
+- [ ] Arena multiplayer
+- [ ] Learning paths
+- [ ] Mobile experience
+- [ ] Any confusing UI
 
-### Post-Launch (Friday-Sunday)
-- [ ] Daily monitoring
-- [ ] User support
-- [ ] Collect feedback
-- [ ] Quick bug fixes
+**User interviews (6h total):**
+- [ ] 10 interviews x 30min each
+- [ ] Record pain points
+- [ ] Note feature requests
+- [ ] Identify most loved features
+
+**Quick wins implementation (8-10h):**
+- [ ] Fix top 5 bugs reported
+- [ ] Implement 2-3 small feature requests
+- [ ] Improve 3 most confusing UX flows
+- [ ] Polish based on feedback
+
+**Deliverable:** Product validated by real users ✅
+
+---
+
+## ⚙️ PHASE 4: Backend & Performance (Week 7)
+
+**Obiectiv:** Rapid, stabil, scalabil
+
+### Week 7: Backend Optimization
+**Focus:** Acum optimizezi cu date reale de la beta
+
+**Performance (3-4h):**
+- [ ] Implement lazy CDN loading (utilities already created)
+- [ ] Add Redis caching:
+  - Room data (5s cache)
+  - Leaderboards (10s cache)
+  - User profiles (5min cache)
+- [ ] Image optimization (compress, WebP)
+- [ ] Measure improvement (Lighthouse before/after)
+
+**Database optimization (2h):**
+Run în Supabase:
+```sql
+-- Based on real query patterns from beta
+CREATE INDEX idx_rooms_status_created ON rooms(status, created_at DESC);
+CREATE INDEX idx_players_user_id ON players(user_id) WHERE user_id IS NOT NULL;
+CREATE INDEX idx_learning_units_user_path ON learning_units(user_id, path_id);
+CREATE INDEX idx_user_progress_user_concept ON user_progress(user_id, concept_id);
+```
+
+**Security (2h):**
+- [ ] Rate limiting (express-rate-limit)
+  - 100 requests/15min per IP
+  - 20 quiz creations/hour per user
+- [ ] Input sanitization audit
+- [ ] SQL injection check (Supabase RLS protects, dar verify)
+
+**Monitoring & errors (2h):**
+- [ ] Sentry.io setup pentru error tracking
+- [ ] Custom error pages (404, 500)
+- [ ] API response time monitoring
+- [ ] Database query logging
+
+**Email system (2-3h):**
+- [ ] Resend.com setup (3000 free/month)
+- [ ] Welcome email template
+- [ ] Password reset functional
+- [ ] Premium upgrade confirmation
+
+**Deliverable:** Backend solid pentru launch 🏗️
+
+---
+
+## 🚀 PHASE 5: Launch Prep & Go Live (Week 8)
+
+**Obiectiv:** LANSARE! 🎉
+
+### Week 8: Launch Week!
+
+**Pre-launch Monday-Tuesday (4h):**
+- [ ] Final smoke tests (all critical flows)
+- [ ] Database backup strategy
+- [ ] Rollback plan documented
+- [ ] Monitoring dashboards ready:
+  - Railway logs
+  - Sentry errors
+  - Plausible analytics
+
+**Marketing prep (3h):**
+- [ ] Product Hunt draft (title, tagline, images)
+- [ ] Social media posts drafted
+- [ ] Reddit posts prepared (5+ communities)
+- [ ] Email beta testers (launch announcement)
+
+**Launch Day Wednesday! (full day monitoring):**
+
+**Morning:**
+- [ ] Deploy final version to Railway
+- [ ] Switch Stripe to LIVE mode
+- [ ] Final tests on production
+- [ ] All team available
+
+**11am:** Product Hunt launch
+- [ ] Submit to Product Hunt
+- [ ] Post on Twitter/X
+- [ ] Post on Reddit (r/SideProject, r/productivity, etc)
+- [ ] LinkedIn announcement
+- [ ] Email list if you have
+
+**Afternoon:** Monitor & respond
+- [ ] Watch first signups closely
+- [ ] Respond to PH comments
+- [ ] Fix any critical bugs immediately
+- [ ] User support on high alert
+
+**Evening:** Celebrate! 🎉
+- [ ] Review metrics
 - [ ] Thank beta testers
+- [ ] Plan next day
 
-**Deliverable:** LAUNCHED! 🚀
+**Thursday-Friday: Post-launch:**
+- [ ] Continue monitoring
+- [ ] Quick bug fixes
+- [ ] Respond to all feedback
+- [ ] Start collecting testimonials
 
----
-
-## 🎯 Key Milestones
-
-**Week 2:** Technical foundation complete  
-**Week 4:** All features ready  
-**Week 6:** Beta testing done  
-**Week 8:** PUBLIC LAUNCH! 🚀
+**Deliverable:** LIVE PRODUCT! 🚀
 
 ---
 
-## 💰 Budget Recommendations (if available)
-
-**Essential:**
-- Sentry (free tier OK)
-- Plausible Analytics ($9/month)
-- Resend email ($0-20/month)
-- Domain (.com if not already) ($12/year)
-
-**Nice to have:**
-- Figma Pro for design ($12/month)
-- Notion for docs ($10/month)
-- Better logo/branding ($50-200 one-time)
-
-**Total:** ~$30-50/month operational
-
----
-
-## 🧪 Testing Schedule
-
-**Ongoing (Weekly):**
-- [ ] All main flows (30min/week)
-- [ ] New features (when added)
-- [ ] Performance check (Lighthouse)
-- [ ] Security scan
-
-**Pre-Launch (Week 8):**
-- [ ] Full regression test
-- [ ] Cross-browser (Chrome, Safari, Firefox)
-- [ ] Mobile devices (iOS, Android)
-- [ ] Slow connection (3G throttle)
-- [ ] Edge cases
-
----
-
-## 📊 Success Metrics (Track from Beta)
+## 📊 What to Track From Day 1
 
 **Acquisition:**
-- Sign-ups per day
-- Traffic sources
-- Conversion rate (visitor → sign up)
+- Daily signups
+- Traffic sources (PH, Reddit, organic, direct)
+- Conversion rate (visit → signup)
 
 **Activation:**
-- First quiz created (%)
-- Tutorial completion (%)
+- % who create first quiz
+- % who complete tutorial
 - Time to first value
 
 **Retention:**
-- D1, D7, D30 retention
+- Day 1, 7, 30 retention
 - Quiz creation frequency
 - Average session duration
 
-**Revenue:**
-- Free → Paid conversion (target: 2-5%)
-- MRR growth
-- Churn rate (target: <5%)
-
-**Referral:**
-- Invite sent per user
-- Invite acceptance rate
-- Viral coefficient
+**Revenue (if applicable):**
+- Free → paid conversion
+- MRR (Monthly Recurring Revenue)
+- Churn rate
 
 ---
 
-## 🎨 Nice-to-Have Features (If time permits)
+## 🎯 Weekly Priorities Summary
 
-**Priority ranking:**
-1. **PWA** (install as app) — High impact
-2. **Dark mode refinement** — Already have toggle
-3. **Keyboard shortcuts** — Power users love
-4. **Export results** (PDF/CSV) — Premium feature
-5. **Advanced analytics** (study patterns) — Unique selling point
-6. **AI study coach** (personalized tips) — Differentiator
-7. **Team/classroom mode** — B2B potential
-8. **Integrations** (Google Classroom, Notion) — Growth
-9. **Mobile app** (React Native) — Future
+| Week | Phase | Focus | Hours |
+|------|-------|-------|-------|
+| 1 | Frontend | UI consistency & micro-interactions | 8-10h |
+| 2 | Frontend | Responsive & mobile perfect | 8-10h |
+| 3 | Frontend | Animations & polish | 8-10h |
+| 4 | Features | UX improvements & onboarding | 10-12h |
+| 5 | Content | SEO, legal, help, blog | 12-15h |
+| 6 | Beta | Testing, feedback, iteration | 15-20h |
+| 7 | Backend | Performance, security, monitoring | 10-12h |
+| 8 | Launch | Final prep & GO LIVE | 10-15h |
 
----
-
-## 🚨 Risk Mitigation
-
-**Technical:**
-- [ ] Backup strategy (daily DB snapshots)
-- [ ] Rollback plan ready
-- [ ] Rate limiting prevents abuse
-- [ ] Error monitoring catches issues
-
-**Business:**
-- [ ] Legal compliance (privacy, terms)
-- [ ] Payment security (Stripe handles)
-- [ ] User data protection (GDPR)
-- [ ] Content moderation (if UGC)
-
-**Market:**
-- [ ] Competitor monitoring
-- [ ] Unique value prop clear
-- [ ] Target audience defined
-- [ ] Pricing justified
+**Total:** ~100-120 hours spread across 8 weeks = **12-15h/week**
 
 ---
 
-## 💡 Pro Tips for Next 2 Months
+## 💡 Why This Order Works
 
-1. **Ship early, iterate fast** — Get beta users ASAP (Week 5-6)
-2. **Build in public** — Share progress on Twitter/LinkedIn
-3. **Talk to users** — 1 user interview = 10 guesses
-4. **Focus on one thing** — Be the BEST at multiplayer study
-5. **Document everything** — Future you will thank you
-6. **Celebrate small wins** — Momentum matters
-
----
-
-## 📞 Weekly Check-ins (Self or with team)
-
-**Every Monday:**
-- What shipped last week?
-- What's blocking us?
-- Top 3 priorities this week
-- Any user feedback?
-
-**Every Friday:**
-- Wins this week?
-- Lessons learned?
-- Next week preview
-- Health check (burnout prevention)
+✅ **Frontend first** = userii văd progres vizibil  
+✅ **Features early** = beta testers au ce testa  
+✅ **Content mid-way** = SEO începe să lucreze  
+✅ **Backend la final** = optimizezi cu date reale  
+✅ **Launch prepared** = confident că totul funcționează  
 
 ---
 
-**You've got this! 🚀**
+## 🚨 Red Flags to Watch
 
-Timeline is realistic, scope is achievable, product will be AMAZING.
+**During frontend (W1-3):**
+- Dacă ceva e prea greu de implementat → simplify UI
+- Dacă animația e laggy → remove, nu complica
 
-Baftă la facultate azi, continuăm diseară! 💪
+**During beta (W6):**
+- Zero signups → need better copy/value prop
+- High churn → onboarding e confusing
+- Bugs everywhere → extend testing 1 week
+
+**During backend (W7):**
+- Slow queries → investigate, optimize
+- High error rate → fix before launch
+- Server costs high → optimize early
+
+---
+
+## 🎁 Nice-to-Have (If you have time)
+
+**By priority:**
+1. PWA manifest (install as app) - 1h
+2. Keyboard shortcuts - 2h
+3. Export results (PDF) - 3h
+4. Advanced analytics - 4h
+5. Mobile app (later) - weeks
+
+---
+
+## 🎓 Perfect for Your Schedule
+
+**Facultate + ProiectE:**
+- **Luni-Joi:** 2-3h/evening = 8-12h
+- **Weekend:** 5-6h = 10-12h
+- **Total:** ~20h/week = enough pentru 2 săptămâni roadmap/săptămână
+
+---
+
+**This timeline is REALISTIC and ACHIEVABLE! 💪**
+
+Focus pe ce văd userii → validează cu beta → optimizează backendül → lansează cu încredere! 🚀
