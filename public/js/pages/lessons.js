@@ -2,7 +2,8 @@ import { installFeedback, showToast, showLoadingOverlay, updateLoadingOverlay, h
 import { installThemeToggle } from "../shared/theme.js";
 import { initHeader, nav } from "../shared/nav.js";
 import { state } from "../shared/state.js";
-import { saveLessonToStorage, getLessonsFromStorage, updateLessonProgress, deleteLessonFromStorage } from "../shared/lessonStorage.js";
+import { saveLessonToStorage, getLessonsFromStorage, updateLessonProgress, deleteLessonFromStorage, renameLesson, moveLessonToCategory } from "../shared/lessonStorage.js";
+import { getCategories, showCategoryManagerModal, showCategorySelector } from "../features/categoryManager.js";
 import {
   renderChallenge,
   renderResultPhase
@@ -219,7 +220,8 @@ window.showMyLessons = showMyLessons;
 
 async function renderMyLessons() {
   cachedLessons = await getLessonsFromStorage(currentUser?.id);
-  const grid    = el("lessonCardsGrid");
+  const categories = await getCategories(currentUser?.id);
+  const grid = el("lessonCardsGrid");
   if (!grid) return;
 
   if (!cachedLessons.length) {
@@ -240,68 +242,181 @@ async function renderMyLessons() {
     return;
   }
 
-  grid.innerHTML = cachedLessons.map(entry => {
-    const { label, btnText, primary } = statusInfo(entry);
-    const score   = entry.lastQuizScore;
-    const hasPct  = score !== null && score !== undefined;
-    const color   = scoreColor(score);
-    const date    = new Date(entry.createdAt).toLocaleDateString();
+  // Group lessons by category
+  const grouped = {};
+  const uncategorized = [];
+  
+  cachedLessons.forEach(lesson => {
+    if (lesson.categoryId) {
+      if (!grouped[lesson.categoryId]) grouped[lesson.categoryId] = [];
+      grouped[lesson.categoryId].push(lesson);
+    } else {
+      uncategorized.push(lesson);
+    }
+  });
 
-    const reviewHtml = (entry.reviewTopics?.length && score !== 100 && score !== null)
-      ? `<div style="margin-top:14px;">
-           <div class="eyebrow" style="font-size:10px;margin-bottom:8px;">Topics to review</div>
-           <div class="row" style="flex-wrap:wrap;gap:6px;">
-             ${entry.reviewTopics.map(t => `<span class="pill" style="font-size:12px;border-color:var(--red);">${escapeHTML(t)}</span>`).join("")}
-           </div>
-         </div>`
-      : "";
+  // Render categories + manage button
+  let html = `
+    <div class="flex justify-between items-center mb-4">
+      <h3 style="margin:0;font-size:var(--text-lg);">My Lessons</h3>
+      <button id="manageCategoriesBtn" class="btn btn-secondary btn-sm">
+        📁 Manage Categories
+      </button>
+    </div>
+  `;
 
-    return `
-      <div class="card lesson-progress-card" style="display:flex;flex-direction:column;gap:0;">
-        <!-- Header -->
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;">
-          <div style="min-width:0;">
-            <div class="eyebrow" style="font-size:10px;">${escapeHTML(entry.language)} · ${date}</div>
-            <h3 style="margin-top:8px;font-size:18px;line-height:1.3;">${escapeHTML(entry.title)}</h3>
-          </div>
-          <span style="flex-shrink:0;padding:4px 12px;border-radius:999px;font-size:12px;font-weight:900;
-                       background:${color};color:${score === null ? "var(--text)" : "white"};
-                       border:2px solid ${color};">
-            ${escapeHTML(label)}
-          </span>
+  // Render each category
+  categories.forEach(category => {
+    const lessons = grouped[category.id] || [];
+    if (lessons.length === 0) return;
+
+    html += `
+      <div class="mb-6">
+        <div class="flex items-center gap-2 mb-3">
+          <span style="font-size:20px;">${category.icon}</span>
+          <h4 style="margin:0;font-size:var(--text-base);font-weight:900;">${escapeHTML(category.name)}</h4>
+          <span class="text-xs text-muted">(${lessons.length})</span>
         </div>
-
-        <!-- Progress bar -->
-        <div style="margin-top:16px;">
-          <div style="display:flex;justify-content:space-between;font-size:13px;font-weight:900;margin-bottom:6px;">
-            <span>Quiz score</span>
-            <span>${hasPct ? score + "%" : "—"}</span>
-          </div>
-          <div class="progress-track">
-            <div class="progress-fill" style="width:${hasPct ? score : 0}%;background:${color};transition:width .6s ease;"></div>
-          </div>
+        <div style="display:grid;gap:12px;">
+          ${lessons.map(renderLessonCard).join("")}
         </div>
+      </div>
+    `;
+  });
 
-        ${reviewHtml}
-
-        <!-- Actions -->
-        <div style="display:flex;gap:10px;margin-top:18px;flex-wrap:wrap;">
-          <button class="btn${primary ? "" : " btn-secondary"}" data-open="${escapeHTML(entry.id)}"
-                  style="flex:1;">
-            ${escapeHTML(btnText)}
-          </button>
-          <button class="btn btn-secondary" data-delete="${escapeHTML(entry.id)}"
-                  style="padding:10px 14px;" title="Delete lesson">🗑</button>
+  // Uncategorized
+  if (uncategorized.length > 0) {
+    html += `
+      <div class="mb-6">
+        <div class="flex items-center gap-2 mb-3">
+          <span style="font-size:20px;">📂</span>
+          <h4 style="margin:0;font-size:var(--text-base);font-weight:900;">Uncategorized</h4>
+          <span class="text-xs text-muted">(${uncategorized.length})</span>
         </div>
-      </div>`;
-  }).join("");
+        <div style="display:grid;gap:12px;">
+          ${uncategorized.map(renderLessonCard).join("")}
+        </div>
+      </div>
+    `;
+  }
 
-  // Event delegation
-  grid.querySelectorAll("[data-open]").forEach(btn => {
+  grid.innerHTML = html;
+
+  // Manage categories button
+  el("manageCategoriesBtn")?.addEventListener("click", () => {
+    showCategoryManagerModal(currentUser.id, renderMyLessons);
+  });
+
+  // Attach event listeners to lesson cards
+  attachLessonCardListeners();
+}
+
+function renderLessonCard(entry) {
+  const { label, btnText, primary } = statusInfo(entry);
+  const score = entry.lastQuizScore;
+  const hasPct = score !== null && score !== undefined;
+  const color = scoreColor(score);
+  const date = new Date(entry.createdAt).toLocaleDateString();
+
+  // Show AI-generated title hint if custom title is set
+  const titleHtml = entry.customTitle
+    ? `<h3 class="lesson-title" data-lesson-id="${entry.id}" style="margin-top:8px;font-size:18px;line-height:1.3;cursor:pointer;" title="Click to rename">
+         ${escapeHTML(entry.displayTitle)} ✏️
+       </h3>`
+    : `<h3 class="lesson-title" data-lesson-id="${entry.id}" style="margin-top:8px;font-size:18px;line-height:1.3;cursor:pointer;" title="Click to rename">
+         ${escapeHTML(entry.displayTitle)} ✏️
+       </h3>`;
+
+  const reviewHtml = (entry.reviewTopics?.length && score !== 100 && score !== null)
+    ? `<div style="margin-top:14px;">
+         <div class="eyebrow" style="font-size:10px;margin-bottom:8px;">Topics to review</div>
+         <div class="row" style="flex-wrap:wrap;gap:6px;">
+           ${entry.reviewTopics.map(t => `<span class="pill" style="font-size:12px;border-color:var(--red);">${escapeHTML(t)}</span>`).join("")}
+         </div>
+       </div>`
+    : "";
+
+  return `
+    <div class="card lesson-progress-card" style="display:flex;flex-direction:column;gap:0;">
+      <!-- Header -->
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;">
+        <div style="min-width:0;flex:1;">
+          <div class="eyebrow" style="font-size:10px;">${escapeHTML(entry.language)} · ${date}</div>
+          ${titleHtml}
+        </div>
+        <span style="flex-shrink:0;padding:4px 12px;border-radius:999px;font-size:12px;font-weight:900;
+                     background:${color};color:${score === null ? "var(--text)" : "white"};
+                     border:2px solid ${color};">
+          ${escapeHTML(label)}
+        </span>
+      </div>
+
+      <!-- Progress bar -->
+      <div style="margin-top:16px;">
+        <div style="display:flex;justify-content:space-between;font-size:13px;font-weight:900;margin-bottom:6px;">
+          <span>Quiz score</span>
+          <span>${hasPct ? score + "%" : "—"}</span>
+        </div>
+        <div class="progress-track">
+          <div class="progress-fill" style="width:${hasPct ? score : 0}%;background:${color};transition:width .6s ease;"></div>
+        </div>
+      </div>
+
+      ${reviewHtml}
+
+      <!-- Actions -->
+      <div style="display:flex;gap:8px;margin-top:18px;flex-wrap:wrap;">
+        <button class="btn${primary ? "" : " btn-secondary"}" data-open="${escapeHTML(entry.id)}"
+                style="flex:1;min-width:120px;">
+          ${escapeHTML(btnText)}
+        </button>
+        <button class="btn btn-secondary btn-sm" data-move="${escapeHTML(entry.id)}"
+                title="Move to category">📁</button>
+        <button class="btn btn-danger btn-sm" data-delete="${escapeHTML(entry.id)}"
+                title="Delete lesson">🗑</button>
+      </div>
+    </div>`;
+}
+
+function attachLessonCardListeners() {
+  // Open lesson
+  document.querySelectorAll("[data-open]").forEach(btn => {
     btn.addEventListener("click", () => openLesson(btn.dataset.open));
   });
 
-  grid.querySelectorAll("[data-delete]").forEach(btn => {
+  // Rename (click on title)
+  document.querySelectorAll(".lesson-title").forEach(title => {
+    title.addEventListener("click", async () => {
+      const id = title.dataset.lessonId;
+      const lesson = cachedLessons.find(l => l.id === id);
+      if (!lesson) return;
+
+      const newTitle = prompt("Rename lesson:", lesson.displayTitle);
+      if (!newTitle || newTitle === lesson.displayTitle) return;
+
+      await renameLesson(id, currentUser.id, newTitle);
+      showToast("Lesson renamed!", "success");
+      await renderMyLessons();
+    });
+  });
+
+  // Move to category
+  document.querySelectorAll("[data-move]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const id = btn.dataset.move;
+      const lesson = cachedLessons.find(l => l.id === id);
+      if (!lesson) return;
+
+      showCategorySelector(currentUser.id, lesson.categoryId, async (categoryId) => {
+        await moveLessonToCategory(id, currentUser.id, categoryId);
+        showToast("Lesson moved!", "success");
+        await renderMyLessons();
+      });
+    });
+  });
+
+  // Delete
+  document.querySelectorAll("[data-delete]").forEach(btn => {
     btn.addEventListener("click", async () => {
       await deleteLessonFromStorage(btn.dataset.delete, currentUser?.id);
       await renderMyLessons();
