@@ -164,21 +164,21 @@ export async function showCategoryManagerModal(userId, onUpdate) {
   const modal = document.createElement("div");
   modal.className = "modal-overlay";
   modal.innerHTML = `
-    <div class="modal-box" style="max-width:600px;">
+    <div class="modal-box" style="max-width:600px;max-height:80vh;display:flex;flex-direction:column;">
       <div class="modal-header">
         <h2 class="modal-title">Manage Categories</h2>
         <button class="modal-close" id="closeCategoryModal">✕</button>
       </div>
       
-      <div class="modal-body" style="max-height:400px;overflow-y:auto;">
-        <div id="categoriesList" class="flex flex-col gap-2">
+      <div class="modal-body" style="flex:1;overflow-y:auto;padding:var(--space-6);">
+        <div id="categoriesList" style="display:grid;gap:var(--space-3);">
           ${renderCategoriesList(categories)}
         </div>
       </div>
 
-      <div class="modal-footer">
-        <button id="addCategoryBtn" class="btn btn-sm">+ Add Category</button>
-        <button id="closeCategoryModalBtn" class="btn btn-secondary btn-sm">Done</button>
+      <div class="modal-footer" style="border-top:1px solid var(--paper-2);padding:var(--space-4);">
+        <button id="addCategoryBtn" class="btn">+ Add Category</button>
+        <button id="closeCategoryModalBtn" class="btn btn-secondary">Done</button>
       </div>
     </div>
   `;
@@ -235,23 +235,30 @@ export async function showCategoryManagerModal(userId, onUpdate) {
 
 function renderCategoriesList(categories) {
   if (!categories.length) {
-    return `<div class="empty-state" style="padding:var(--space-8);">
-      <div class="empty-state-icon">📚</div>
-      <p class="empty-state-title">No categories yet</p>
-      <p class="empty-state-description">Create categories to organize your lessons</p>
-    </div>`;
+    return `
+      <div style="text-align:center;padding:var(--space-12) var(--space-4);">
+        <div style="font-size:48px;opacity:0.3;margin-bottom:var(--space-4);">●</div>
+        <h3 style="font-size:var(--text-lg);font-weight:700;margin:0 0 var(--space-2);">No categories yet</h3>
+        <p style="font-size:var(--text-sm);color:var(--muted);">Create categories to organize your lessons</p>
+      </div>`;
   }
 
   return categories.map(cat => `
-    <div class="flat-card flex items-center justify-between" style="padding:var(--space-3);">
-      <div class="flex items-center gap-3">
-        <span style="font-size:24px;">${cat.icon}</span>
-        <div>
-          <div class="font-bold">${escapeHTML(cat.name)}</div>
-          <div class="text-xs text-muted">${cat.color}</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:var(--space-4);
+                background:white;border:1px solid var(--paper-2);border-radius:var(--radius-md);">
+      <div style="display:flex;align-items:center;gap:var(--space-3);flex:1;min-width:0;">
+        <div style="width:32px;height:32px;display:flex;align-items:center;justify-content:center;
+                    background:var(--paper-2);border-radius:var(--radius-sm);font-size:16px;flex-shrink:0;">
+          ${cat.icon}
+        </div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-weight:700;font-size:var(--text-base);">${escapeHTML(cat.name)}</div>
+          <div style="font-size:var(--text-xs);color:var(--muted);margin-top:2px;">${cat.color}</div>
         </div>
       </div>
-      <button class="btn btn-danger btn-sm" data-delete-category="${cat.id}">Delete</button>
+      <button class="btn btn-ghost btn-sm" data-delete-category="${cat.id}" style="color:var(--red);">
+        Delete
+      </button>
     </div>
   `).join("");
 }
