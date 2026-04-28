@@ -71,42 +71,44 @@
 
     <!-- ── LOBBY ──────────────────────────────────────────────────────────────── -->
     <section id="lobbyScreen" class="screen hidden fade">
-      <div style="display:grid;grid-template-columns:1fr;gap:20px;max-width:800px;margin:0 auto;">
-        <!-- Main info -->
-        <div class="card">
-          <div class="eyebrow">Lobby</div>
-          <div class="room-code" id="roomCodeText"></div>
-          <h2 id="roomTitleText" style="margin-top:34px;"></h2>
-          <p id="roomSummaryText" class="muted" style="margin-top:14px;"></p>
-          <div id="conceptsList" class="row" style="margin-top:20px;"></div>
+      <div class="grid-2" style="align-items:start;">
+        <!-- Left: Main info + actions -->
+        <div style="display:grid;gap:20px;">
+          <div class="card">
+            <div class="eyebrow">Lobby</div>
+            <div class="room-code" id="roomCodeText"></div>
+            <h2 id="roomTitleText" style="margin-top:34px;"></h2>
+            <p id="roomSummaryText" class="muted" style="margin-top:14px;"></p>
+            <div id="conceptsList" class="row" style="margin-top:20px;"></div>
+          </div>
+
+          <div class="card">
+            <div class="eyebrow">Actions</div>
+            <div style="display:flex;gap:12px;margin-top:16px;flex-wrap:wrap;">
+              <button id="startArenaBtn" class="btn" style="flex:1;min-width:180px;">Start challenges</button>
+              <button id="copyLinkBtn" class="btn btn-secondary" style="flex:1;min-width:180px;">Copy join link</button>
+            </div>
+            <p id="lobbyStatusText" class="status"></p>
+          </div>
         </div>
 
-        <!-- Players + QR in single row -->
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+        <!-- Right: Players + QR -->
+        <div style="display:grid;gap:20px;">
           <div class="card">
-            <div style="display:flex;justify-content:space-between;gap:12px;align-items:center;">
+            <div style="display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:16px;">
               <div class="eyebrow">Players</div>
               <span id="playerCountText" class="pill">0 joined</span>
             </div>
-            <div id="playersList" style="display:grid;gap:8px;margin-top:16px;max-height:280px;overflow-y:auto;padding-right:6px;"></div>
+            <div id="playersList" style="display:grid;gap:8px;max-height:340px;overflow-y:auto;padding-right:6px;"></div>
           </div>
 
           <div class="card">
             <div class="eyebrow">QR join</div>
-            <div style="margin-top:18px;background:white;border-radius:18px;padding:12px;width:fit-content;margin-left:auto;margin-right:auto;">
+            <div style="margin-top:18px;background:white;border-radius:18px;padding:12px;width:fit-content;margin:0 auto;">
               <canvas id="qrCanvas"></canvas>
             </div>
             <p id="joinLinkText" class="muted" style="margin-top:14px;word-break:break-all;font-size:12px;text-align:center;"></p>
           </div>
-        </div>
-
-        <!-- Action buttons -->
-        <div class="card" style="padding:16px;">
-          <div style="display:flex;gap:12px;flex-wrap:wrap;">
-            <button id="startArenaBtn" class="btn" style="flex:1;min-width:200px;">Start challenges</button>
-            <button id="copyLinkBtn" class="btn btn-secondary" style="flex:1;min-width:200px;">Copy join link</button>
-          </div>
-          <p id="lobbyStatusText" class="status"></p>
         </div>
       </div>
     </section>

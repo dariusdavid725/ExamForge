@@ -303,7 +303,7 @@ function mountArenaActionButtons(context) {
 
   const wrapper = document.createElement("div");
   wrapper.id = "efArenaActions";
-  Object.assign(wrapper.style, { position: "fixed", right: "22px", bottom: "22px", zIndex: "60",
+  Object.assign(wrapper.style, { position: "fixed", right: "22px", bottom: "90px", zIndex: "110",
     display: "flex", gap: "10px", alignItems: "center", flexWrap: "wrap", justifyContent: "flex-end",
     maxWidth: "calc(100vw - 44px)" });
 
