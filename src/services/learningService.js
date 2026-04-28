@@ -1,4 +1,4 @@
-import { createClient } from "@getSupabase()/getSupabase()-js";
+import { createClient } from "@supabase/supabase-js";
 import OpenAI from "openai";
 
 function getSupabase() {

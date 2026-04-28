@@ -1,5 +1,5 @@
 import express from "express";
-import { createClient } from "@getSupabase()/getSupabase()-js";
+import { createClient } from "@supabase/supabase-js";
 import {
   chunkMaterial,
   extractConceptsAndDependencies,

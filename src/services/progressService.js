@@ -1,4 +1,4 @@
-import { createClient } from "@getSupabase()/getSupabase()-js";
+import { createClient } from "@supabase/supabase-js";
 
 function getSupabase() {
   return createClient(
