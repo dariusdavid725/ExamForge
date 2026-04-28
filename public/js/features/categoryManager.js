@@ -68,6 +68,96 @@ export async function deleteCategory(id, userId) {
 
 // ─── UI: Category Manager Modal ────────────────────────────────────────────────
 
+// ─── Input Modal ────────────────────────────────────────────────────────────
+
+export function showInputModal(title, label, onSubmit) {
+  const modal = document.createElement("div");
+  modal.className = "modal-overlay";
+  modal.innerHTML = `
+    <div class="modal-box" style="max-width:400px;">
+      <div class="modal-header">
+        <h2 class="modal-title">${escapeHTML(title)}</h2>
+        <button class="modal-close" id="closeInputModal">✕</button>
+      </div>
+      
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">${escapeHTML(label)}</label>
+          <input type="text" class="input" id="inputModalValue" autofocus />
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button id="inputModalCancel" class="btn btn-secondary">Cancel</button>
+        <button id="inputModalSubmit" class="btn">Submit</button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+
+  const input = modal.querySelector("#inputModalValue");
+  const submitBtn = modal.querySelector("#inputModalSubmit");
+  const cancelBtn = modal.querySelector("#inputModalCancel");
+  const closeBtn = modal.querySelector("#closeInputModal");
+
+  const close = () => document.body.removeChild(modal);
+
+  submitBtn.onclick = () => {
+    const value = input.value.trim();
+    close();
+    if (onSubmit) onSubmit(value);
+  };
+
+  input.onkeydown = (e) => {
+    if (e.key === "Enter") {
+      const value = input.value.trim();
+      close();
+      if (onSubmit) onSubmit(value);
+    }
+  };
+
+  cancelBtn.onclick = close;
+  closeBtn.onclick = close;
+  input.focus();
+}
+
+// ─── Confirm Modal ──────────────────────────────────────────────────────────
+
+export function showConfirmModal(title, message, onConfirm) {
+  const modal = document.createElement("div");
+  modal.className = "modal-overlay";
+  modal.innerHTML = `
+    <div class="modal-box" style="max-width:400px;">
+      <div class="modal-header">
+        <h2 class="modal-title">${escapeHTML(title)}</h2>
+        <button class="modal-close" id="closeConfirmModal">✕</button>
+      </div>
+      
+      <div class="modal-body">
+        <p>${escapeHTML(message)}</p>
+      </div>
+
+      <div class="modal-footer">
+        <button id="confirmModalCancel" class="btn btn-secondary">Cancel</button>
+        <button id="confirmModalConfirm" class="btn btn-danger">Confirm</button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+
+  const close = () => document.body.removeChild(modal);
+
+  modal.querySelector("#confirmModalConfirm").onclick = () => {
+    close();
+    if (onConfirm) onConfirm();
+  };
+
+  modal.querySelector("#confirmModalCancel").onclick = close;
+  modal.querySelector("#closeConfirmModal").onclick = close;
+}
+
 export async function showCategoryManagerModal(userId, onUpdate) {
   const categories = await getCategories(userId);
 
@@ -219,94 +309,4 @@ function escapeHTML(str) {
   const div = document.createElement("div");
   div.textContent = str;
   return div.innerHTML;
-}
-
-// ─── Input Modal ────────────────────────────────────────────────────────────
-
-function showInputModal(title, label, onSubmit) {
-  const modal = document.createElement("div");
-  modal.className = "modal-overlay";
-  modal.innerHTML = `
-    <div class="modal-box" style="max-width:400px;">
-      <div class="modal-header">
-        <h2 class="modal-title">${escapeHTML(title)}</h2>
-        <button class="modal-close" id="closeInputModal">✕</button>
-      </div>
-      
-      <div class="modal-body">
-        <div class="form-group">
-          <label class="form-label">${escapeHTML(label)}</label>
-          <input type="text" class="input" id="inputModalValue" autofocus />
-        </div>
-      </div>
-
-      <div class="modal-footer">
-        <button id="inputModalCancel" class="btn btn-secondary">Cancel</button>
-        <button id="inputModalSubmit" class="btn">Submit</button>
-      </div>
-    </div>
-  `;
-
-  document.body.appendChild(modal);
-
-  const input = modal.querySelector("#inputModalValue");
-  const submitBtn = modal.querySelector("#inputModalSubmit");
-  const cancelBtn = modal.querySelector("#inputModalCancel");
-  const closeBtn = modal.querySelector("#closeInputModal");
-
-  const close = () => document.body.removeChild(modal);
-
-  submitBtn.onclick = () => {
-    const value = input.value.trim();
-    close();
-    if (onSubmit) onSubmit(value);
-  };
-
-  input.onkeydown = (e) => {
-    if (e.key === "Enter") {
-      const value = input.value.trim();
-      close();
-      if (onSubmit) onSubmit(value);
-    }
-  };
-
-  cancelBtn.onclick = close;
-  closeBtn.onclick = close;
-  input.focus();
-}
-
-// ─── Confirm Modal ──────────────────────────────────────────────────────────
-
-function showConfirmModal(title, message, onConfirm) {
-  const modal = document.createElement("div");
-  modal.className = "modal-overlay";
-  modal.innerHTML = `
-    <div class="modal-box" style="max-width:400px;">
-      <div class="modal-header">
-        <h2 class="modal-title">${escapeHTML(title)}</h2>
-        <button class="modal-close" id="closeConfirmModal">✕</button>
-      </div>
-      
-      <div class="modal-body">
-        <p>${escapeHTML(message)}</p>
-      </div>
-
-      <div class="modal-footer">
-        <button id="confirmModalCancel" class="btn btn-secondary">Cancel</button>
-        <button id="confirmModalConfirm" class="btn btn-danger">Confirm</button>
-      </div>
-    </div>
-  `;
-
-  document.body.appendChild(modal);
-
-  const close = () => document.body.removeChild(modal);
-
-  modal.querySelector("#confirmModalConfirm").onclick = () => {
-    close();
-    if (onConfirm) onConfirm();
-  };
-
-  modal.querySelector("#confirmModalCancel").onclick = close;
-  modal.querySelector("#closeConfirmModal").onclick = close;
 }

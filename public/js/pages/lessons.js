@@ -3,7 +3,7 @@ import { installThemeToggle } from "../shared/theme.js";
 import { initHeader, nav } from "../shared/nav.js";
 import { state } from "../shared/state.js";
 import { saveLessonToStorage, getLessonsFromStorage, updateLessonProgress, deleteLessonFromStorage, renameLesson, moveLessonToCategory } from "../shared/lessonStorage.js";
-import { getCategories, showCategoryManagerModal, showCategorySelector } from "../features/categoryManager.js";
+import { getCategories, showCategoryManagerModal, showCategorySelector, showInputModal, showConfirmModal } from "../features/categoryManager.js";
 import {
   renderChallenge,
   renderResultPhase
@@ -476,12 +476,12 @@ function attachLessonCardListeners() {
       const lesson = cachedLessons.find(l => l.id === id);
       if (!lesson) return;
 
-      const newTitle = prompt("Rename lesson:", lesson.displayTitle);
-      if (!newTitle || newTitle === lesson.displayTitle) return;
-
-      await renameLesson(id, currentUser.id, newTitle);
-      showToast("Lesson renamed!", "success");
-      await renderMyLessons();
+      showInputModal("Rename Lesson", "New name:", async (newTitle) => {
+        if (!newTitle || newTitle === lesson.displayTitle) return;
+        await renameLesson(id, currentUser.id, newTitle);
+        showToast("Lesson renamed!", "success");
+        await renderMyLessons();
+      });
     });
   });
 
