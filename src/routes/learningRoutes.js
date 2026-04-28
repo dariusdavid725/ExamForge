@@ -10,6 +10,7 @@ import {
   getConceptMasteryWithPrerequisites
 } from "../services/learningService.js";
 import { extractTextFromFile } from "../services/documentService.js";
+import { generateLessonTitle, suggestCategory } from "../services/titleGenerator.js";
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
@@ -41,11 +42,24 @@ router.post("/process-material", async (req, res) => {
       return res.status(400).json({ error: "Failed to process material" });
     }
 
-    // Step 2: Store units in database
-    console.log("Storing learning units...");
-    const storedUnits = await storeLearningUnits(userId, units, documentName, sourceType);
+    // Step 2: Generate AI title for the learning path
+    const pathTitle = await generateLessonTitle({ sections: units }, documentText).catch(() => documentName);
+    
+    // Get user's categories for suggestion
+    const { data: categories } = await supabase
+      .from('lesson_categories')
+      .select('id, name')
+      .eq('user_id', userId);
+    
+    const suggestedCategoryId = categories && categories.length > 0
+      ? await suggestCategory({ sections: units }, categories).catch(() => null)
+      : null;
 
-    // Step 3: Store concepts (if any were extracted)
+    // Step 3: Store units in database with auto_title and category
+    console.log("Storing learning units...");
+    const storedUnits = await storeLearningUnits(userId, units, documentName, sourceType, pathTitle, suggestedCategoryId);
+
+    // Step 4: Store concepts (if any were extracted)
     if (concepts.length > 0) {
       console.log("Storing concepts...");
       const conceptsData = {

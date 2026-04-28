@@ -321,7 +321,7 @@ Focus on concepts that are truly foundational vs advanced.`;
 /**
  * Store learning units and concepts in database
  */
-export async function storeLearningUnits(userId, units, sourceName, sourceType) {
+export async function storeLearningUnits(userId, units, sourceName, sourceType, autoTitle = null, categoryId = null) {
   try {
     // Store units
     const unitsToInsert = units.map((unit, index) => ({
@@ -333,7 +333,9 @@ export async function storeLearningUnits(userId, units, sourceName, sourceType) 
       concepts: JSON.stringify(unit.concepts || []),
       difficulty_level: unit.difficultyLevel || 3,
       estimated_time_minutes: unit.estimatedMinutes || 15,
-      sequence_order: index
+      sequence_order: index,
+      auto_title: autoTitle || sourceName,
+      category_id: categoryId
     }));
 
     const { data: insertedUnits, error: unitsError } = await supabase
