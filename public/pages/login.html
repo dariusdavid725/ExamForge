@@ -24,8 +24,10 @@
   <main class="container">
     <div style="max-width:480px;margin:0 auto;padding-top:40px;">
       <div class="card">
-        <h2 style="margin-bottom:4px;">Welcome to ExamForge</h2>
-        <p class="muted" style="margin-bottom:24px;">Sign in to create and track your study arenas.</p>
+        <div class="card-header">
+          <h2 class="card-title">Welcome to ExamForge</h2>
+          <p class="card-description">Sign in to create and track your study arenas.</p>
+        </div>
 
         <div class="auth-tabs">
           <button class="auth-tab auth-tab-active" id="authTabLogin">Login</button>
@@ -33,20 +35,44 @@
         </div>
 
         <!-- Login form -->
-        <div id="loginForm" style="display:grid;gap:14px;margin-top:20px;">
-          <input id="loginEmail"    class="input" type="email"    placeholder="Email" />
-          <input id="loginPassword" class="input" type="password" placeholder="Password" />
-          <button id="loginBtn" class="btn" style="width:100%;">Login</button>
-          <p id="loginError" class="muted" style="color:var(--red);font-size:13px;"></p>
+        <div id="loginForm" class="mt-6">
+          <div class="form-group">
+            <label class="form-label required" for="loginEmail">Email Address</label>
+            <input id="loginEmail" class="input" type="email" placeholder="you@example.com" autocomplete="email" />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label required" for="loginPassword">Password</label>
+            <input id="loginPassword" class="input" type="password" placeholder="Enter your password" autocomplete="current-password" />
+          </div>
+
+          <button id="loginBtn" class="btn w-full">Login</button>
+          
+          <div id="loginError" style="display:none;"></div>
         </div>
 
         <!-- Register form -->
-        <div id="registerForm" class="hidden" style="display:grid;gap:14px;margin-top:20px;">
-          <input id="registerUsername" class="input" type="text"     placeholder="Username (unique)" />
-          <input id="registerEmail"    class="input" type="email"    placeholder="Email" />
-          <input id="registerPassword" class="input" type="password" placeholder="Password (min 6 chars)" />
-          <button id="registerBtn" class="btn" style="width:100%;">Create account</button>
-          <p id="registerError" class="muted" style="color:var(--red);font-size:13px;"></p>
+        <div id="registerForm" class="hidden mt-6">
+          <div class="form-group">
+            <label class="form-label required" for="registerUsername">Username</label>
+            <input id="registerUsername" class="input" type="text" placeholder="Choose a unique username" autocomplete="username" />
+            <span class="form-hint">This will be visible to other players</span>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label required" for="registerEmail">Email Address</label>
+            <input id="registerEmail" class="input" type="email" placeholder="you@example.com" autocomplete="email" />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label required" for="registerPassword">Password</label>
+            <input id="registerPassword" class="input" type="password" placeholder="At least 6 characters" autocomplete="new-password" />
+            <span class="form-hint">Minimum 6 characters</span>
+          </div>
+
+          <button id="registerBtn" class="btn w-full">Create Account</button>
+          
+          <div id="registerError" style="display:none;"></div>
         </div>
       </div>
     </div>

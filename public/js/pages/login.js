@@ -28,7 +28,7 @@ function setupTabs() {
     registerTab?.classList.remove("auth-tab-active");
     loginForm?.classList.remove("hidden");
     registerForm?.classList.add("hidden");
-    document.getElementById("loginError").textContent = "";
+    clearError("loginError");
   });
 
   registerTab?.addEventListener("click", () => {
@@ -36,8 +36,23 @@ function setupTabs() {
     loginTab?.classList.remove("auth-tab-active");
     registerForm?.classList.remove("hidden");
     loginForm?.classList.add("hidden");
-    document.getElementById("registerError").textContent = "";
+    clearError("registerError");
   });
+}
+
+function showError(elementId, message) {
+  const errorEl = document.getElementById(elementId);
+  if (!errorEl) return;
+  errorEl.className = "form-error mt-4";
+  errorEl.textContent = message;
+  errorEl.style.display = "flex";
+}
+
+function clearError(elementId) {
+  const errorEl = document.getElementById(elementId);
+  if (!errorEl) return;
+  errorEl.style.display = "none";
+  errorEl.textContent = "";
 }
 
 function setupForms() {
@@ -50,24 +65,28 @@ function setupForms() {
 async function handleLogin() {
   const email    = document.getElementById("loginEmail").value.trim();
   const password = document.getElementById("loginPassword").value;
-  const errorEl  = document.getElementById("loginError");
   const btn      = document.getElementById("loginBtn");
 
-  if (!email || !password) { errorEl.textContent = "Enter your email and password."; return; }
+  if (!email || !password) { 
+    showError("loginError", "Please enter your email and password.");
+    return;
+  }
 
-  errorEl.textContent = "";
+  clearError("loginError");
+  btn.classList.add("btn-loading");
   btn.textContent = "Logging in...";
   btn.disabled    = true;
 
   try {
     await login(email, password);
-    showToast("Logged in.", "success");
+    showToast("Logged in successfully!", "success");
     nav.dashboard();
   } catch (err) {
-    errorEl.textContent = err.message || "Login failed.";
+    showError("loginError", err.message || "Login failed. Please check your credentials.");
     showToast(err.message || "Login failed.", "danger");
   } finally {
     btn.disabled    = false;
+    btn.classList.remove("btn-loading");
     btn.textContent = "Login";
   }
 }
@@ -76,25 +95,34 @@ async function handleRegister() {
   const username = document.getElementById("registerUsername").value.trim();
   const email    = document.getElementById("registerEmail").value.trim();
   const password = document.getElementById("registerPassword").value;
-  const errorEl  = document.getElementById("registerError");
   const btn      = document.getElementById("registerBtn");
 
-  if (!username || !email || !password) { errorEl.textContent = "All fields are required."; return; }
+  if (!username || !email || !password) { 
+    showError("registerError", "All fields are required.");
+    return;
+  }
+  
+  if (password.length < 6) {
+    showError("registerError", "Password must be at least 6 characters long.");
+    return;
+  }
 
-  errorEl.textContent = "";
+  clearError("registerError");
+  btn.classList.add("btn-loading");
   btn.textContent = "Creating account...";
   btn.disabled    = true;
 
   try {
     await register(email, password, username);
-    showToast("Account created successfully.", "success");
+    showToast("Account created successfully!", "success");
     nav.dashboard();
   } catch (err) {
-    errorEl.textContent = err.message || "Registration failed.";
+    showError("registerError", err.message || "Registration failed. Please try again.");
     showToast(err.message || "Registration failed.", "danger");
   } finally {
     btn.disabled    = false;
-    btn.textContent = "Create account";
+    btn.classList.remove("btn-loading");
+    btn.textContent = "Create Account";
   }
 }
 
