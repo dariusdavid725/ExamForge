@@ -5,18 +5,30 @@
 
 -- ─── 1. Create Categories Table ────────────────────────────────────────────────
 
+-- Create table if not exists (for new deployments)
 CREATE TABLE IF NOT EXISTS lesson_categories (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   name TEXT NOT NULL,
   color TEXT DEFAULT '#4f46e5',
   icon TEXT DEFAULT '📚',
-  sort_order INTEGER DEFAULT 0,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   
   CONSTRAINT unique_category_per_user UNIQUE(user_id, name)
 );
+
+-- Add sort_order column if it doesn't exist (for existing tables)
+DO $$ 
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_name = 'lesson_categories' 
+    AND column_name = 'sort_order'
+  ) THEN
+    ALTER TABLE lesson_categories ADD COLUMN sort_order INTEGER DEFAULT 0;
+  END IF;
+END $$;
 
 CREATE INDEX IF NOT EXISTS idx_lesson_categories_user ON lesson_categories(user_id);
 CREATE INDEX IF NOT EXISTS idx_lesson_categories_sort ON lesson_categories(user_id, sort_order);
