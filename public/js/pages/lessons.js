@@ -892,15 +892,19 @@ async function renderLearningPathsGrid() {
     
     if (!pathData.path || pathData.path.length === 0) {
       container.innerHTML = `
-        <div class="card" style="text-align:center;padding:40px;">
-          <div style="font-size:48px;margin-bottom:16px;">🧠</div>
-          <h3 style="margin:0 0 12px;">No Learning Paths Yet</h3>
-          <p class="muted" style="margin-bottom:20px;">
-            Create your first AI-powered learning path by uploading a document and clicking "Smart Learning Path"
-          </p>
-          <button onclick="document.getElementById('newLessonFromGridBtn').click()" class="btn" style="padding:12px 24px;">
-            + Create Learning Path
-          </button>
+        <div class="card">
+          <div class="empty-state">
+            <div class="empty-state-icon">🧠</div>
+            <h2 class="empty-state-title">No Learning Paths Yet</h2>
+            <p class="empty-state-description">
+              Create your first AI-powered learning path by uploading a document and clicking "Smart Learning Path". Get structured, interactive units designed for maximum learning efficiency.
+            </p>
+            <div class="empty-state-actions">
+              <button onclick="document.getElementById('newLessonFromGridBtn').click()" class="btn">
+                Create First Learning Path
+              </button>
+            </div>
+          </div>
         </div>
       `;
       return;
