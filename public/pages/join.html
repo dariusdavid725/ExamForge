@@ -34,21 +34,27 @@
     </div>
 
     <div class="card">
-      <div class="eyebrow">Player</div>
-      <p class="muted" style="margin-top:8px;">Enter the room code shared by your host to jump in.</p>
-
-      <div style="margin-top:28px;">
-        <label class="eyebrow">Room code</label>
-        <input id="joinCodeInput" class="input" style="margin-top:12px;text-transform:uppercase;letter-spacing:4px;font-size:22px;text-align:center;" placeholder="ABCDE" maxlength="5" />
+      <div class="card-header">
+        <div class="eyebrow">Player</div>
+        <p class="card-description">Enter the room code shared by your host to jump in.</p>
       </div>
 
-      <div style="margin-top:18px;">
-        <label class="eyebrow">Your nickname</label>
-        <input id="joinNameInput" class="input" style="margin-top:12px;" placeholder="e.g. Alex" />
+      <div class="form-group">
+        <label class="form-label required" for="joinCodeInput">Room Code</label>
+        <input id="joinCodeInput" class="input" 
+          style="text-transform:uppercase;letter-spacing:4px;font-size:22px;text-align:center;" 
+          placeholder="ABCDE" maxlength="5" autocomplete="off" />
+        <span class="form-hint">Enter the 5-letter code from your host</span>
       </div>
 
-      <button id="joinArenaBtn" class="btn" style="width:100%;margin-top:24px;padding:16px;">Join room</button>
-      <p id="joinStatusText" class="status"></p>
+      <div class="form-group">
+        <label class="form-label required" for="joinNameInput">Your Nickname</label>
+        <input id="joinNameInput" class="input" placeholder="e.g. Alex" autocomplete="nickname" />
+        <span class="form-hint">This name will be visible to other players</span>
+      </div>
+
+      <button id="joinArenaBtn" class="btn w-full btn-lg">Join Arena</button>
+      <div id="joinStatusText" style="display:none;"></div>
     </div>
 
   </main>
