@@ -222,21 +222,25 @@ async function renderMyLessons() {
   cachedLessons = await getLessonsFromStorage(currentUser?.id);
   const categories = await getCategories(currentUser?.id);
   const grid = el("lessonCardsGrid");
-  if (!grid) return;
+  const categoriesList = el("categoriesList");
+  const lessonsTitle = el("lessonsTitle");
+  const lessonsSubtitle = el("lessonsSubtitle");
+  
+  if (!grid || !categoriesList) return;
 
+  // Empty state
   if (!cachedLessons.length) {
     grid.innerHTML = `
-      <div class="lessons-empty">
-        <div class="empty-state-icon" style="font-size:64px;opacity:0.2;">▣</div>
+      <div class="empty-state">
+        <div class="empty-state-icon">▣</div>
         <h2 class="empty-state-title">No lessons yet</h2>
-        <p class="empty-state-description">
-          Create your first AI-powered lesson from any document or topic.
-        </p>
-        <div class="empty-state-actions mt-6">
-          <button id="firstLessonBtn" class="btn btn-lg">Create Lesson</button>
-        </div>
+        <p class="empty-state-text">Create your first AI-powered lesson from any document or topic.</p>
+        <button id="firstLessonBtn" class="btn">Create Lesson</button>
       </div>`;
     el("firstLessonBtn")?.addEventListener("click", () => showSection("uploadSection"));
+    categoriesList.innerHTML = '';
+    lessonsTitle.textContent = 'All Lessons';
+    lessonsSubtitle.textContent = '0 lessons';
     return;
   }
 
@@ -259,69 +263,38 @@ async function renderMyLessons() {
     categoryCounts[cat.id] = (grouped[cat.id] || []).length;
   });
 
-  // Render with sidebar layout
-  let html = `
-    <div class="lessons-container">
-      <!-- Sidebar -->
-      <div class="lessons-sidebar">
-        <div class="sidebar-header">
-          <div class="sidebar-logo">ExamForge</div>
-        </div>
-        <div class="sidebar-section">
-          <div class="sidebar-title">CATEGORIES</div>
-          <div id="categoryFilter">
-            <div class="category-item active" data-category="all">
-              <span class="category-icon">▣</span>
-              <span class="category-name">All Lessons</span>
-              <span class="category-count">${cachedLessons.length}</span>
-            </div>
-            ${categories.map(cat => {
-              const icon = getCategoryIcon(cat.name);
-              return `
-                <div class="category-item" data-category="${cat.id}">
-                  <span class="category-icon">${icon}</span>
-                  <span class="category-name">${escapeHTML(cat.name)}</span>
-                  <span class="category-count">${categoryCounts[cat.id] || 0}</span>
-                </div>
-              `;
-            }).join("")}
-            ${uncategorized.length > 0 ? `
-              <div class="category-item" data-category="uncategorized">
-                <span class="category-icon">○</span>
-                <span class="category-name">Uncategorized</span>
-                <span class="category-count">${uncategorized.length}</span>
-              </div>
-            ` : ''}
-          </div>
-          
-          <button id="manageCategoriesBtn" class="btn btn-ghost btn-sm w-full mt-4">
-            Manage
-          </button>
-        </div>
-      </div>
-
-      <!-- Main Content -->
-      <div class="lessons-main">
-        <div class="lessons-content-wrapper">
-          <div class="lessons-header">
-            <div class="lessons-header-left">
-              <h1 class="lessons-title">All Lessons</h1>
-              <div class="lessons-subtitle" id="lessonsSubtitle">${cachedLessons.length} ${cachedLessons.length === 1 ? 'lesson' : 'lessons'}</div>
-            </div>
-            <div class="lessons-actions">
-              <button id="newLessonFromGridBtn" class="btn">+ New Lesson</button>
-            </div>
-          </div>
-          
-          <div class="lessons-grid" id="lessonsGridContent">
-            ${renderLessonsForCategory('all', categories, grouped, uncategorized)}
-          </div>
-        </div>
-      </div>
-    </div>
+  // Render categories in sidebar
+  categoriesList.innerHTML = `
+    <button class="category-item active" data-category="all">
+      <span class="category-icon">▣</span>
+      <span class="category-name">All Lessons</span>
+      <span class="category-count">${cachedLessons.length}</span>
+    </button>
+    ${categories.map(cat => {
+      const icon = getCategoryIcon(cat.name);
+      return `
+        <button class="category-item" data-category="${cat.id}">
+          <span class="category-icon">${icon}</span>
+          <span class="category-name">${escapeHTML(cat.name)}</span>
+          <span class="category-count">${categoryCounts[cat.id] || 0}</span>
+        </button>
+      `;
+    }).join("")}
+    ${uncategorized.length > 0 ? `
+      <button class="category-item" data-category="uncategorized">
+        <span class="category-icon">○</span>
+        <span class="category-name">Uncategorized</span>
+        <span class="category-count">${uncategorized.length}</span>
+      </button>
+    ` : ''}
   `;
 
-  grid.innerHTML = html;
+  // Update header
+  lessonsTitle.textContent = 'All Lessons';
+  lessonsSubtitle.textContent = `${cachedLessons.length} lesson${cachedLessons.length !== 1 ? 's' : ''}`;
+
+  // Render lessons
+  grid.innerHTML = renderLessonsForCategory('all', categories, grouped, uncategorized);
 
   // Category filter
   document.querySelectorAll('[data-category]').forEach(item => {
@@ -333,8 +306,6 @@ async function renderMyLessons() {
       // Update title and subtitle
       const categoryId = item.dataset.category;
       const category = categories.find(c => c.id === categoryId);
-      const titleEl = document.querySelector('.lessons-title');
-      const subtitleEl = document.querySelector('.lessons-subtitle');
       
       let title = 'All Lessons';
       let count = cachedLessons.length;
@@ -350,12 +321,11 @@ async function renderMyLessons() {
         count = (grouped[categoryId] || []).length;
       }
       
-      titleEl.textContent = title;
-      subtitleEl.textContent = `${count} lesson${count !== 1 ? 's' : ''}`;
+      lessonsTitle.textContent = title;
+      lessonsSubtitle.textContent = `${count} lesson${count !== 1 ? 's' : ''}`;
 
       // Filter lessons
-      const gridContent = document.getElementById('lessonsGridContent');
-      gridContent.innerHTML = renderLessonsForCategory(categoryId, categories, grouped, uncategorized);
+      grid.innerHTML = renderLessonsForCategory(categoryId, categories, grouped, uncategorized);
       attachLessonCardListeners();
     });
   });
@@ -385,10 +355,10 @@ function renderLessonsForCategory(categoryId, categories, grouped, uncategorized
 
   if (lessons.length === 0) {
     return `
-      <div class="lessons-empty">
-        <div class="empty-state-icon" style="font-size:48px;opacity:0.3;">○</div>
+      <div class="empty-state">
+        <div class="empty-state-icon">○</div>
         <h3 class="empty-state-title">No lessons in this category</h3>
-        <p class="empty-state-description">Create a new lesson or move existing ones here.</p>
+        <p class="empty-state-text">Create a new lesson or move existing ones here.</p>
       </div>
     `;
   }
@@ -421,60 +391,58 @@ function renderLessonCard(entry) {
 
   return `
     <div class="lesson-card">
-      <div class="lesson-card-header">
-        <div class="lesson-card-header-left">
-          <h3 class="lesson-card-title lesson-title" data-lesson-id="${entry.id}" title="Click to rename">
+      <div class="lesson-header">
+        <div class="lesson-header-left">
+          <h3 class="lesson-title" data-lesson-id="${entry.id}" title="Click to rename">
             ${escapeHTML(entry.displayTitle)}
           </h3>
-          <div class="lesson-card-meta">
+          <div class="lesson-meta">
             <span>${escapeHTML(entry.language)}</span>
             <span>•</span>
             <span>${date}</span>
           </div>
         </div>
-        <span style="flex-shrink:0;padding:8px 16px;border-radius:20px;font-size:11px;font-weight:700;
-                     background:${color};color:${score === null ? "#111827" : "white"};
-                     text-transform:uppercase;letter-spacing:0.1em;white-space:nowrap;">
+        <span class="lesson-badge" style="background:${color};color:${score === null ? "#6a737d" : "white"};">
           ${escapeHTML(label)}
         </span>
       </div>
 
       ${hasPct ? `
-        <div class="lesson-card-progress">
-          <div class="progress-label">
-            <span>Quiz Score</span>
-            <span style="color:${color};">${score}%</span>
+        <div style="margin-bottom:12px;">
+          <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:6px;">
+            <span style="color:#6a737d;">Quiz Score</span>
+            <span style="color:${color};font-weight:600;">${score}%</span>
           </div>
-          <div class="progress-track">
-            <div class="progress-fill" style="width:${score}%;background:${color};"></div>
+          <div style="height:6px;background:#e1e4e8;border-radius:3px;overflow:hidden;">
+            <div style="height:100%;width:${score}%;background:${color};transition:width 0.3s;"></div>
           </div>
         </div>
       ` : ''}
 
       ${entry.reviewTopics?.length && score !== 100 && score !== null ? `
-        <div style="margin-bottom:20px;">
-          <div style="font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:0.1em;color:#6b7280;margin-bottom:8px;">
+        <div style="margin-bottom:12px;">
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:#6a737d;margin-bottom:6px;">
             Topics to Review
           </div>
-          <div style="display:flex;flex-wrap:wrap;gap:6px;">
+          <div style="display:flex;flex-wrap:wrap;gap:4px;">
             ${entry.reviewTopics.slice(0, 5).map(t => `
-              <span style="font-size:11px;background:rgba(255,92,92,0.1);color:#dc2626;padding:4px 10px;border-radius:12px;font-weight:600;border:1px solid rgba(255,92,92,0.2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:150px;" title="${escapeHTML(t)}">
+              <span style="font-size:10px;background:#ffebe9;color:#d73a49;padding:3px 8px;border-radius:10px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:120px;" title="${escapeHTML(t)}">
                 ${escapeHTML(t)}
               </span>
             `).join("")}
-            ${entry.reviewTopics.length > 5 ? `<span style="font-size:11px;color:#6b7280;">+${entry.reviewTopics.length - 5} more</span>` : ''}
+            ${entry.reviewTopics.length > 5 ? `<span style="font-size:10px;color:#6a737d;">+${entry.reviewTopics.length - 5} more</span>` : ''}
           </div>
         </div>
       ` : ''}
 
-      <div class="lesson-card-actions">
-        <button class="btn${primary ? "" : " btn-secondary"} btn-sm" data-open="${escapeHTML(entry.id)}" style="flex:1;min-width:120px;">
+      <div class="lesson-actions">
+        <button class="btn${primary ? "" : " btn-secondary"}" data-open="${escapeHTML(entry.id)}">
           ${escapeHTML(btnText)}
         </button>
-        <button class="btn btn-ghost btn-sm" data-move="${escapeHTML(entry.id)}" title="Move to category">
+        <button class="btn btn-ghost" data-move="${escapeHTML(entry.id)}" title="Move to category">
           Move
         </button>
-        <button class="btn btn-ghost btn-sm" data-delete="${escapeHTML(entry.id)}" title="Delete">
+        <button class="btn btn-ghost" data-delete="${escapeHTML(entry.id)}" title="Delete">
           Delete
         </button>
       </div>

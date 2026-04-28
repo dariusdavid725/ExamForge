@@ -36,29 +36,55 @@
     <!-- ══════════════════════════════════════════════════════════════════════ -->
     <!-- MY LESSONS — overview grid                                             -->
     <!-- ══════════════════════════════════════════════════════════════════════ -->
-    <div id="myLessonsSection" class="hidden">
-      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;margin-bottom:24px;">
-        <div>
-          <a href="/dashboard" class="btn btn-secondary" style="padding:10px 16px;margin-right:12px;">← Dashboard</a>
-          <h1 style="display:inline;vertical-align:middle;">My Lessons</h1>
-        </div>
-        <button id="newLessonFromGridBtn" class="btn" style="padding:12px 24px;">+ New Lesson</button>
-      </div>
+    <div id="myLessonsSection" class="hidden lessons-page-wrapper">
+      <div class="lessons-container">
+        <!-- Sidebar -->
+        <aside class="lessons-sidebar">
+          <div class="sidebar-brand">
+            <div class="sidebar-brand-text">ExamForge</div>
+          </div>
+          
+          <div class="sidebar-content">
+            <div class="sidebar-section-title">Categories</div>
+            <div class="category-list" id="categoriesList">
+              <!-- Categories rendered by JS -->
+            </div>
+          </div>
+          
+          <div class="sidebar-footer" style="display:grid;gap:8px;">
+            <button id="manageCategoriesBtn" class="btn btn-secondary btn-sm">Manage Categories</button>
+            <button id="newLessonFromGridBtn" class="btn btn-sm">+ New Lesson</button>
+          </div>
+        </aside>
 
-      <!-- Tabs for Lessons vs Learning Paths -->
-      <div class="auth-tabs" style="margin-bottom:24px;">
-        <button class="auth-tab auth-tab-active" id="tabLessons" type="button">📚 Quick Lessons</button>
-        <button class="auth-tab" id="tabLearningPaths" type="button">🧠 Learning Paths</button>
-      </div>
+        <!-- Main Content -->
+        <main class="lessons-main">
+          <div class="lessons-content">
+            <div class="lessons-header">
+              <div class="lessons-header-left">
+                <h1 id="lessonsTitle">All Lessons</h1>
+                <div class="lessons-subtitle" id="lessonsSubtitle">Loading...</div>
+              </div>
+              <a href="/dashboard" class="btn btn-ghost">← Dashboard</a>
+            </div>
 
-      <!-- Quick Lessons Grid -->
-      <div id="lessonCardsGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:20px;">
-        <!-- Lesson cards rendered by JS -->
-      </div>
+            <!-- Tabs for Lessons vs Learning Paths -->
+            <div class="auth-tabs" style="margin-bottom:32px;">
+              <button class="auth-tab auth-tab-active" id="tabLessons" type="button">Quick Lessons</button>
+              <button class="auth-tab" id="tabLearningPaths" type="button">Learning Paths</button>
+            </div>
 
-      <!-- Learning Paths Grid -->
-      <div id="learningPathsGrid" class="hidden" style="display:grid;gap:16px;">
-        <!-- Learning paths rendered by JS -->
+            <!-- Quick Lessons Grid -->
+            <div class="lessons-grid" id="lessonCardsGrid">
+              <!-- Lesson cards rendered by JS -->
+            </div>
+
+            <!-- Learning Paths Grid -->
+            <div id="learningPathsGrid" class="hidden lessons-grid">
+              <!-- Learning paths rendered by JS -->
+            </div>
+          </div>
+        </main>
       </div>
     </div>
 
