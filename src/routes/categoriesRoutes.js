@@ -27,11 +27,10 @@ router.get("/categories", async (req, res) => {
 
     if (error) throw error;
 
-    // Create minimal default categories if none exist
+    // No default categories - let users create their own
     if (!data || data.length === 0) {
-      const defaultCategories = [
-        { user_id: userId, name: 'My Lessons', color: '#4f46e5', icon: '📚', sort_order: 1 }
-      ];
+      return res.json([]);
+    }
 
       const { data: created, error: createError } = await getAdmin()
         .from("lesson_categories")
