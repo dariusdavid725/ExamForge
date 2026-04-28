@@ -223,10 +223,19 @@ async function renderMyLessons() {
   if (!grid) return;
 
   if (!cachedLessons.length) {
-    grid.innerHTML = `<div class="flat-card" style="text-align:center;padding:32px;">
-      <p class="muted">No lessons yet.</p>
-      <button id="firstLessonBtn" class="btn" style="margin-top:16px;">Create your first lesson</button>
-    </div>`;
+    grid.innerHTML = `
+      <div class="card">
+        <div class="empty-state">
+          <div class="empty-state-icon">📚</div>
+          <h2 class="empty-state-title">No lessons yet</h2>
+          <p class="empty-state-description">
+            Create your first AI-powered lesson from any document or topic. Get structured content, key concepts, and personalized quizzes.
+          </p>
+          <div class="empty-state-actions">
+            <button id="firstLessonBtn" class="btn">Create First Lesson</button>
+          </div>
+        </div>
+      </div>`;
     el("firstLessonBtn")?.addEventListener("click", () => showSection("uploadSection"));
     return;
   }
@@ -843,7 +852,14 @@ async function loadLearningPath() {
   const container = el("learningPathContainer");
   if (!container) return;
 
-  container.innerHTML = '<div class="card" style="text-align:center;padding:32px;"><div class="spinner"></div><p class="muted" style="margin-top:12px;">Loading learning path...</p></div>';
+  container.innerHTML = `
+    <div class="card">
+      <div class="skeleton skeleton-title"></div>
+      <div class="skeleton skeleton-text"></div>
+      <div class="skeleton skeleton-text"></div>
+      <div class="skeleton skeleton-text" style="width: 60%;"></div>
+      <div class="skeleton skeleton-card mt-4"></div>
+    </div>`;
 
   try {
     const pathData = await getLearningPath(currentUser.id);
