@@ -34,13 +34,16 @@
     </div>
 
     <div class="card">
-      <div class="eyebrow">Host</div>
-      <p class="muted" style="margin-top:8px;">Upload a document or choose a saved lesson — AI builds the challenge pack.</p>
+      <div class="card-header">
+        <div class="eyebrow">Host</div>
+        <p class="card-description">Upload a document or choose a saved lesson — AI builds the challenge pack.</p>
+      </div>
 
       <!-- Nickname (shared between both modes) -->
-      <div style="margin-top:24px;">
-        <label class="eyebrow">Your nickname</label>
-        <input id="hostNameInput" class="input" style="margin-top:12px;" placeholder="e.g. Darius" />
+      <div class="form-group">
+        <label class="form-label required" for="hostNameInput">Your Nickname</label>
+        <input id="hostNameInput" class="input" placeholder="e.g. Darius" autocomplete="nickname" />
+        <span class="form-hint">This name will be visible to other players</span>
       </div>
 
       <!-- Source tabs -->
@@ -61,13 +64,12 @@
 
       <!-- ── Topic panel ───────────────────────────────────────────────────── -->
       <div id="topicPanel" class="hidden" style="margin-top:20px;">
-        <label class="eyebrow" style="display:block;margin-bottom:10px;">What quiz do you want to create?</label>
-        <textarea id="createTopicInput" class="input" rows="4"
-          style="width:100%;resize:vertical;font-family:inherit;"
-          placeholder="e.g. Quiz about the Roman Empire, or basic Python programming concepts, or cryptocurrency fundamentals..."></textarea>
-        <p class="muted" style="margin-top:8px;font-size:13px;">
-          Be specific for better results. Works in any language.
-        </p>
+        <div class="form-group">
+          <label class="form-label required" for="createTopicInput">What quiz do you want to create?</label>
+          <textarea id="createTopicInput" class="input" rows="4"
+            placeholder="e.g. Quiz about the Roman Empire, or basic Python programming concepts, or cryptocurrency fundamentals..."></textarea>
+          <span class="form-hint">Be specific for better results. Works in any language.</span>
+        </div>
       </div>
 
       <!-- ── My Lessons panel ──────────────────────────────────────────────── -->
