@@ -12,6 +12,21 @@ let selectedLesson   = null;       // lesson entry from localStorage
 
 const el = id => document.getElementById(id);
 
+function showError(message) {
+  const statusEl = el("hostStatusText");
+  if (!statusEl) return;
+  statusEl.className = "form-error mt-4";
+  statusEl.textContent = message;
+  statusEl.style.display = "flex";
+}
+
+function clearError() {
+  const statusEl = el("hostStatusText");
+  if (!statusEl) return;
+  statusEl.style.display = "none";
+  statusEl.textContent = "";
+}
+
 // ─── Init ─────────────────────────────────────────────────────────────────────
 
 async function init() {
@@ -369,17 +384,17 @@ async function createArenaFromTopic() {
     formData.append("gameMode", selectedGameMode);
 
     const packData = await api.generatePack(formData, msg => {
-      statusEl.textContent = msg;
       updateLoadingOverlay(msg);
     });
 
     await _openRoom(packData, hostName, topic, "");
   } catch (err) {
     console.error(err);
-    statusEl.textContent = err.message || "Something went wrong.";
+    showError(err.message || "Failed to create arena. Please try again.");
     showToast(err.message || "Something went wrong.", "danger");
   } finally {
     hideLoadingOverlay();
+    createBtn.classList.remove("btn-loading");
     createBtn.disabled = false;
   }
 }
