@@ -27,14 +27,10 @@ router.get("/categories", async (req, res) => {
 
     if (error) throw error;
 
-    // Create default categories if none exist
+    // Create minimal default categories if none exist
     if (!data || data.length === 0) {
       const defaultCategories = [
-        { user_id: userId, name: 'Mathematics', color: '#3b82f6', icon: '🔢', sort_order: 1 },
-        { user_id: userId, name: 'Science', color: '#10b981', icon: '🧪', sort_order: 2 },
-        { user_id: userId, name: 'History', color: '#f59e0b', icon: '📜', sort_order: 3 },
-        { user_id: userId, name: 'Languages', color: '#8b5cf6', icon: '🌍', sort_order: 4 },
-        { user_id: userId, name: 'Other', color: '#6b7280', icon: '📚', sort_order: 5 }
+        { user_id: userId, name: 'My Lessons', color: '#4f46e5', icon: '📚', sort_order: 1 }
       ];
 
       const { data: created, error: createError } = await getAdmin()

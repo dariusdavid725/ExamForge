@@ -226,16 +226,14 @@ async function renderMyLessons() {
 
   if (!cachedLessons.length) {
     grid.innerHTML = `
-      <div class="card">
-        <div class="empty-state">
-          <div class="empty-state-icon">📚</div>
-          <h2 class="empty-state-title">No lessons yet</h2>
-          <p class="empty-state-description">
-            Create your first AI-powered lesson from any document or topic. Get structured content, key concepts, and personalized quizzes.
-          </p>
-          <div class="empty-state-actions">
-            <button id="firstLessonBtn" class="btn">Create First Lesson</button>
-          </div>
+      <div class="lessons-empty">
+        <div class="empty-state-icon" style="font-size:64px;">📚</div>
+        <h2 class="empty-state-title">No lessons yet</h2>
+        <p class="empty-state-description">
+          Create your first AI-powered lesson from any document or topic.
+        </p>
+        <div class="empty-state-actions mt-6">
+          <button id="firstLessonBtn" class="btn btn-lg">Create First Lesson</button>
         </div>
       </div>`;
     el("firstLessonBtn")?.addEventListener("click", () => showSection("uploadSection"));
@@ -255,60 +253,126 @@ async function renderMyLessons() {
     }
   });
 
-  // Render categories + manage button
+  // Count lessons per category
+  const categoryCounts = {};
+  categories.forEach(cat => {
+    categoryCounts[cat.id] = (grouped[cat.id] || []).length;
+  });
+
+  // Render with sidebar layout
   let html = `
-    <div class="flex justify-between items-center mb-4">
-      <h3 style="margin:0;font-size:var(--text-lg);">My Lessons</h3>
-      <button id="manageCategoriesBtn" class="btn btn-secondary btn-sm">
-        📁 Manage Categories
-      </button>
+    <div class="lessons-container">
+      <!-- Sidebar -->
+      <div class="lessons-sidebar">
+        <div class="sidebar-section">
+          <div class="sidebar-title">Categories</div>
+          <div id="categoryFilter">
+            <div class="category-item active" data-category="all">
+              <span class="category-icon">📚</span>
+              <span class="category-name">All Lessons</span>
+              <span class="category-count">${cachedLessons.length}</span>
+            </div>
+            ${categories.map(cat => `
+              <div class="category-item" data-category="${cat.id}">
+                <span class="category-icon">${cat.icon}</span>
+                <span class="category-name">${escapeHTML(cat.name)}</span>
+                <span class="category-count">${categoryCounts[cat.id] || 0}</span>
+              </div>
+            `).join("")}
+            ${uncategorized.length > 0 ? `
+              <div class="category-item" data-category="uncategorized">
+                <span class="category-icon">📂</span>
+                <span class="category-name">Uncategorized</span>
+                <span class="category-count">${uncategorized.length}</span>
+              </div>
+            ` : ''}
+          </div>
+          
+          <button id="manageCategoriesBtn" class="btn btn-ghost btn-sm w-full mt-4">
+            ⚙️ Manage Categories
+          </button>
+        </div>
+      </div>
+
+      <!-- Main Content -->
+      <div class="lessons-main">
+        <div class="lessons-header">
+          <h1 class="lessons-title">All Lessons</h1>
+          <div class="lessons-actions">
+            <button id="newLessonFromGridBtn" class="btn">+ New Lesson</button>
+          </div>
+        </div>
+        
+        <div class="lessons-grid" id="lessonsGridContent">
+          ${renderLessonsForCategory('all', categories, grouped, uncategorized)}
+        </div>
+      </div>
     </div>
   `;
 
-  // Render each category
-  categories.forEach(category => {
-    const lessons = grouped[category.id] || [];
-    if (lessons.length === 0) return;
-
-    html += `
-      <div class="mb-6">
-        <div class="flex items-center gap-2 mb-3">
-          <span style="font-size:20px;">${category.icon}</span>
-          <h4 style="margin:0;font-size:var(--text-base);font-weight:900;">${escapeHTML(category.name)}</h4>
-          <span class="text-xs text-muted">(${lessons.length})</span>
-        </div>
-        <div style="display:grid;gap:12px;">
-          ${lessons.map(renderLessonCard).join("")}
-        </div>
-      </div>
-    `;
-  });
-
-  // Uncategorized
-  if (uncategorized.length > 0) {
-    html += `
-      <div class="mb-6">
-        <div class="flex items-center gap-2 mb-3">
-          <span style="font-size:20px;">📂</span>
-          <h4 style="margin:0;font-size:var(--text-base);font-weight:900;">Uncategorized</h4>
-          <span class="text-xs text-muted">(${uncategorized.length})</span>
-        </div>
-        <div style="display:grid;gap:12px;">
-          ${uncategorized.map(renderLessonCard).join("")}
-        </div>
-      </div>
-    `;
-  }
-
   grid.innerHTML = html;
+
+  // Category filter
+  document.querySelectorAll('[data-category]').forEach(item => {
+    item.addEventListener('click', () => {
+      // Update active state
+      document.querySelectorAll('.category-item').forEach(el => el.classList.remove('active'));
+      item.classList.add('active');
+
+      // Update title
+      const categoryId = item.dataset.category;
+      const category = categories.find(c => c.id === categoryId);
+      const titleEl = document.querySelector('.lessons-title');
+      
+      if (categoryId === 'all') {
+        titleEl.textContent = 'All Lessons';
+      } else if (categoryId === 'uncategorized') {
+        titleEl.textContent = 'Uncategorized';
+      } else if (category) {
+        titleEl.textContent = category.name;
+      }
+
+      // Filter lessons
+      const gridContent = document.getElementById('lessonsGridContent');
+      gridContent.innerHTML = renderLessonsForCategory(categoryId, categories, grouped, uncategorized);
+      attachLessonCardListeners();
+    });
+  });
 
   // Manage categories button
   el("manageCategoriesBtn")?.addEventListener("click", () => {
     showCategoryManagerModal(currentUser.id, renderMyLessons);
   });
 
-  // Attach event listeners to lesson cards
+  // New lesson button
+  el("newLessonFromGridBtn")?.addEventListener("click", () => showSection("uploadSection"));
+
+  // Attach event listeners
   attachLessonCardListeners();
+}
+
+function renderLessonsForCategory(categoryId, categories, grouped, uncategorized) {
+  let lessons = [];
+  
+  if (categoryId === 'all') {
+    lessons = cachedLessons;
+  } else if (categoryId === 'uncategorized') {
+    lessons = uncategorized;
+  } else {
+    lessons = grouped[categoryId] || [];
+  }
+
+  if (lessons.length === 0) {
+    return `
+      <div class="lessons-empty">
+        <div class="empty-state-icon">📭</div>
+        <h3 class="empty-state-title">No lessons in this category</h3>
+        <p class="empty-state-description">Create a new lesson or move existing ones here.</p>
+      </div>
+    `;
+  }
+
+  return lessons.map(renderLessonCard).join("");
 }
 
 function renderLessonCard(entry) {
@@ -316,64 +380,70 @@ function renderLessonCard(entry) {
   const score = entry.lastQuizScore;
   const hasPct = score !== null && score !== undefined;
   const color = scoreColor(score);
-  const date = new Date(entry.createdAt).toLocaleDateString();
-
-  // Show AI-generated title hint if custom title is set
-  const titleHtml = entry.customTitle
-    ? `<h3 class="lesson-title" data-lesson-id="${entry.id}" style="margin-top:8px;font-size:18px;line-height:1.3;cursor:pointer;" title="Click to rename">
-         ${escapeHTML(entry.displayTitle)} ✏️
-       </h3>`
-    : `<h3 class="lesson-title" data-lesson-id="${entry.id}" style="margin-top:8px;font-size:18px;line-height:1.3;cursor:pointer;" title="Click to rename">
-         ${escapeHTML(entry.displayTitle)} ✏️
-       </h3>`;
-
-  const reviewHtml = (entry.reviewTopics?.length && score !== 100 && score !== null)
-    ? `<div style="margin-top:14px;">
-         <div class="eyebrow" style="font-size:10px;margin-bottom:8px;">Topics to review</div>
-         <div class="row" style="flex-wrap:wrap;gap:6px;">
-           ${entry.reviewTopics.map(t => `<span class="pill" style="font-size:12px;border-color:var(--red);">${escapeHTML(t)}</span>`).join("")}
-         </div>
-       </div>`
-    : "";
+  const date = new Date(entry.createdAt).toLocaleDateString('en-US', { 
+    month: 'short', 
+    day: 'numeric', 
+    year: 'numeric' 
+  });
 
   return `
-    <div class="card lesson-progress-card" style="display:flex;flex-direction:column;gap:0;">
-      <!-- Header -->
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;">
-        <div style="min-width:0;flex:1;">
-          <div class="eyebrow" style="font-size:10px;">${escapeHTML(entry.language)} · ${date}</div>
-          ${titleHtml}
+    <div class="lesson-card">
+      <div class="lesson-card-header">
+        <div style="flex:1;min-width:0;">
+          <h3 class="lesson-card-title lesson-title" data-lesson-id="${entry.id}" title="Click to rename">
+            ${escapeHTML(entry.displayTitle)}
+            <span class="rename-icon">✏️</span>
+          </h3>
+          <div class="lesson-card-meta">
+            <span>${escapeHTML(entry.language)}</span>
+            <span>•</span>
+            <span>${date}</span>
+          </div>
         </div>
-        <span style="flex-shrink:0;padding:4px 12px;border-radius:999px;font-size:12px;font-weight:900;
+        <span style="flex-shrink:0;padding:6px 12px;border-radius:999px;font-size:11px;font-weight:900;
                      background:${color};color:${score === null ? "var(--text)" : "white"};
-                     border:2px solid ${color};">
+                     border:2px solid ${color};text-transform:uppercase;letter-spacing:0.05em;">
           ${escapeHTML(label)}
         </span>
       </div>
 
-      <!-- Progress bar -->
-      <div style="margin-top:16px;">
-        <div style="display:flex;justify-content:space-between;font-size:13px;font-weight:900;margin-bottom:6px;">
-          <span>Quiz score</span>
-          <span>${hasPct ? score + "%" : "—"}</span>
+      ${hasPct ? `
+        <div class="lesson-card-progress">
+          <div class="progress-label">
+            <span>Quiz Score</span>
+            <span style="color:${color};">${score}%</span>
+          </div>
+          <div class="progress-track">
+            <div class="progress-fill" style="width:${score}%;background:${color};"></div>
+          </div>
         </div>
-        <div class="progress-track">
-          <div class="progress-fill" style="width:${hasPct ? score : 0}%;background:${color};transition:width .6s ease;"></div>
+      ` : ''}
+
+      ${entry.reviewTopics?.length && score !== 100 && score !== null ? `
+        <div style="margin-bottom:var(--space-4);">
+          <div style="font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:0.05em;color:var(--muted);margin-bottom:var(--space-2);">
+            Topics to Review
+          </div>
+          <div style="display:flex;flex-wrap:wrap;gap:var(--space-2);">
+            ${entry.reviewTopics.map(t => `
+              <span class="pill" style="font-size:11px;background:rgba(255,92,92,0.1);color:var(--red);border-color:var(--red);">
+                ${escapeHTML(t)}
+              </span>
+            `).join("")}
+          </div>
         </div>
-      </div>
+      ` : ''}
 
-      ${reviewHtml}
-
-      <!-- Actions -->
-      <div style="display:flex;gap:8px;margin-top:18px;flex-wrap:wrap;">
-        <button class="btn${primary ? "" : " btn-secondary"}" data-open="${escapeHTML(entry.id)}"
-                style="flex:1;min-width:120px;">
+      <div class="lesson-card-actions">
+        <button class="btn${primary ? "" : " btn-secondary"} btn-sm" data-open="${escapeHTML(entry.id)}" style="flex:1;">
           ${escapeHTML(btnText)}
         </button>
-        <button class="btn btn-secondary btn-sm" data-move="${escapeHTML(entry.id)}"
-                title="Move to category">📁</button>
-        <button class="btn btn-danger btn-sm" data-delete="${escapeHTML(entry.id)}"
-                title="Delete lesson">🗑</button>
+        <button class="btn btn-ghost btn-sm" data-move="${escapeHTML(entry.id)}" title="Move to category">
+          📁
+        </button>
+        <button class="btn btn-ghost btn-sm" data-delete="${escapeHTML(entry.id)}" title="Delete">
+          🗑
+        </button>
       </div>
     </div>`;
 }
