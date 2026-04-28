@@ -72,7 +72,7 @@ async function init() {
             // Set the file in the upload input
             const dataTransfer = new DataTransfer();
             dataTransfer.items.add(file);
-            const fileInput = el('documentUpload');
+            const fileInput = el('fileInput');
             
             console.log('File input element:', !!fileInput);
             console.log('All inputs:', document.querySelectorAll('input[type="file"]'));
@@ -87,19 +87,25 @@ async function init() {
               console.log('✓ Change event dispatched');
               
               // Update UI to show file is loaded
-              const fileLabel = document.querySelector('label[for="documentUpload"]');
+              const fileLabel = document.querySelector('label[for="fileInput"]');
+              const dropZone = el('dropZone');
+              const fileName = el('fileName');
               console.log('File label element:', !!fileLabel);
               
-              if (fileLabel) {
-                fileLabel.innerHTML = `
-                  <div style="text-align:center;">
-                    <div style="font-size:48px;margin-bottom:12px;">📄</div>
-                    <div style="font-weight:700;margin-bottom:4px;">${preloadedFileName}</div>
-                    <div style="font-size:13px;color:var(--muted);">✓ File loaded from learning path - ready to create quiz!</div>
-                  </div>
-                `;
-                console.log('✓ UI updated');
+              // Update UI - use fileName element that exists in HTML
+              if (fileName) {
+                fileName.textContent = `📄 ${preloadedFileName}`;
+                console.log('✓ FileName updated');
               }
+              
+              // Update dropZone to show loaded state
+              if (dropZone) {
+                dropZone.style.borderColor = '#10b981';
+                dropZone.style.background = 'rgba(16, 185, 129, 0.1)';
+                console.log('✓ DropZone styled');
+              }
+              
+              console.log('✓ UI updated');
               
               showToast('✓ File loaded! Choose your game mode and create arena.', 'success');
               console.log('✓ Toast shown');
