@@ -555,22 +555,7 @@ main.container.arena-main:has(#lobbyScreen:not(.hidden)) {
   box-shadow: 8px 8px 0 var(--text);
 }
 
-.card {
-  border-radius: 18px;
-  padding: 20px;
-}
-
-.flat-card {
-  border-radius: 16px;
-  padding: 20px;
-}
-
-.card:hover,
-.flat-card:hover {
-  transform: translate(-2px, -2px);
-  box-shadow: 10px 10px 0 var(--text);
-  transition: 0.12s ease;
-}
+/* Card styles moved to CARD SYSTEM section (line ~940) */
 
 .eyebrow {
   color: white;
@@ -1179,23 +1164,7 @@ textarea.input {
   color: var(--text);
 }
 
-.input {
-  width: 100%;
-  border: 4px solid var(--text);
-  background: white;
-  border-radius: 14px;
-  padding: 14px 15px;
-  font-size: 15px;
-  font-weight: 800;
-  outline: none;
-  box-shadow: 4px 4px 0 var(--text);
-  font-family: inherit;
-}
-
-.input:focus {
-  background: #f7fbff;
-  box-shadow: 6px 6px 0 var(--blue);
-}
+/* Input styles moved to INPUT SYSTEM section (line ~850) */
 
 .upload-box {
   border: 4px dashed var(--text);
