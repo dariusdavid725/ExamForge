@@ -170,9 +170,13 @@ export async function renderDashboard(
                 style="padding:3px 8px;font-size:10px;">Manage</button>
             </div>
             <div style="display:grid;gap:5px;">
-              ${friendProfiles.length > 0 
+              ${friendProfiles.length > 0
                 ? renderFriendsLb(friendProfiles, user.id, 5)
-                : `<p class="muted" style="font-size:11px;margin:3px 0;">No friends yet</p>`}
+                : `<div style="text-align:center;padding:var(--space-8) var(--space-4);">
+                     <div style="font-size:2rem;opacity:0.5;margin-bottom:var(--space-2);">👥</div>
+                     <p class="text-sm font-bold" style="color:var(--text);margin-bottom:var(--space-1);">No friends yet</p>
+                     <p class="text-xs text-muted">Add friends to compete!</p>
+                   </div>`}
             </div>
             ${friendProfiles.length > 5 
               ? `<button id="seeMoreFriendsBtn" class="btn btn-secondary" type="button"
@@ -314,7 +318,17 @@ export async function renderHistoryPage(container, user) {
   if (!sessions.length) {
     container.innerHTML = `
       <div class="card">
-        <p class="muted">No quizzes yet.</p>
+        <div class="empty-state" style="padding:var(--space-16) var(--space-6);">
+          <div class="empty-state-icon">📊</div>
+          <h2 class="empty-state-title">No quiz history yet</h2>
+          <p class="empty-state-description">
+            Complete your first arena or lesson quiz to see your performance history and detailed analytics.
+          </p>
+          <div class="empty-state-actions">
+            <a href="/create" class="btn">Create First Arena</a>
+            <a href="/lessons" class="btn btn-secondary">Start Learning</a>
+          </div>
+        </div>
       </div>
     `;
     return;
