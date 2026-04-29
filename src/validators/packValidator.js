@@ -338,8 +338,22 @@ function normalizeChallenge(raw, index) {
       throw new Error(`Multiple select ${index + 1} must have 4-5 clean options.`);
     }
 
+    // Auto-repair: If not enough correctAnswers, convert to multiple_choice
     if (challenge.correctAnswers.length < 2 || challenge.correctAnswers.length > 3) {
-      throw new Error(`Multiple select ${index + 1} needs 2-3 correctAnswers.`);
+      console.warn(`Multiple select ${index + 1} has ${challenge.correctAnswers.length} correctAnswers, converting to multiple_choice`);
+      challenge.type = "multiple_choice";
+      challenge.correctAnswer = challenge.correctAnswers[0] || challenge.options[0];
+      challenge.correctAnswers = [];
+      challenge.prompt = challenge.prompt.replace(/Select ALL that apply:\s*/i, "").trim();
+      
+      // Validate as multiple_choice
+      if (challenge.options.length !== 4) {
+        challenge.options = challenge.options.slice(0, 4);
+      }
+      if (!challenge.options.includes(challenge.correctAnswer)) {
+        challenge.correctAnswer = challenge.options[0];
+      }
+      return challenge;
     }
 
     for (const answer of challenge.correctAnswers) {

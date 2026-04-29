@@ -445,7 +445,7 @@ async function createArenaFromLesson() {
 async function _openRoom(packData, hostName, docName, docText) {
   const statusEl = el("hostStatusText");
 
-  updateLoadingOverlay("Opening lobby...", 92);
+  updateLoadingOverlay("Creating arena...", 90);
   statusEl.textContent = "Creating arena...";
 
   const { response: roomRes, data: roomData } = await api.createRoom(packData.pack, currentUser?.id || null);
@@ -461,9 +461,11 @@ async function _openRoom(packData, hostName, docName, docText) {
 
   const roomCode = roomData.code;
 
+  updateLoadingOverlay("Joining lobby...", 95);
   const { response: joinRes, data: joinData } = await api.joinRoom(roomCode, hostName, currentUser?.id || null);
   if (!joinRes.ok) throw new Error(joinData.error || "Could not join room.");
 
+  updateLoadingOverlay("Opening lobby...", 98);
   sessionStorage.setItem("ef_session", JSON.stringify({
     currentRoomCode:   roomCode,
     currentPlayerId:   joinData.playerId,
@@ -478,6 +480,8 @@ async function _openRoom(packData, hostName, docName, docText) {
     documentText:      docText
   }));
 
+  updateLoadingOverlay("Ready!", 100);
+  await new Promise(resolve => setTimeout(resolve, 300));
   nav.arena(roomCode);
 }
 
