@@ -67,17 +67,23 @@ export function updateTimerUI() {
 let lastPlayerCount = 0;
 
 export function renderPlayerList(players) {
-  dom.playersList.innerHTML = "";
-  dom.playerCountText.textContent = `${players.length} joined`;
-  
+  const listEl = dom.playersList || document.getElementById("playersList");
+  const countEl = dom.playerCountText || document.getElementById("playerCountText");
+  if (!listEl) return;
+
+  const safePlayers = Array.isArray(players) ? players : [];
+
+  listEl.innerHTML = "";
+  if (countEl) countEl.textContent = `${safePlayers.length} joined`;
+
   // Show notification when a new player joins
-  if (players.length > lastPlayerCount && lastPlayerCount > 0) {
-    const newPlayer = players[players.length - 1];
+  if (safePlayers.length > lastPlayerCount && lastPlayerCount > 0) {
+    const newPlayer = safePlayers[safePlayers.length - 1];
     showPlayerJoinNotification(newPlayer.name);
   }
-  lastPlayerCount = players.length;
-  
-  players.forEach((player, i) => {
+  lastPlayerCount = safePlayers.length;
+
+  safePlayers.forEach((player, i) => {
     const div = document.createElement("div");
     div.className = "player-card-compact";
     div.innerHTML = `
@@ -87,12 +93,12 @@ export function renderPlayerList(players) {
         </div>
         <div style="flex:1;min-width:0;">
           <strong style="display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHTML(player.name)}</strong>
-          <span class="muted" style="font-size:11px;">${player.finished ? "✓ Finished" : "⏳ Waiting"}</span>
+          <span class="muted" style="font-size:11px;">${player.finished ? "Finished" : "Waiting"}</span>
         </div>
       </div>
       <strong style="font-size:18px;color:var(--blue);">${player.score}</strong>
     `;
-    dom.playersList.appendChild(div);
+    listEl.appendChild(div);
   });
 }
 
@@ -102,7 +108,7 @@ function showPlayerJoinNotification(playerName) {
   notification.className = "player-join-notification";
   notification.innerHTML = `
     <div style="display:flex;align-items:center;gap:12px;">
-      <div style="font-size:24px;">👋</div>
+      <div style="font-size:12px;font-weight:950;border:2px solid var(--text);border-radius:8px;padding:6px 8px;background:var(--yellow);">+1</div>
       <div>
         <strong style="display:block;font-size:14px;">${escapeHTML(playerName)}</strong>
         <span style="font-size:12px;color:var(--muted);">joined the arena</span>

@@ -69,6 +69,7 @@ async function handleGeneratePack(req, res) {
       return res.end();
     }
 
+    send("progress", { message: "Extracting key concepts from your material..." });
     send("progress", { message: "AI is generating challenges..." });
 
     const pack = await generateLearningPackWithAI(safeText, gameMode, (msg) => send("progress", { message: msg }), isTopic);

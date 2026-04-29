@@ -380,7 +380,7 @@ main.container.arena-main:has(#lobbyScreen:not(.hidden)) {
 }
 
 #lobbyScreen.lobby-fit-viewport .lobby-card--players {
-  min-height: 0;
+  min-height: 120px;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -397,7 +397,7 @@ main.container.arena-main:has(#lobbyScreen:not(.hidden)) {
 
 #lobbyScreen.lobby-fit-viewport .lobby-players-list {
   flex: 1 1 auto;
-  min-height: 0;
+  min-height: 72px;
   overflow-y: auto;
   display: grid;
   gap: 6px;

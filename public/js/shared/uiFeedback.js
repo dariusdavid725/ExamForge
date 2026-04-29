@@ -171,7 +171,7 @@ export function showLoadingOverlay({
   overlay.innerHTML = `
     <div class="ef-loading-card card">
       <div class="ef-loading-orb">
-        <span>⚡</span>
+        <span style="font-size:18px;font-weight:950;">AI</span>
       </div>
 
       <p class="eyebrow">ExamForge AI</p>
@@ -207,17 +207,13 @@ export function showLoadingOverlay({
 
   activeLoader = {
     overlay,
-    progress: 8,
+    progress: 5,
     step: 0,
     steps
   };
 
-  loaderInterval = setInterval(() => {
-    if (!activeLoader) return;
-
-    const next = Math.min(activeLoader.progress + Math.random() * 4.2, 92);
-    setLoadingProgress(next);
-  }, 750);
+  // No fake random progress — it desynced the bar from the step list. Progress only moves from
+  // explicit updateLoadingOverlay() calls (SSE messages + room open).
 
   return activeLoader;
 }
@@ -233,28 +229,53 @@ export function updateLoadingOverlay(message, progress) {
 
   if (typeof progress === "number") {
     setLoadingProgress(progress);
-    setLoadingStepByProgress(progress);
     return;
   }
 
   const text = String(message || "").toLowerCase();
+  const n = activeLoader.steps.length;
+  // Target progress bands per step (0..n-1) so bar and numbered list stay aligned
+  const band = index => {
+    const lo = (index / n) * 100;
+    const hi = ((index + 1) / n) * 100 - 1;
+    return { lo, hi: Math.max(lo + 2, hi) };
+  };
 
-  if (text.includes("read") || text.includes("cit") || text.includes("document")) {
-    setLoadingStep(0);
-    setLoadingProgress(Math.max(activeLoader.progress, 18));
-  } else if (text.includes("concept")) {
-    setLoadingStep(1);
-    setLoadingProgress(Math.max(activeLoader.progress, 36));
-  } else if (text.includes("gener")) {
-    setLoadingStep(2);
-    setLoadingProgress(Math.max(activeLoader.progress, 54));
-  } else if (text.includes("quality") || text.includes("verific") || text.includes("repair")) {
-    setLoadingStep(3);
-    setLoadingProgress(Math.max(activeLoader.progress, 74));
-  } else if (text.includes("room") || text.includes("arena") || text.includes("creating")) {
-    setLoadingStep(4);
-    setLoadingProgress(Math.max(activeLoader.progress, 88));
+  let stepIndex = activeLoader.step;
+  let targetPct = activeLoader.progress;
+
+  if (text.includes("read") || text.includes("cit") || text.includes("document") || text.includes("upload")) {
+    stepIndex = 0;
+    targetPct = Math.max(activeLoader.progress, band(0).hi);
+  } else if (text.includes("concept") || text.includes("extract") || text.includes("research")) {
+    stepIndex = 1;
+    targetPct = Math.max(activeLoader.progress, band(1).hi);
+  } else if (text.includes("gener") || text.includes("challeng") || text.includes("forging")) {
+    stepIndex = 2;
+    targetPct = Math.max(activeLoader.progress, band(2).hi);
+  } else if (
+    text.includes("quality") ||
+    text.includes("verific") ||
+    text.includes("repair") ||
+    text.includes("checking question") ||
+    text.includes("unclear")
+  ) {
+    stepIndex = 3;
+    targetPct = Math.max(activeLoader.progress, band(3).hi);
+  } else if (
+    text.includes("room") ||
+    text.includes("lobby") ||
+    text.includes("arena") ||
+    text.includes("creating") ||
+    text.includes("joining") ||
+    text.includes("opening")
+  ) {
+    stepIndex = n - 1;
+    targetPct = Math.max(activeLoader.progress, Math.min(99, band(n - 1).hi));
   }
+
+  setLoadingStep(stepIndex);
+  setLoadingProgress(Math.min(99, targetPct));
 }
 
 export function hideLoadingOverlay() {
@@ -288,6 +309,9 @@ function setLoadingProgress(value) {
   if (percent) {
     percent.textContent = `${Math.round(activeLoader.progress)}%`;
   }
+
+  // Keep step highlights in sync whenever the bar moves (fixes bar at 90% + step 1 bug)
+  setLoadingStepByProgress(activeLoader.progress);
 }
 
 function setLoadingStep(index) {
@@ -305,13 +329,16 @@ function setLoadingStep(index) {
 function setLoadingStepByProgress(progress) {
   if (!activeLoader) return;
 
-  const stepSize = 100 / activeLoader.steps.length;
-  const index = Math.min(
-    activeLoader.steps.length - 1,
-    Math.floor(progress / stepSize)
+  const n = activeLoader.steps.length;
+  if (n <= 0) return;
+
+  // Step i active while progress is in [i/n * 100, (i+1)/n * 100)
+  const idx = Math.min(
+    n - 1,
+    Math.floor((progress / 100) * n)
   );
 
-  setLoadingStep(index);
+  setLoadingStep(idx);
 }
 
 function injectFeedbackStyles() {
