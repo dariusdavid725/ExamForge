@@ -2,6 +2,14 @@ let installed = false;
 let activeLoader = null;
 let loaderInterval = null;
 
+/** When SSE is quiet, creep toward ~82% so the bar is not stuck at 6%. */
+function syntheticIdleProgress(elapsedSec) {
+  const base = 6;
+  const ceiling = 82;
+  const tau = 34;
+  return base + (ceiling - base) * (1 - Math.exp(-elapsedSec / tau));
+}
+
 export function installFeedback() {
   if (installed) return;
   installed = true;
@@ -208,16 +216,20 @@ export function showLoadingOverlay({
   activeLoader = {
     overlay,
     progress: 6,
+    anchorProgress: 6,
+    loadStartedAt: Date.now(),
     step: 0,
     steps
   };
 
-  // Sync bar width / % with activeLoader (template showed 6% but bar CSS default could mismatch).
-  setLoadingProgress(activeLoader.progress);
-  setLoadingStep(0);
+  if (loaderInterval) {
+    clearInterval(loaderInterval);
+    loaderInterval = null;
+  }
+  loaderInterval = setInterval(() => refreshLoadingDisplay(), 110);
 
-  // No fake random progress — it desynced the bar from the step list. Progress only moves from
-  // explicit updateLoadingOverlay() calls (SSE messages + room open).
+  setLoadingStep(0);
+  refreshLoadingDisplay();
 
   return activeLoader;
 }
@@ -245,25 +257,21 @@ export function updateLoadingOverlay(message, progress) {
     return { lo, hi: Math.max(lo + 2, hi) };
   };
 
-  let stepIndex = activeLoader.step;
-  let targetPct = activeLoader.progress;
+  const anchor = activeLoader.anchorProgress ?? activeLoader.progress;
+
+  let targetPct = anchor;
 
   if (text.includes("read") || text.includes("cit") || text.includes("document") || text.includes("upload")) {
-    stepIndex = 0;
-    targetPct = Math.max(activeLoader.progress, band(0).hi);
+    targetPct = Math.max(anchor, band(0).hi);
   } else if (text.includes("concept") || text.includes("extract") || text.includes("research")) {
-    stepIndex = 1;
-    targetPct = Math.max(activeLoader.progress, band(1).hi);
+    targetPct = Math.max(anchor, band(1).hi);
   } else if (text.includes("gener") || text.includes("challeng") || text.includes("forging")) {
-    stepIndex = 2;
-    targetPct = Math.max(activeLoader.progress, band(2).hi);
+    targetPct = Math.max(anchor, band(2).hi);
   } else if (
     text.includes("still") &&
     (text.includes("challenge") || text.includes("creating") || text.includes("repair") || text.includes("working"))
   ) {
-    // Long-running OpenAI call — creep progress so the bar does not look frozen
-    stepIndex = Math.max(2, activeLoader.step);
-    targetPct = Math.max(activeLoader.progress, Math.min(88, activeLoader.progress + 4));
+    targetPct = Math.max(anchor, Math.min(88, anchor + 4));
   } else if (
     text.includes("quality") ||
     text.includes("verific") ||
@@ -271,8 +279,7 @@ export function updateLoadingOverlay(message, progress) {
     text.includes("checking question") ||
     text.includes("unclear")
   ) {
-    stepIndex = 3;
-    targetPct = Math.max(activeLoader.progress, band(3).hi);
+    targetPct = Math.max(anchor, band(3).hi);
   } else if (
     text.includes("room") ||
     text.includes("lobby") ||
@@ -281,11 +288,9 @@ export function updateLoadingOverlay(message, progress) {
     text.includes("joining") ||
     text.includes("opening")
   ) {
-    stepIndex = n - 1;
-    targetPct = Math.max(activeLoader.progress, Math.min(99, band(n - 1).hi));
+    targetPct = Math.max(anchor, Math.min(99, band(n - 1).hi));
   }
 
-  setLoadingStep(stepIndex);
   setLoadingProgress(Math.min(99, targetPct));
 }
 
@@ -308,21 +313,37 @@ export function hideLoadingOverlay() {
 function setLoadingProgress(value) {
   if (!activeLoader) return;
 
-  activeLoader.progress = Math.max(0, Math.min(100, value));
+  const v = Math.max(0, Math.min(100, value));
+  activeLoader.anchorProgress = Math.max(activeLoader.anchorProgress ?? 6, v);
+
+  refreshLoadingDisplay();
+}
+
+/**
+ * Bar shows max(anchor, time-based idle curve). Step pills track displayed % so they match the bar.
+ */
+function refreshLoadingDisplay() {
+  if (!activeLoader) return;
+
+  const anchor = activeLoader.anchorProgress ?? 6;
+  const elapsedSec = (Date.now() - (activeLoader.loadStartedAt || Date.now())) / 1000;
+  const syn = syntheticIdleProgress(elapsedSec);
+  const display = Math.min(100, Math.max(anchor, syn));
+
+  activeLoader.progress = display;
 
   const bar = document.getElementById("efLoadingBar");
   const percent = document.getElementById("efLoadingPercent");
 
   if (bar) {
-    bar.style.width = `${activeLoader.progress}%`;
+    bar.style.width = `${display}%`;
   }
 
   if (percent) {
-    percent.textContent = `${Math.round(activeLoader.progress)}%`;
+    percent.textContent = `${Math.round(display)}%`;
   }
 
-  // Keep step highlights in sync whenever the bar moves (fixes bar at 90% + step 1 bug)
-  setLoadingStepByProgress(activeLoader.progress);
+  setLoadingStepByProgress(display);
 }
 
 function setLoadingStep(index) {
@@ -495,7 +516,7 @@ function injectFeedbackStyles() {
       height: 100%;
       width: 8%;
       background: linear-gradient(90deg, #a78bfa, #38bdf8, #86efac);
-      transition: width 0.28s ease;
+      transition: width 0.48s cubic-bezier(0.33, 1, 0.68, 1);
     }
 
     .ef-loading-percent {

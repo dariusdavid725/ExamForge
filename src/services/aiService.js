@@ -263,7 +263,7 @@ async function repairUntilValid({
     try {
       const repairHb = setInterval(() => {
         onProgress?.(`Repairing pack… attempt ${repairAttempt} (still working)…`);
-      }, 12000);
+      }, 8000);
       try {
         repairedRaw = await callJsonSchema(
           model,
@@ -320,7 +320,7 @@ async function tryGenerateAndRepair(model, text, gameMode, onProgress, isTopic =
   // Long OpenAI call — no SSE until it returns; keep the UI moving so it does not look stuck at ~8%.
   const heartbeat = setInterval(() => {
     onProgress?.("Still creating challenges (40–120s is normal)…");
-  }, 12000);
+  }, 8000);
 
   let raw;
   try {

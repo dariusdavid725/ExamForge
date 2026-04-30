@@ -150,16 +150,13 @@ main.container.arena-main:has(#lobbyScreen:not(.hidden)) {
   min-height: calc(100vh - 130px);
 }
 
-/* ═══ Arena lobby: viewport fit + wide hero (big code + concepts use horizontal space) ═══ */
+/* ═══ Arena lobby: natural page scroll, shadows not clipped, calmer density ═══ */
 #lobbyScreen.lobby-fit-viewport {
-  --lobby-offset-top: 88px;
-  --lobby-offset-bottom: 104px;
+  height: auto;
+  max-height: none;
   min-height: 0;
-  height: calc(100svh - var(--lobby-offset-top) - var(--lobby-offset-bottom));
-  max-height: calc(100svh - var(--lobby-offset-top) - var(--lobby-offset-bottom));
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
+  overflow: visible;
+  display: block;
   box-sizing: border-box;
 }
 
@@ -167,36 +164,30 @@ main.container.arena-main:has(#lobbyScreen:not(.hidden)) {
   min-height: 0;
 }
 
-@supports (height: 100dvh) {
-  #lobbyScreen.lobby-fit-viewport {
-    height: calc(100dvh - var(--lobby-offset-top) - var(--lobby-offset-bottom));
-    max-height: calc(100dvh - var(--lobby-offset-top) - var(--lobby-offset-bottom));
-  }
-}
-
 #lobbyScreen.lobby-fit-viewport .lobby-shell {
-  flex: 1 1 auto;
-  min-height: 0;
   display: flex;
   flex-direction: column;
-  gap: clamp(8px, 1.2vw, 14px);
+  gap: 16px;
+  padding: 0 clamp(12px, 3vw, 24px) 20px;
+  max-width: 1120px;
+  margin-inline: auto;
 }
 
 #lobbyScreen.lobby-fit-viewport .lobby-card {
   min-width: 0;
-  padding: clamp(14px, 1.7vw, 20px);
+  padding: 14px 16px;
+  box-shadow: 3px 3px 0 var(--text);
 }
 
 #lobbyScreen.lobby-fit-viewport .eyebrow {
   margin-bottom: 2px;
 }
 
-/* ── Hero: room code + meta / concepts (uses side space) ── */
+/* ── Hero: room code + meta / concepts ── */
 #lobbyScreen.lobby-fit-viewport .lobby-hero {
-  flex: 1 1 52%;
-  min-height: 0;
   display: flex;
   flex-direction: column;
+  gap: 10px;
 }
 
 #lobbyScreen.lobby-fit-viewport .lobby-hero-eyebrow {
@@ -206,25 +197,21 @@ main.container.arena-main:has(#lobbyScreen:not(.hidden)) {
 
 #lobbyScreen.lobby-fit-viewport .lobby-hero-grid {
   display: grid;
-  grid-template-columns: minmax(260px, 44%) minmax(0, 1fr);
-  gap: clamp(16px, 2.2vw, 32px);
-  align-items: stretch;
-  flex: 1 1 auto;
-  min-height: 0;
+  grid-template-columns: minmax(200px, 38%) minmax(0, 1fr);
+  gap: 16px 20px;
+  align-items: start;
 }
 
 #lobbyScreen.lobby-fit-viewport .lobby-hero-code {
   display: flex;
-  align-items: stretch;
-  justify-content: stretch;
+  align-items: flex-start;
+  justify-content: center;
   min-width: 0;
-  min-height: 0;
 }
 
 #lobbyScreen.lobby-fit-viewport .lobby-hero-code .room-code {
   width: 100%;
   max-width: 100%;
-  flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -233,81 +220,75 @@ main.container.arena-main:has(#lobbyScreen:not(.hidden)) {
 }
 
 #lobbyScreen.lobby-fit-viewport .room-code {
-  font-size: clamp(56px, 8.5vw, 112px);
-  line-height: 0.92;
-  letter-spacing: 0.05em;
+  font-size: clamp(36px, 5.5vw, 76px);
+  line-height: 0.95;
+  letter-spacing: 0.04em;
   margin-top: 0;
   padding: 8px 12px;
-  border-radius: 16px;
-  border-width: 4px;
-  box-shadow: 8px 8px 0 var(--text);
+  border-radius: 14px;
+  border-width: 3px;
+  box-shadow: 4px 4px 0 var(--text);
 }
 
 #lobbyScreen.lobby-fit-viewport .lobby-hero-meta {
   min-width: 0;
-  min-height: 0;
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  align-self: stretch;
+  gap: 6px;
+  align-self: start;
   justify-content: flex-start;
-  overflow-y: auto;
-  overflow-x: hidden;
-  padding-right: 4px;
+  overflow: visible;
 }
 
 #lobbyScreen.lobby-fit-viewport .lobby-room-title {
   margin: 0;
-  font-size: clamp(18px, 1.95vw, 26px);
-  line-height: 1.2;
+  font-size: clamp(17px, 1.6vw, 22px);
+  line-height: 1.25;
   font-weight: 900;
-  letter-spacing: -0.03em;
+  letter-spacing: -0.02em;
   flex-shrink: 0;
 }
 
 #lobbyScreen.lobby-fit-viewport .lobby-room-summary {
   margin: 0;
-  font-size: 13px;
+  font-size: 12.5px;
   line-height: 1.45;
   display: -webkit-box;
-  -webkit-line-clamp: 3;
-  line-clamp: 3;
+  -webkit-line-clamp: 4;
+  line-clamp: 4;
   -webkit-box-orient: vertical;
   overflow: hidden;
   flex-shrink: 0;
 }
 
 #lobbyScreen.lobby-fit-viewport .lobby-concepts-label {
-  margin: 4px 0 0;
-  font-size: 11px;
+  margin: 2px 0 0;
+  font-size: 10.5px;
   flex-shrink: 0;
+  opacity: 0.85;
 }
 
 #lobbyScreen.lobby-fit-viewport .lobby-concepts {
   margin: 0;
   display: flex;
   flex-wrap: wrap;
-  gap: 8px 12px;
+  gap: 6px 8px;
   align-items: center;
   align-content: flex-start;
   justify-content: flex-start;
-  flex: 0 1 auto;
-  min-height: 0;
-  max-height: none;
-  overflow: visible;
-  padding: 2px 0 6px 0;
+  padding: 2px 0 4px;
 }
 
 #lobbyScreen.lobby-fit-viewport .lobby-concepts .pill {
-  font-size: 13px;
-  font-weight: 800;
-  padding: 8px 14px;
+  font-size: 11.5px;
+  font-weight: 700;
+  padding: 5px 10px;
 }
 
-/* Host actions live inside Actions card (no floating overlap) */
+/* Host actions inside Actions card */
 #lobbyScreen.lobby-fit-viewport .lobby-host-actions-mount {
-  margin-top: 12px;
-  margin-bottom: 12px;
+  margin-top: 10px;
+  margin-bottom: 8px;
   width: 100%;
 }
 
@@ -324,11 +305,10 @@ main.container.arena-main:has(#lobbyScreen:not(.hidden)) {
 
 #lobbyScreen.lobby-fit-viewport .lobby-host-actions-row .btn {
   flex: 1 1 calc(50% - 4px);
-  min-height: 44px;
+  min-height: 42px;
   min-width: 120px;
 }
 
-/* When host actions are present, make main actions 2-col too for consistency */
 #lobbyScreen.lobby-fit-viewport .lobby-card--actions:has(.lobby-host-actions-mount:not([hidden])) .lobby-action-row {
   flex-direction: row;
   flex-wrap: wrap;
@@ -341,49 +321,47 @@ main.container.arena-main:has(#lobbyScreen:not(.hidden)) {
 
 /* ── Bottom: actions | players | QR ── */
 #lobbyScreen.lobby-fit-viewport .lobby-bottom {
-  flex: 1 1 48%;
-  min-height: 0;
   display: grid;
-  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr) minmax(0, 0.82fr);
-  gap: clamp(8px, 1.2vw, 16px);
-  align-items: stretch;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr) minmax(0, 0.88fr);
+  gap: 12px;
+  align-items: start;
 }
 
 #lobbyScreen.lobby-fit-viewport .lobby-card--actions {
   display: flex;
   flex-direction: column;
   min-height: 0;
-  overflow: hidden;
+  overflow: visible;
 }
 
 #lobbyScreen.lobby-fit-viewport .lobby-action-row {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  margin-top: 10px;
+  margin-top: 8px;
   flex: 0 0 auto;
 }
 
 #lobbyScreen.lobby-fit-viewport .lobby-action-row .btn {
   width: 100%;
-  min-height: 44px;
-  padding: 11px 14px;
+  min-height: 42px;
+  padding: 10px 12px;
   font-size: 14px;
 }
 
 #lobbyScreen.lobby-fit-viewport .lobby-status {
-  margin-top: auto;
-  padding-top: 12px;
+  margin-top: 12px;
+  padding-top: 8px;
   font-size: 12px;
   min-height: 18px;
   flex-shrink: 0;
 }
 
 #lobbyScreen.lobby-fit-viewport .lobby-card--players {
-  min-height: 120px;
+  min-height: 100px;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  overflow: visible;
 }
 
 #lobbyScreen.lobby-fit-viewport .lobby-players-head {
@@ -392,12 +370,13 @@ main.container.arena-main:has(#lobbyScreen:not(.hidden)) {
   align-items: center;
   gap: 8px;
   flex-shrink: 0;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 
 #lobbyScreen.lobby-fit-viewport .lobby-players-list {
   flex: 1 1 auto;
-  min-height: 72px;
+  min-height: 56px;
+  max-height: 220px;
   overflow-y: auto;
   display: grid;
   gap: 6px;
@@ -406,30 +385,28 @@ main.container.arena-main:has(#lobbyScreen:not(.hidden)) {
 }
 
 #lobbyScreen.lobby-fit-viewport .lobby-card--qr {
-  min-height: 0;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
-  justify-content: center;
+  overflow: visible;
+  justify-content: flex-start;
 }
 
 #lobbyScreen.lobby-fit-viewport .lobby-qr-wrap {
-  margin-top: 8px;
-  flex: 1 1 auto;
-  min-height: 0;
+  margin-top: 6px;
+  flex: 0 0 auto;
   display: flex;
   align-items: center;
   justify-content: center;
   background: #fff;
-  border-radius: 14px;
-  padding: 12px;
-  box-shadow: inset 0 1px 3px rgba(17, 17, 17, 0.08);
+  border-radius: 12px;
+  padding: 10px;
+  box-shadow: inset 0 1px 2px rgba(17, 17, 17, 0.06);
 }
 
 #lobbyScreen.lobby-fit-viewport #qrCanvas {
   display: block;
   max-width: 100%;
-  max-height: min(32vh, 180px);
+  max-height: min(200px, 28vh);
   width: auto;
   height: auto;
 }
@@ -456,12 +433,12 @@ main.container.arena-main:has(#lobbyScreen:not(.hidden)) {
   }
 
   #lobbyScreen.lobby-fit-viewport .room-code {
-    font-size: clamp(44px, 12vw, 72px);
+    font-size: clamp(32px, 10vw, 56px);
   }
 
   #lobbyScreen.lobby-fit-viewport .lobby-bottom {
     grid-template-columns: 1fr;
-    grid-template-rows: auto minmax(0, 1fr) auto;
+    gap: 12px;
   }
 
   #lobbyScreen.lobby-fit-viewport .lobby-action-row {
@@ -475,33 +452,18 @@ main.container.arena-main:has(#lobbyScreen:not(.hidden)) {
   }
 
   #lobbyScreen.lobby-fit-viewport .lobby-card--players {
-    min-height: 120px;
-    max-height: 200px;
+    min-height: 100px;
+    max-height: none;
   }
 
   #lobbyScreen.lobby-fit-viewport .lobby-card--qr {
-    max-height: 200px;
+    max-height: none;
   }
 }
 
 @media (max-width: 780px) {
-  #lobbyScreen.lobby-fit-viewport {
-    --lobby-offset-top: 84px;
-    --lobby-offset-bottom: 112px;
-    height: calc(100svh - var(--lobby-offset-top) - var(--lobby-offset-bottom));
-    max-height: calc(100svh - var(--lobby-offset-top) - var(--lobby-offset-bottom));
-    overflow: hidden;
-  }
-
-  @supports (height: 100dvh) {
-    #lobbyScreen.lobby-fit-viewport {
-      height: calc(100dvh - var(--lobby-offset-top) - var(--lobby-offset-bottom));
-      max-height: calc(100dvh - var(--lobby-offset-top) - var(--lobby-offset-bottom));
-    }
-  }
-
   #lobbyScreen.lobby-fit-viewport #qrCanvas {
-    max-height: min(20vh, 120px);
+    max-height: min(160px, 24vh);
   }
 }
 
