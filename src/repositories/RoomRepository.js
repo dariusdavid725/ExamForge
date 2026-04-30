@@ -20,15 +20,28 @@ export async function findByCode(code) {
 
   if (!room) return null;
 
-  const { data: players } = await getSupabase()
+  // Do NOT .order("created_at") here: many DBs lack players.created_at until migration runs.
+  // Ordering on a missing column makes PostgREST fail and returns no rows (empty lobby + "No host found").
+  const { data: playerRows, error: playersError } = await getSupabase()
     .from("players")
     .select("*")
-    .eq("room_code", upperCode)
-    .order("created_at", { ascending: true });
+    .eq("room_code", upperCode);
+
+  if (playersError) {
+    console.error("[RoomRepository] players query failed:", playersError.message);
+  }
+
+  const rows = playerRows || [];
+  const sorted = [...rows].sort((a, b) => {
+    const ta = a.created_at != null ? Number(a.created_at) : 0;
+    const tb = b.created_at != null ? Number(b.created_at) : 0;
+    if (ta !== tb) return ta - tb;
+    return String(a.id).localeCompare(String(b.id));
+  });
 
   return {
     ...room,
-    players: (players || []).map(normalizePlayer)
+    players: sorted.map(normalizePlayer)
   };
 }
 

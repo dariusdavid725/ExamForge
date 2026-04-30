@@ -19,6 +19,7 @@ export function normalizePlayer(row) {
   return {
     id: row.id,
     userId: row.user_id || null,
+    createdAt: row.created_at != null ? Number(row.created_at) : null,
     name: row.name,
     score: row.score || 0,
     correct: row.correct || 0,

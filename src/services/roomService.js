@@ -174,9 +174,12 @@ export async function closeRoom(roomCode, playerId) {
   const room = await RoomRepo.findByCode(roomCode);
   if (!room) throw new Error("Room not found.");
 
-  // Host is the first player who joined (players are sorted by created_at ASC)
+  // Host = first player by join order (RoomRepository sorts by created_at, then id)
   const host = room.players[0];
-  if (!host) throw new Error("No host found for this arena.");
+  if (!host) {
+    console.error(`[closeRoom] No players in room ${roomCode}; DB/ordering may be broken.`);
+    throw new Error("No host found for this arena.");
+  }
   
   // Check if the requesting player is the host
   if (host.id !== playerId) {
