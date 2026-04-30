@@ -261,14 +261,21 @@ async function repairUntilValid({
     let repairedRaw = "";
 
     try {
-      repairedRaw = await callJsonSchema(
-        model,
-        repairPrompt,
-        LEARNING_PACK_SCHEMA,
-        "learning_pack_repair",
-        3800,
-        0.12
-      );
+      const repairHb = setInterval(() => {
+        onProgress?.(`Repairing pack… attempt ${repairAttempt} (still working)…`);
+      }, 12000);
+      try {
+        repairedRaw = await callJsonSchema(
+          model,
+          repairPrompt,
+          LEARNING_PACK_SCHEMA,
+          "learning_pack_repair",
+          3800,
+          0.12
+        );
+      } finally {
+        clearInterval(repairHb);
+      }
     } catch (error) {
       currentReason = error.message;
       continue;
@@ -310,14 +317,24 @@ async function tryGenerateAndRepair(model, text, gameMode, onProgress, isTopic =
     ? buildTopicPackPrompt(text, gameMode)
     : buildLearningPackPrompt(text, gameMode);
 
-  const raw = await callJsonSchema(
-    model,
-    prompt,
-    LEARNING_PACK_SCHEMA,
-    "learning_pack",
-    3800,
-    0.25
-  );
+  // Long OpenAI call — no SSE until it returns; keep the UI moving so it does not look stuck at ~8%.
+  const heartbeat = setInterval(() => {
+    onProgress?.("Still creating challenges (40–120s is normal)…");
+  }, 12000);
+
+  let raw;
+  try {
+    raw = await callJsonSchema(
+      model,
+      prompt,
+      LEARNING_PACK_SCHEMA,
+      "learning_pack",
+      3800,
+      0.25
+    );
+  } finally {
+    clearInterval(heartbeat);
+  }
 
   let pack;
 

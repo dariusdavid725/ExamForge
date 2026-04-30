@@ -186,7 +186,7 @@ export function showLoadingOverlay({
         <div id="efLoadingBar" class="ef-loading-bar"></div>
       </div>
 
-      <div id="efLoadingPercent" class="ef-loading-percent">8%</div>
+      <div id="efLoadingPercent" class="ef-loading-percent">6%</div>
 
       <div class="ef-loading-steps">
         ${steps
@@ -207,10 +207,14 @@ export function showLoadingOverlay({
 
   activeLoader = {
     overlay,
-    progress: 5,
+    progress: 6,
     step: 0,
     steps
   };
+
+  // Sync bar width / % with activeLoader (template showed 6% but bar CSS default could mismatch).
+  setLoadingProgress(activeLoader.progress);
+  setLoadingStep(0);
 
   // No fake random progress — it desynced the bar from the step list. Progress only moves from
   // explicit updateLoadingOverlay() calls (SSE messages + room open).
@@ -253,6 +257,13 @@ export function updateLoadingOverlay(message, progress) {
   } else if (text.includes("gener") || text.includes("challeng") || text.includes("forging")) {
     stepIndex = 2;
     targetPct = Math.max(activeLoader.progress, band(2).hi);
+  } else if (
+    text.includes("still") &&
+    (text.includes("challenge") || text.includes("creating") || text.includes("repair") || text.includes("working"))
+  ) {
+    // Long-running OpenAI call — creep progress so the bar does not look frozen
+    stepIndex = Math.max(2, activeLoader.step);
+    targetPct = Math.max(activeLoader.progress, Math.min(88, activeLoader.progress + 4));
   } else if (
     text.includes("quality") ||
     text.includes("verific") ||

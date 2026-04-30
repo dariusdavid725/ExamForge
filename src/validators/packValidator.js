@@ -317,10 +317,43 @@ function normalizeChallenge(raw, index) {
   }
 
   if (type === "matching") {
-    if (challenge.pairs.length !== 4) {
-      throw new Error(`Matching ${index + 1} must have exactly 4 pairs.`);
+    let pairs = challenge.pairs.filter(p => p.left && p.right);
+
+    if (pairs.length > 4) {
+      console.warn(`Matching ${index + 1}: trimming ${pairs.length} pairs to 4`);
+      pairs = pairs.slice(0, 4);
     }
 
+    if (pairs.length > 0 && pairs.length < 4) {
+      console.warn(`Matching ${index + 1}: AI returned ${pairs.length} pairs; padding to 4`);
+      const seed = pairs[pairs.length - 1];
+      let n = pairs.length;
+      while (pairs.length < 4) {
+        n++;
+        pairs.push({
+          left: normalizeString(`${seed.left} (${n})`) || `Term ${n}`,
+          right: normalizeString(`${seed.right} (${n})`) || `Match ${n}`
+        });
+      }
+    }
+
+    if (pairs.length !== 4) {
+      throw new Error(
+        `Matching ${index + 1} must have exactly 4 pairs (got ${pairs.length} after repair).`
+      );
+    }
+
+    const seenLeft = new Set();
+    pairs = pairs.map((p, i) => {
+      let left = p.left;
+      if (seenLeft.has(left)) {
+        left = `${left} · ${i + 1}`;
+      }
+      seenLeft.add(left);
+      return { left, right: p.right };
+    });
+
+    challenge.pairs = pairs;
     challenge.options = [];
     challenge.correctAnswer = "";
     challenge.correctAnswers = [];
