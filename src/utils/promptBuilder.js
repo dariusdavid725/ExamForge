@@ -4,6 +4,21 @@ import {
   randomSeed
 } from "./textUtils.js";
 
+/** Repair used to slice JSON at 5k chars — later challenges (e.g. c8) were missing. Prefer full/minified pack. */
+export function formatPackJsonForRepair(badJson, maxChars = 120000) {
+  const raw = String(badJson || "").trim();
+  if (!raw) return "";
+  if (raw.length <= maxChars) return raw;
+  try {
+    const pack = JSON.parse(raw);
+    const compact = JSON.stringify(pack);
+    if (compact.length <= maxChars) return compact;
+  } catch {
+    /* fall through */
+  }
+  return raw.slice(0, maxChars) + "\n/* truncated: increase source or split */";
+}
+
 export function buildLearningPackPrompt(text, gameMode = "arena_mix") {
   const seed = randomSeed();
   const documentSlice = prepareDocumentSlice(text);
@@ -223,6 +238,10 @@ multiple_select:
 - correctAnswers 2 or 3 strings, subset of options
 - correctAnswer ""
 - order must not matter
+- CRITICAL: Each option must be objectively true or false for the prompt — no two options that mean the same thing with different wording
+- CRITICAL: If the task fits a single best answer only, use multiple_choice (one correct), not multiple_select
+- CRITICAL: For any arithmetic or equality in an option, verify it (e.g. 15+12=27 is TRUE; do not mark it incorrect in explanation)
+- explanation must match correctAnswers: never claim a true statement is false or vice versa; re-check all sums and facts before output
 
 DOCUMENT:
 ${documentSlice}
@@ -407,6 +426,8 @@ multiple_select:
 - options 4 or 5 strings
 - correctAnswers 2 or 3 strings, subset of options
 - correctAnswer ""
+- CRITICAL: Each option objectively true or false; use multiple_choice if only one answer is correct
+- CRITICAL: Verify arithmetic/equalities in options; explanation must align with correctAnswers (no contradictions)
 `;
 }
 
@@ -432,7 +453,7 @@ ${validationError}
 Important:
 Do NOT reject the document.
 Do NOT remove the whole pack.
-Fix the invalid challenge.
+Fix every challenge mentioned in the error (e.g. c8). If multiple_select is ambiguous or the explanation contradicts the math, rewrite options and correctAnswers so they are unambiguous, or change type to multiple_choice if only one option should be correct.
 
 If the problem is a hidden source reference such as "linia 10", "line 10", "pagina 4", "fragmentul de mai sus":
 1. First try to make the challenge self-contained by including the actual relevant sequence/operation/statement in prompt or mistakeText.
@@ -488,7 +509,7 @@ Every challenge must include:
 id, type, concept, difficulty, prompt, options, correctAnswer, correctAnswers, pairs, acceptedAnswers, steps, correctOrder, mistakeText, explanation, sourceSnippet
 
 Previous invalid JSON:
-${String(badJson || "").slice(0, 5000)}
+${formatPackJsonForRepair(badJson)}
 
 Document:
 ${documentContext}
@@ -517,6 +538,7 @@ Mark valid=false if ANY challenge:
 - CRITICAL: has a multiple_choice where 2 or more options could be considered correct (ambiguous question)
 - has a multiple_choice where all 4 options are equally plausible (needs clearer wrong answers)
 - should be multiple_select but is multiple_choice
+- CRITICAL: multiple_select where only one option is truly correct (should be multiple_choice) OR correctAnswers/explanation contradict the facts (e.g. explanation says a true arithmetic equality is false)
 - has options glued together or confusing
 - has sourceSnippet that does not support the answer
 - has ambiguous wording that makes the question unclear

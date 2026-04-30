@@ -247,7 +247,7 @@ async function repairUntilValid({
   let currentRaw = rawPackText;
   let currentReason = reason;
 
-  for (let repairAttempt = 1; repairAttempt <= 3; repairAttempt++) {
+  for (let repairAttempt = 1; repairAttempt <= 5; repairAttempt++) {
     onProgress?.(`AI repairing unclear questions... attempt ${repairAttempt}`);
 
     const repairPrompt = buildRepairPrompt(
