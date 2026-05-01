@@ -150,7 +150,12 @@ async function loadAuditLogs() {
   }
 
   container.innerHTML = logs.map(log => {
-    const actionLabel = log.action === "admin_granted" ? "🔓 Granted admin" : "🔒 Revoked admin";
+    const actionLabel = {
+      admin_granted: "🔓 Granted admin",
+      admin_revoked: "🔒 Revoked admin",
+      premium_gift_granted: "🎁 Gifted premium",
+      premium_gift_revoked: "🧹 Removed gifted premium"
+    }[log.action] || `📝 ${log.action}`;
     return `
       <div class="flat-card">
         <strong>${actionLabel}</strong>
@@ -162,6 +167,38 @@ async function loadAuditLogs() {
       </div>
     `;
   }).join("");
+}
+
+async function setGiftedPremium(isPremium) {
+  const input = el("premiumEmailInput");
+  const status = el("premiumActionStatus");
+  const email = String(input?.value || "").trim().toLowerCase();
+  if (!email) {
+    showToast("Enter an email first.", "info");
+    return;
+  }
+
+  const actionText = isPremium ? "Give gifted premium" : "Remove gifted premium";
+  const confirmed = confirm(`${actionText} for ${email}?`);
+  if (!confirmed) return;
+
+  try {
+    const headers = await authHeaders();
+    await fetchJson("/api/admin/premium-gifts", {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ email, isPremium })
+    });
+    if (status) status.textContent = isPremium
+      ? `Gifted premium enabled for ${email}.`
+      : `Gifted premium removed for ${email}.`;
+    showToast(isPremium ? "Gifted premium granted." : "Gifted premium removed.", "success");
+    if (input) input.value = "";
+    await Promise.all([loadOverview(), loadAuditLogs()]);
+  } catch (error) {
+    if (status) status.textContent = error.message;
+    showToast(error.message, "danger");
+  }
 }
 
 async function grantAdmin() {
@@ -212,6 +249,8 @@ async function init() {
   el("adminContent")?.classList.remove("hidden");
 
   el("grantAdminBtn")?.addEventListener("click", grantAdmin);
+  el("grantPremiumBtn")?.addEventListener("click", () => setGiftedPremium(true));
+  el("revokePremiumBtn")?.addEventListener("click", () => setGiftedPremium(false));
 
   try {
     await Promise.all([loadOverview(), loadActivationFunnel(), loadAdmins(), loadRecentEvents(), loadAuditLogs()]);

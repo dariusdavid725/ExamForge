@@ -43,6 +43,20 @@
       </div>
 
       <div class="card">
+        <div class="eyebrow">Premium gifts</div>
+        <h3 style="margin:10px 0 10px;">Grant gifted premium</h3>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;">
+          <input id="premiumEmailInput" class="input" placeholder="user@email.com" style="max-width:360px;" />
+          <button id="grantPremiumBtn" class="btn" type="button">Give premium</button>
+          <button id="revokePremiumBtn" class="btn btn-secondary" type="button">Remove gifted premium</button>
+        </div>
+        <p class="muted" style="margin-top:8px;font-size:12px;">
+          Gifted premium is marked as premium access without a Stripe subscription.
+        </p>
+        <p id="premiumActionStatus" class="status"></p>
+      </div>
+
+      <div class="card">
         <div class="eyebrow">Product events</div>
         <h3 style="margin:10px 0 10px;">Recent events</h3>
         <div id="recentEventsList" style="display:grid;gap:8px;"></div>

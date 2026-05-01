@@ -85,19 +85,25 @@ router.get("/stripe/plan-status", async (req, res) => {
 
   const admin = getAdmin();
   const { data, error } = await admin.from("profiles")
-    .select("plan, weekly_lessons_count, weekly_quizzes_count, weekly_reset_date")
+    .select("plan, stripe_customer_id, weekly_lessons_count, weekly_quizzes_count, weekly_reset_date")
     .eq("id", userId)
     .maybeSingle();
 
   if (error || !data) return res.status(404).json({ error: "Profile not found." });
 
   const plan = data.plan || "free";
+  const canManageSubscription = Boolean(data.stripe_customer_id);
+  const premiumSource = plan === "premium"
+    ? (canManageSubscription ? "stripe" : "gifted")
+    : "free";
   const reset = needsWeeklyReset(data.weekly_reset_date);
   const lessonsUsed = reset ? 0 : (data.weekly_lessons_count || 0);
   const quizzesUsed = reset ? 0 : (data.weekly_quizzes_count || 0);
 
   return res.json({
     plan,
+    premiumSource,
+    canManageSubscription,
     weeklyLessonsUsed: lessonsUsed,
     weeklyQuizzesUsed: quizzesUsed,
     lessonsLimit:      plan === "premium" ? null : 3,
@@ -143,9 +149,16 @@ router.post("/stripe/portal-session", async (req, res) => {
 
   const admin = getAdmin();
   const { data } = await admin.from("profiles")
-    .select("stripe_customer_id").eq("id", userId).maybeSingle();
+    .select("plan, stripe_customer_id").eq("id", userId).maybeSingle();
 
-  if (!data?.stripe_customer_id) return res.status(400).json({ error: "No active subscription found." });
+  if (!data?.stripe_customer_id) {
+    if (data?.plan === "premium") {
+      return res.status(400).json({
+        error: "This premium plan was granted by admin and has no Stripe subscription to manage."
+      });
+    }
+    return res.status(400).json({ error: "No active subscription found." });
+  }
 
   const origin = `${req.protocol}://${req.headers.host}`;
 

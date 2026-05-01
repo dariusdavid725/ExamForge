@@ -178,6 +178,52 @@ router.post("/admin/admins", requireAdmin, async (req, res) => {
   }
 });
 
+router.post("/admin/premium-gifts", requireAdmin, async (req, res) => {
+  try {
+    const email = String(req.body.email || "").trim().toLowerCase();
+    const isPremium = Boolean(req.body.isPremium);
+
+    if (!email || !email.includes("@")) {
+      return res.status(400).json({ error: "Invalid email." });
+    }
+
+    const usersByEmail = await listUsersByEmail();
+    const targetUser = usersByEmail.get(email);
+    if (!targetUser) return res.status(404).json({ error: "User not found." });
+
+    const payload = isPremium
+      ? {
+          plan: "premium",
+          stripe_customer_id: null,
+          stripe_subscription_id: null
+        }
+      : {
+          plan: "free",
+          stripe_customer_id: null,
+          stripe_subscription_id: null
+        };
+
+    const { error } = await getAdmin()
+      .from("profiles")
+      .update(payload)
+      .eq("id", targetUser.id);
+
+    if (error) return res.status(500).json({ error: "Could not update premium status." });
+
+    await getAdmin().from("admin_audit_logs").insert({
+      action: isPremium ? "premium_gift_granted" : "premium_gift_revoked",
+      actor_id: req.adminUser.id,
+      target_email: email,
+      target_id: targetUser.id,
+      metadata: { gifted: true, new_plan: payload.plan }
+    }).catch(() => {});
+
+    return res.json({ ok: true });
+  } catch (error) {
+    return res.status(500).json({ error: "Could not update premium status." });
+  }
+});
+
 router.get("/admin/events/recent", requireAdmin, async (_req, res) => {
   try {
     const { data, error } = await getAdmin()

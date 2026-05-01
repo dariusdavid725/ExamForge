@@ -234,22 +234,37 @@ async function renderPlanCard(container, userId) {
       card.style.borderColor   = "#c9a227";
       card.style.boxShadow     = "4px 4px 0 #c9a227";
       card.style.background    = "linear-gradient(135deg,#fffdf4,#fff8dc)";
+      const isGiftedPremium = data.premiumSource === "gifted" || !data.canManageSubscription;
       card.innerHTML = `
         <div style="display:flex;justify-content:space-between;align-items:center;">
           <span style="font-size:11px;font-weight:900;color:#8a6800;">⭐ PREMIUM ACTIVE</span>
         </div>
+        ${isGiftedPremium ? `
+          <p class="muted" style="font-size:11px;margin-top:8px;line-height:1.45;">
+            🎁 This premium plan was gifted by admin. Billing is not handled via Stripe.
+          </p>
+        ` : ""}
         <button id="manageSubBtn" class="btn btn-secondary" type="button"
-          style="width:100%;padding:8px;font-size:12px;margin-top:8px;">
-          Manage Subscription
+          style="width:100%;padding:8px;font-size:12px;margin-top:8px;"
+          ${isGiftedPremium ? "disabled" : ""}>
+          ${isGiftedPremium ? "Gifted Premium" : "Manage Subscription"}
         </button>`;
 
       card.querySelector("#manageSubBtn")?.addEventListener("click", async () => {
+        if (isGiftedPremium) {
+          alert("Acest premium este oferit cadou de admin si nu are abonament Stripe de gestionat.");
+          return;
+        }
         try {
           const r = await fetch("/api/stripe/portal-session", {
             method: "POST", headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ userId })
           });
           const d = await r.json();
+          if (!r.ok) {
+            alert(d.error || "Nu am putut deschide portalul de billing.");
+            return;
+          }
           if (d.url) window.location.href = d.url;
         } catch { alert("Nu am putut deschide portalul. Incearca din nou."); }
       });
